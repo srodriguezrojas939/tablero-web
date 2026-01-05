@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tablero Inteligente - Raiz Cuadrada</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #FDFDFD;
+            --primary: #2D3436;
+            --accent: #0984E3;
+            --toolbar-bg: rgba(255, 255, 255, 0.95);
+            --border: #E1E8ED;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            height: 100%; overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+        }
+
+        /* --- CABECERA ESTILO PREMIUM --- */
+        header {
+            position: absolute; top: 20px; left: 20px;
+            z-index: 100; pointer-events: none;
+            display: flex; align-items: baseline; gap: 15px;
+        }
+
+        header h1 {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700; font-size: 32px;
+            margin: 0; color: var(--primary);
+        }
+
+        header span {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700; font-size: 18px;
+            color: var(--accent); opacity: 0.8;
+        }
+
+        /* --- TOOLBAR --- */
+        .toolbar {
+            position: absolute; left: 50%; transform: translateX(-50%);
+            bottom: 30px; background: var(--toolbar-bg);
+            padding: 8px 15px; border-radius: 20px;
+            display: flex; gap: 8px; align-items: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+            z-index: 1000; flex-wrap: wrap;
+        }
+
+        .btn {
+            width: 40px; height: 40px; border-radius: 12px;
+            border: none; background: transparent;
+            cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; color: var(--primary);
+        }
+
+        .btn:hover { background: #F1F2F6; }
+        .btn.active { background: var(--primary); color: white; }
+        .divider { width: 1px; height: 25px; background: var(--border); margin: 0 5px; }
+
+        /* --- ÁREA DE TRABAJO --- */
+        #board-container {
+            width: 100vw; height: 100vh;
+            cursor: crosshair; background-image: radial-gradient(#CED6E0 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        svg { width: 100%; height: 100%; touch-action: none; }
+
+        .drawing-path { fill: none; stroke: var(--primary); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+        .shape { fill: rgba(9, 132, 227, 0.05); stroke: var(--primary); stroke-width: 2; }
+        
+        /* LaTeX Styles */
+        .latex-item {
+            position: absolute; cursor: move; padding: 5px;
+            background: rgba(255,255,255,0.1); border-radius: 4px;
+            user-select: none;
+        }
+
+        #latex-input-box {
+            position: absolute; display: none;
+            background: white; padding: 10px; border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2); z-index: 2000;
+        }
+
+        #latex-input-box input {
+            border: 1px solid #ddd; padding: 8px; border-radius: 5px; width: 200px;
+        }
+
+        .controls-top {
+            position: absolute; top: 20px; right: 20px;
+            display: flex; gap: 10px; z-index: 1000;
+        }
+
+        .btn-special {
+            background: white; padding: 8px 15px; border-radius: 10px;
+            border: 1px solid var(--border); font-weight: 600; cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Tablero</h1>
+    <span>√(Raiz) Cuadrada²</span>
+</header>
+
+<div class="controls-top">
+    <button class="btn-special" onclick="toggleFullScreen()">⛶ Pantalla Completa</button>
+    <button class="btn-special" style="background: var(--accent); color: white;" onclick="exportBoard()">⬇ Descargar PNG</button>
+</div>
+
+<div class="toolbar">
+    <button class="btn active" title="Dibujo Libre" onclick="setMode('FREE')">✎</button>
+    <button class="btn" title="Texto LaTeX" onclick="setMode('LATEX')">Σ</button>
+    <div class="divider"></div>
+    <button class="btn" title="Línea" onclick="setMode('LINE')">╱</button>
+    <button class="btn" title="Rectángulo" onclick="setMode('RECT')">▭</button>
+    <button class="btn" title="Círculo" onclick="setMode('CIRCLE')">○</button>
+    <button class="btn" title="Triángulo" onclick="setMode('TRI')">△</button>
+    <div class="divider"></div>
+    <button class="btn" title="Borrar todo" onclick="clearBoard()">🗑</button>
+</div>
+
+<div id="latex-input-box">
+    <input type="text" id="latex-input" placeholder="Escribe LaTeX aquí...">
+</div>
+
+<div id="board-container">
+    <svg id="svg-board">
+        <g id="grid-layer"></g>
+        <g id="drawing-layer"></g>
+        <g id="temp-layer"></g>
+    </svg>
+    <div id="latex-layer"></div>
+</div>
+
+<script>
+    let mode = 'FREE';
+    let isDrawing = false;
+    let startPoint = { x: 0, y: 0 };
+    let currentPath = null;
+    let tempElement = null;
+
+    const svg = document.getElementById('svg-board');
+    const drawingLayer = document.getElementById('drawing-layer');
+    const tempLayer = document.getElementById('temp-layer');
+    const latexLayer = document.getElementById('latex-layer');
+    const latexBox = document.getElementById('latex-input-box');
+    const latexInput = document.getElementById('latex-input');
+
+    // --- MANEJO DE MODOS ---
+    function setMode(m) {
+        mode = m;
+        document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+        latexBox.style.display = 'none';
+    }
+
+    // --- EVENTOS DE MOUSE ---
+    svg.onmousedown = (e) => {
+        isDrawing = true;
+        const rect = svg.getBoundingClientRect();
+        startPoint = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+
+        if (mode === 'FREE') {
+            currentPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            currentPath.setAttribute("class", "drawing-path");
+            currentPath.setAttribute("d", `M ${startPoint.x} ${startPoint.y}`);
+            drawingLayer.appendChild(currentPath);
+        } else if (mode === 'LATEX') {
+            showLatexInput(e.clientX, e.clientY);
+            isDrawing = false;
+        }
+    };
+
+    svg.onmousemove = (e) => {
+        if (!isDrawing) return;
+        const rect = svg.getBoundingClientRect();
+        const cur = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+
+        if (mode === 'FREE') {
+            const d = currentPath.getAttribute("d");
+            currentPath.setAttribute("d", `${d} L ${cur.x} ${cur.y}`);
+        } else {
+            updateTempShape(cur);
+        }
+    };
+
+    svg.onmouseup = (e) => {
+        if (!isDrawing) return;
+        isDrawing = false;
+        if (tempElement) {
+            drawingLayer.appendChild(tempElement);
+            tempElement = null;
+        }
+    };
+
+    // --- GESTIÓN DE FORMAS ---
+    function updateTempShape(cur) {
+        tempLayer.innerHTML = '';
+        tempElement = document.createElementNS("http://www.w3.org/2000/svg", mode === 'CIRCLE' ? 'circle' : mode === 'LINE' ? 'line' : mode === 'RECT' ? 'rect' : 'path');
+        tempElement.setAttribute("class", "shape");
+
+        const w = cur.x - startPoint.x;
+        const h = cur.y - startPoint.y;
+
+        if (mode === 'RECT') {
+            tempElement.setAttribute("x", w > 0 ? startPoint.x : cur.x);
+            tempElement.setAttribute("y", h > 0 ? startPoint.y : cur.y);
+            tempElement.setAttribute("width", Math.abs(w));
+            tempElement.setAttribute("height", Math.abs(h));
+        } else if (mode === 'CIRCLE') {
+            const r = Math.hypot(w, h);
+            tempElement.setAttribute("cx", startPoint.x);
+            tempElement.setAttribute("cy", startPoint.y);
+            tempElement.setAttribute("r", r);
+        } else if (mode === 'LINE') {
+            tempElement.setAttribute("x1", startPoint.x);
+            tempElement.setAttribute("y1", startPoint.y);
+            tempElement.setAttribute("x2", cur.x);
+            tempElement.setAttribute("y2", cur.y);
+        } else if (mode === 'TRI') {
+            // Triángulo: Base recta y punta en el cursor
+            const d = `M ${startPoint.x} ${cur.y} L ${cur.x} ${cur.y} L ${(startPoint.x + cur.x)/2} ${startPoint.y} Z`;
+            tempElement.setAttribute("d", d);
+        }
+        
+        tempLayer.appendChild(tempElement);
+    }
+
+    // --- GESTIÓN LATEX ---
+    function showLatexInput(x, y) {
+        latexBox.style.display = 'block';
+        latexBox.style.left = x + 'px';
+        latexBox.style.top = y + 'px';
+        latexInput.value = '';
+        latexInput.focus();
+        
+        latexInput.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                createLatexLabel(latexInput.value, x, y);
+                latexBox.style.display = 'none';
+            }
+        };
+    }
+
+    function createLatexLabel(text, x, y) {
+        if (!text) return;
+        const div = document.createElement('div');
+        div.className = 'latex-item';
+        div.style.left = x + 'px';
+        div.style.top = y + 'px';
+        
+        try {
+            katex.render(text, div, { throwOnError: false });
+            latexLayer.appendChild(div);
+            makeDraggable(div);
+        } catch (err) { console.error(err); }
+    }
+
+    function makeDraggable(el) {
+        let px = 0, py = 0;
+        el.onmousedown = (e) => {
+            e.stopPropagation();
+            px = e.clientX; py = e.clientY;
+            document.onmousemove = (e) => {
+                el.style.left = (el.offsetLeft + e.clientX - px) + "px";
+                el.style.top = (el.offsetTop + e.clientY - py) + "px";
+                px = e.clientX; py = e.clientY;
+            };
+            document.onmouseup = () => { document.onmousemove = null; };
+        };
+    }
+
+    // --- UTILIDADES ---
+    function clearBoard() {
+        drawingLayer.innerHTML = '';
+        latexLayer.innerHTML = '';
+    }
+
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+        else document.exitFullscreen();
+    }
+
+    async function exportBoard() {
+        const container = document.getElementById('board-container');
+        const canvas = await html2canvas(container, {
+            backgroundColor: '#FDFDFD',
+            scale: 2 // Alta calidad
+        });
+        const link = document.createElement('a');
+        link.download = 'tablero-clase.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    }
+</script>
+
+</body>
+</html>
