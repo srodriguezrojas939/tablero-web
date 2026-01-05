@@ -83,6 +83,13 @@
         .tool-btn { border: 1px solid transparent; background: none; font-size: 13px; cursor: pointer; padding: 8px 12px; border-radius: 10px; color: var(--ui-gray-dark); font-weight: 600; }
         .tool-btn.active { background: var(--ui-gray-light); color: var(--text-main); border-color: var(--ui-gray-med); }
         .divider { width: 1px; background: var(--ui-gray-med); margin: 0 5px; }
+
+        .grid-active {
+    background-image: radial-gradient(var(--ui-gray-med) 1px, transparent 1px);
+    background-size: 20px 20px; /* Debe coincidir con gridStep */
+}
+
+        
     </style>
 </head>
 <body>
@@ -121,6 +128,7 @@
     <div class="divider"></div>
     <button class="tool-btn" onclick="clearBoard()">⨯</button>
     <button class="tool-btn" onclick="exportPNG()">⇪ PNG</button>
+    <button id="grid-btn" class="tool-btn" onclick="toggleGrid()"># Grilla</button>
 </div>
 
 <div id="board-container">
@@ -141,6 +149,8 @@
     const latexLayer = document.getElementById('latex-layer');
     const editorPanel = document.getElementById('editor-panel');
     const latexInput = document.getElementById('latex-input');
+    let snapEnabled = false;
+const gridStep = 20; // Tamaño de la cuadrícula
 
     /* ============================================================
        2. LIBRERÍA DE SÍMBOLOS (KATEX)
@@ -196,7 +206,7 @@
        4. LÓGICA DE DIBUJO Y MOUSE
        ============================================================ */
     svg.onmousedown = (e) => {
-        const x = e.offsetX, y = e.offsetY;
+        const x = snap(e.offsetX), y = snap(e.offsetY);
         startX = x; startY = y;
 
         if (mode === 'SELECT') { 
@@ -232,7 +242,7 @@
 
     svg.onmousemove = (e) => {
         if (!isDrawing && mode !== 'POLY') return;
-        const x = e.offsetX, y = e.offsetY;
+        const x = snap(e.offsetX), y = snap(e.offsetY);
 
         if (selectionRect) {
             let w = x - startX, h = y - startY;
@@ -398,7 +408,7 @@
         };
         window.addEventListener('mousemove', (e) => {
             if (!dragging) return;
-            let dx = e.clientX - iX, dy = e.clientY - iY;
+            let dx = snap(e.clientX - iX), dy = snap(e.clientY - iY);
             selectedElements.forEach(item => {
                 if (item.tagName.toLowerCase() === 'div') {
                     item.style.left = (parseFloat(item.style.left) + dx) + "px";
@@ -426,6 +436,24 @@
         });
         document.addEventListener('mouseup', () => { if(resizing) { resizing = false; saveState(); } });
     }
+
+    function toggleGrid() {
+    snapEnabled = !snapEnabled;
+    const btn = document.getElementById('grid-btn');
+    const container = document.getElementById('board-container');
+    
+    if (snapEnabled) {
+        btn.classList.add('active');
+        container.classList.add('grid-active');
+    } else {
+        btn.classList.remove('active');
+        container.classList.remove('grid-active');
+    }
+}
+
+function snap(val) {
+    return snapEnabled ? Math.round(val / gridStep) * gridStep : val;
+}
 
     /* ============================================================
        8. HISTORIAL (UNDO/REDO) Y EXPORTACIÓN
