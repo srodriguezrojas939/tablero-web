@@ -103,6 +103,24 @@
     background-size: 20px 20px, 20px 20px, 20px 20px;
     background-position: -1px -1px;
 }
+        /* --- NUEVA BARRA DE ESTILOS Y CAPAS --- */
+        .style-bar {
+            position: absolute; top: 80px; left: 20px; /* Debajo del título "Tablero" */
+            background: var(--ui-white); padding: 12px; border-radius: 12px;
+            display: flex; flex-direction: column; gap: 12px;
+            border: 1px solid var(--ui-gray-med); box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 1000;
+        }
+        .color-picker { 
+            width: 35px; height: 35px; border: 2px solid var(--ui-gray-light); 
+            border-radius: 50%; cursor: pointer; padding: 0; overflow: hidden;
+        }
+        .stroke-slider { width: 100%; cursor: pointer; accent-color: var(--accent); }
+        .layer-btn { 
+            font-size: 18px; cursor: pointer; background: var(--ui-gray-light); 
+            border: 1px solid var(--ui-gray-med); border-radius: 8px; padding: 5px;
+            transition: 0.2s;
+        }
+        .layer-btn:hover { background: var(--ui-gray-med); }
         
     </style>
 </head>
@@ -125,6 +143,18 @@
 <div class="symbol-library">
     <div class="pill-container" id="category-pills"></div>
     <div class="symbol-grid" id="symbol-display"></div>
+</div>
+
+    <div class="style-bar">
+    <span style="font-size: 10px; color: var(--ui-gray-dark); font-weight: bold;">ESTILO</span>
+    <input type="color" id="stroke-color" class="color-picker" value="#222222" title="Color del trazo">
+    <input type="range" id="stroke-width" class="stroke-slider" min="1" max="15" value="3" title="Grosor">
+    
+    <div style="height:1px; background: var(--ui-gray-light); margin: 5px 0;"></div>
+    
+    <span style="font-size: 10px; color: var(--ui-gray-dark); font-weight: bold;">CAPAS</span>
+    <button class="layer-btn" onclick="changeLayer('front')" title="Traer al frente">⤒</button>
+    <button class="layer-btn" onclick="changeLayer('back')" title="Enviar al fondo">⤓</button>
 </div>
 
 <div class="toolbar">
@@ -167,6 +197,17 @@
     const latexInput = document.getElementById('latex-input');
     let snapEnabled = false;
 const gridStep = 20; // Tamaño de la cuadrícula
+
+    // --- NUEVAS VARIABLES DE ESTADO ---
+    let currentStrokeColor = '#222222';
+    let currentStrokeWidth = 3;
+    let isPanning = false;
+    let startPanX, startPanY;
+    let viewBox = { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight };
+
+    // Escuchadores para actualizar color y grosor instantáneamente
+    document.getElementById('stroke-color').onchange = (e) => currentStrokeColor = e.target.value;
+    document.getElementById('stroke-width').oninput = (e) => currentStrokeWidth = e.target.value;
 
     /* ============================================================
        2. LIBRERÍA DE SÍMBOLOS (KATEX)
@@ -248,8 +289,12 @@ const gridStep = 20; // Tamaño de la cuadrícula
         else if (mode === 'RECT') currentPath = createSVGElement('rect', {x, y, width:0, height:0});
         else if (mode === 'CIRCLE') currentPath = createSVGElement('circle', {cx:x, cy:y, r:0});
 
-        if (currentPath) {
-            Object.assign(currentPath.style, { stroke: 'var(--text-main)', fill: 'none', strokeWidth: '3' });
+       if (currentPath) {
+            Object.assign(currentPath.style, { 
+                stroke: currentStrokeColor, // Usa el color del selector
+                fill: 'none', 
+                strokeWidth: currentStrokeWidth // Usa el grosor del slider
+            });
             currentPath.setAttribute('class', 'sketch-path');
             currentPath.setAttribute('transform', 'translate(0,0) scale(1)');
             svg.appendChild(currentPath);
@@ -297,6 +342,36 @@ const gridStep = 20; // Tamaño de la cuadrícula
         if (mode === 'POLY' && currentPath) {
             makeMovable(currentPath, 'path'); saveState(); currentPath = null; polyPoints = [];
         }
+    };
+
+    // --- LÓGICA DE PANEO (BARRA ESPACIADORA) ---
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT') {
+            isPanning = true;
+            document.body.style.cursor = 'grab';
+        }
+    });
+
+    window.addEventListener('keyup', (e) => {
+        if (e.code === 'Space') {
+            isPanning = false;
+            document.body.style.cursor = 'auto';
+        }
+    });
+
+    // Modificar el movimiento del mouse para el paneo
+    const originalMouseMove = svg.onmousemove;
+    svg.onmousemove = (e) => {
+        if (isPanning && e.buttons === 1) {
+            const dx = e.movementX;
+            const dy = e.movementY;
+            viewBox.x -= dx;
+            viewBox.y -= dy;
+            svg.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+            latexLayer.style.transform = `translate(${-viewBox.x}px, ${-viewBox.y}px)`;
+            return;
+        }
+        originalMouseMove(e); // Ejecuta tu dibujo normal si no estamos paneando
     };
 
     /* ============================================================
@@ -514,6 +589,21 @@ function addImageItem(src) {
 function snap(val) {
     return snapEnabled ? Math.round(val / gridStep) * gridStep : val;
 }
+
+    // --- GESTIÓN DE CAPAS (Z-INDEX) ---
+    function changeLayer(dir) {
+        if (selectedElements.length === 0) return;
+        
+        selectedElements.forEach(el => {
+            const parent = el.parentNode;
+            if (dir === 'front') {
+                parent.appendChild(el); // Lo mueve al final del HTML (se ve arriba)
+            } else {
+                parent.insertBefore(el, parent.firstChild); // Lo mueve al inicio (se ve abajo)
+            }
+        });
+        saveState();
+    }
 
     /* ============================================================
        8. HISTORIAL (UNDO/REDO) Y EXPORTACIÓN
