@@ -94,8 +94,40 @@
         }
         .tool-btn.active { background: var(--ui-gray-light); color: var(--text-main); border-color: var(--ui-gray-med); }
         .divider { width: 1px; background: var(--ui-gray-med); margin: 0 5px; }
+/* --- ESTILOS DE SELECCIÓN (SOLO GRISES) --- */
+
+    /* El recuadro gris transparente que dibujas con el mouse */
+    .selection-box {
+        fill: rgba(136, 136, 136, 0.15); /* Gris muy clarito */
+        stroke: #888888;               /* Borde gris medio */
+        stroke-width: 1;
+        stroke-dasharray: 4;           /* Borde punteado */
+        pointer-events: none;
+    }
+
+    /* Lo que pasa cuando seleccionas un objeto (Lápiz, Figuras o LaTeX) */
+    .selected {
+        outline: 2px solid #222222 !important; /* Borde negro/gris oscuro resaltado */
+        box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Limpieza de los bordes de LaTeX: solo se ven si pasas el mouse o seleccionas */
+    .draggable-item {
+        border: 1px dashed transparent !important; 
+        transition: border 0.2s;
+    }
+    .draggable-item:hover, .draggable-item.selected {
+        border: 1px dashed #888888 !important; 
+    }
+
+
+        
 
     </style>
+
+
+
+    
 </head>
 <body>
 
@@ -120,6 +152,7 @@
 <button class="tool-btn" onclick="setMode('TRI')">△ Triángulo</button>
     <button class="tool-btn" onclick="clearBoard()"> ⨯ Limpiar</button>
     <button class="tool-btn" onclick="exportPNG()"> ⇪ PNG</button>
+    <button class="tool-btn" id="btn-select" onclick="setMode('SELECT')">⬚ Seleccionar</button>
 </div>
 
 <div id="board-container">
@@ -127,13 +160,17 @@
     <div id="latex-layer"></div>
 </div>
 
+    
+
 <script>
+
     let mode = 'DRAW';
     let isDrawing = false;
-    let startX, startY; // Para guardar el punto exacto donde empiezas a dibujar
+    let startX, startY;        // Solo una vez aquí
     let currentPath = null;
     let polyPoints = [];
-    let selectedElement = null;
+    let selectedElements = []; // Lista para el grupo
+    let selectionRect = null;  // El recuadro visual
 
     const svg = document.getElementById('svg-canvas');
     const latexLayer = document.getElementById('latex-layer');
@@ -254,11 +291,24 @@
         currentPath.setAttribute("transform", "translate(0,0) scale(1)");
         svg.appendChild(currentPath);
     }
+     if (mode === 'SELECT') {
+    deselectAll(); // Limpiar selección previa
+    
+    selectionRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    selectionRect.setAttribute("class", "selection-box");
+    selectionRect.setAttribute("x", x);
+    selectionRect.setAttribute("y", y);
+    svg.appendChild(selectionRect);
+    
+    startX = x;
+    startY = y;
+    isDrawing = true;
+}
 };
 
    svg.onmousemove = (e) => {
     // 1. Verificación básica: ¿Estamos dibujando algo?
-    if (!isDrawing || !currentPath) return;
+    if (!isDrawing || (!currentPath && !selectionRect)) return;
 
     const rect = svg.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -299,31 +349,68 @@
         let points = `${startX},${startY} ${x},${y} ${startX - (x - startX)},${y}`;
         currentPath.setAttribute("points", points);
     }
+       if (mode === 'SELECT' && isDrawing && selectionRect) {
+    let width = x - startX;
+    let height = y - startY;
+    
+    selectionRect.setAttribute("width", Math.abs(width));
+    selectionRect.setAttribute("height", Math.abs(height));
+    selectionRect.setAttribute("x", width < 0 ? x : startX);
+    selectionRect.setAttribute("y", height < 0 ? y : startY);
+}
 };
 
-    svg.ondblclick = () => {
-        if (mode === 'POLY') {
-            makeMovable(currentPath, 'path');
-            polyPoints = [];
-            currentPath = null;
-        }
-    };
+   svg.ondblclick = (e) => {
+    // 1. Si estás terminando una polilínea
+    if (mode === 'POLY' && currentPath) {
+        makeMovable(currentPath, 'path');
+        polyPoints = [];
+        currentPath = null;
+    }
+
+    // 2. Si haces doble clic en el FONDO (para limpiar selección y bordes)
+    // Usamos e.target para saber si tocaste el lienzo vacío o un objeto
+    if (e.target === svg || e.target.id === 'latex-layer') {
+        deselectAll(); // Esta es la función que borra los bordes grises y la lista
+    }
+};
 
 window.onmouseup = () => {
-    // Si estamos en modo dibujo o figuras (excepto polilínea)
-    if (isDrawing && currentPath) {
+    // 1. Lógica para terminar la SELECCIÓN (La red de pesca)
+    if (mode === 'SELECT' && selectionRect) {
+        const box = selectionRect.getBoundingClientRect();
+        // Buscamos dibujos SVG (.sketch-path) y cajas LaTeX (.draggable-item)
+        const items = document.querySelectorAll('.sketch-path, .draggable-item');
         
-        // Solo "cerramos" el dibujo si NO es una polilínea
-        if (mode !== 'POLY') {
-            makeMovable(currentPath, 'path'); // Le damos los poderes de mover/escalar
-            currentPath = null; // Limpiamos para el siguiente dibujo
+        items.forEach(item => {
+            const itemRect = item.getBoundingClientRect();
+            // Verificamos si hay colisión (si el objeto está dentro del cuadro gris)
+            const isInside = !(itemRect.left > box.right || 
+                               itemRect.right < box.left || 
+                               itemRect.top > box.bottom || 
+                               itemRect.bottom < box.top);
+            
+            if (isInside) {
+                item.classList.add('selected'); // Se ilumina el borde
+                selectedElements.push(item);    // Se guarda en la lista de grupo
+            }
+        });
+
+        selectionRect.remove(); // Borramos el cuadro gris visual
+        selectionRect = null;
+    }
+
+    // 2. Tu lógica original para DIBUJO y FIGURAS
+    if (isDrawing && currentPath) {
+        // Añadimos "mode !== 'SELECT'" para que no intente procesar el cuadro gris como dibujo
+        if (mode !== 'POLY' && mode !== 'SELECT') {
+            makeMovable(currentPath, 'path'); 
+            currentPath = null; 
         }
     }
     
-    // El dibujo por arrastre (lápiz, rect, circ) siempre se detiene al soltar
     isDrawing = false;
 };
-
     
     // --- GESTIÓN DE LATEX ---
 
@@ -360,89 +447,155 @@ window.onmouseup = () => {
             }
         };
 
-        wrapper.onclick = (e) => {
-            e.stopPropagation();
-            if (selectedElement) selectedElement.classList.remove('selected');
-            selectedElement = wrapper;
-            wrapper.classList.add('selected');
-        };
+
 
         makeMovable(wrapper, 'div');
         makeManualResize(wrapper, handle);
     }
+    
 
     // --- MOVIMIENTO, ESCALADO Y BORRADO ---
-    function makeMovable(el, type) {
-        let dragging = false;
-        let startX, startY;
 
-        el.addEventListener('mousedown', (e) => {
-            if (mode === 'ERASE') {
-                el.remove();
-                return;
+// --- SISTEMA DE MOVIMIENTO, ESCALADO Y BORRADO UNIFICADO ---
+
+function makeMovable(el, type) {
+    let dragging = false;
+    let initialX, initialY;
+
+    el.addEventListener('mousedown', (e) => {
+        if (mode === 'ERASE') {
+            el.remove();
+            selectedElements = selectedElements.filter(item => item !== el);
+            return;
+        }
+
+        // Selección automática al hacer clic
+        if (mode === 'SELECT' || mode === 'DRAW') {
+            if (!el.classList.contains('selected')) {
+                deselectAll();
+                el.classList.add('selected');
+                selectedElements = [el];
             }
-            e.stopPropagation();
-            dragging = true;
-            startX = e.clientX; startY = e.clientY;
-        });
+        }
 
-        document.addEventListener('mousemove', (e) => {
-            if (!dragging) return;
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
+        e.stopPropagation();
+        dragging = true;
+        initialX = e.clientX;
+        initialY = e.clientY;
+    });
 
-            if (type === 'path') {
-                const t = el.getAttribute("transform") || "translate(0,0) scale(1)";
-                const mTranslate = t.match(/translate\(([^,]+),([^)]+)\)/);
-                const mScale = t.match(/scale\(([^)]+)\)/);
-                const tx = mTranslate ? parseFloat(mTranslate[1]) + dx : dx;
-                const ty = mTranslate ? parseFloat(mTranslate[2]) + dy : dy;
-                el.setAttribute("transform", `translate(${tx},${ty}) ${mScale ? mScale[0] : 'scale(1)'}`);
-            } else {
-                el.style.left = (el.offsetLeft + dx) + 'px';
-                el.style.top = (el.offsetTop + dy) + 'px';
-            }
-            startX = e.clientX; startY = e.clientY;
-        });
+    window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        
+        let dx = e.clientX - initialX;
+        let dy = e.clientY - initialY;
 
-        document.addEventListener('mouseup', () => dragging = false);
+        if (el.classList.contains('selected')) {
+            // Mover todos los seleccionados en grupo
+            selectedElements.forEach(item => moverElementoIndividual(item, dx, dy));
+        } else {
+            // Mover solo este si no está en un grupo
+            moverElementoIndividual(el, dx, dy);
+        }
 
-        // Escalado con rueda
-        el.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            let scale;
-            if (type === 'path') {
-                const t = el.getAttribute("transform") || "scale(1)";
-                scale = parseFloat(t.match(/scale\(([^)]+)\)/)[1]);
-                scale += e.deltaY * -0.001;
-                el.setAttribute("transform", t.replace(/scale\([^)]+\)/, `scale(${scale})`));
-            } else {
-                const t = el.style.transform || "scale(1)";
-                scale = parseFloat(t.match(/scale\(([^)]+)\)/)[1]);
-                scale += e.deltaY * -0.001;
-                el.style.transform = `scale(${scale})`;
-            }
-        });
-    }
+        initialX = e.clientX;
+        initialY = e.clientY;
+    });
 
-    function makeManualResize(el, handle) {
-        let resizing = false;
-        handle.onmousedown = (e) => {
-            e.stopPropagation();
-            resizing = true;
-        };
-        document.onmousemove = (e) => {
-            if (!resizing) return;
+    window.addEventListener('mouseup', () => {
+        dragging = false;
+    });
+
+    // --- ESCALADO CON RUEDA ---
+    el.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        let scale;
+        
+        if (type === 'path') {
+            const t = el.getAttribute("transform") || "translate(0,0) scale(1)";
+            const match = t.match(/scale\(([^)]+)\)/);
+            scale = match ? parseFloat(match[1]) : 1;
+            scale += e.deltaY * -0.001;
+            el.setAttribute("transform", t.replace(/scale\([^)]+\)/, `scale(${Math.max(0.1, scale)})`));
+        } else {
             const t = el.style.transform || "scale(1)";
-            let scale = parseFloat(t.match(/scale\(([^)]+)\)/)[1]);
-            scale += 0.01 * (e.movementX + e.movementY);
-            el.style.transform = `scale(${Math.max(0.2, scale)})`;
-        };
-        document.onmouseup = () => resizing = false;
+            const match = t.match(/scale\(([^)]+)\)/);
+            scale = match ? parseFloat(match[1]) : 1;
+            scale += e.deltaY * -0.001;
+            el.style.transform = `scale(${Math.max(0.1, scale)})`;
+        }
+    }, { passive: false });
+}
+
+// Función auxiliar para aplicar el movimiento real
+function moverElementoIndividual(item, dx, dy) {
+    if (item.tagName.toLowerCase() === 'div') {
+        // Mover LaTeX (HTML)
+        let x = parseFloat(item.style.left) || 0;
+        let y = parseFloat(item.style.top) || 0;
+        item.style.left = (x + dx) + "px";
+        item.style.top = (y + dy) + "px";
+    } else {
+        // Mover Figuras/Lápiz (SVG)
+        let transform = item.getAttribute("transform") || "translate(0,0) scale(1)";
+        
+        // Usamos Regex para capturar translate(x, y) de forma segura
+        let translateMatch = transform.match(/translate\(([^,)]+),? ?([^)]+)\)/);
+        let tx = 0, ty = 0;
+        
+        if (translateMatch) {
+            tx = parseFloat(translateMatch[1]);
+            ty = parseFloat(translateMatch[2]);
+        }
+
+        let newTx = tx + dx;
+        let newTy = ty + dy;
+
+        // Mantener la escala que ya tenía
+        let scalePart = transform.includes("scale") ? transform.match(/scale\([^)]+\)/)[0] : "scale(1)";
+        
+        item.setAttribute("transform", `translate(${newTx},${newTy}) ${scalePart}`);
     }
+}
 
-    function clearBoard() { if(confirm("¿Limpiar todo?")) { svg.innerHTML = ''; latexLayer.innerHTML = ''; } }
+   function makeManualResize(el, handle) {
+    let resizing = false;
 
+    handle.onmousedown = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        resizing = true;
+    };
+
+    document.addEventListener('mousemove', (e) => {
+        if (!resizing) return;
+        
+        // Obtenemos la escala actual del elemento
+        const t = el.style.transform || "scale(1)";
+        const match = t.match(/scale\(([^)]+)\)/);
+        let scale = match ? parseFloat(match[1]) : 1;
+
+        // Ajustamos la escala según el movimiento del mouse (sensibilidad 0.01)
+        scale += 0.01 * (e.movementX + e.movementY);
+        
+        // Aplicamos la nueva escala con un mínimo de 0.2
+        el.style.transform = `scale(${Math.max(0.2, scale)})`;
+    });
+
+    document.addEventListener('mouseup', () => {
+        resizing = false;
+    });
+}
+
+    function clearBoard() { 
+    if(confirm("¿Limpiar todo?")) { 
+        svg.innerHTML = ''; 
+        latexLayer.innerHTML = ''; 
+        selectedElements = []; // Añade esta línea para resetear la memoria
+    } 
+}
+
+    // --- FUNCIÓN DE EXPORTACIÓN ---
     async function exportPNG() {
         const canvas = await html2canvas(document.getElementById('board-container'));
         const link = document.createElement('a');
@@ -450,6 +603,30 @@ window.onmouseup = () => {
         link.href = canvas.toDataURL();
         link.click();
     }
+
+    // --- FUNCIÓN DE LIMPIEZA ---
+    function deselectAll() {
+        // 1. Quita el borde visual de todos los elementos
+        document.querySelectorAll('.selected').forEach(el => {
+            el.classList.remove('selected');
+        });
+        // 2. Vacía la lista en la memoria del programa
+        selectedElements = [];
+    }
+
+    // --- ESCUCHADORES GLOBALES (FUERA DE LAS FUNCIONES) ---
+    
+    // Detectan el doble clic en el lienzo SVG
+    svg.addEventListener('dblclick', (e) => {
+        if (e.target === svg) deselectAll();
+    });
+
+    // Detectan el doble clic en la capa de LaTeX
+    latexLayer.addEventListener('dblclick', (e) => {
+        if (e.target === latexLayer) deselectAll();
+    });
+    
+    
 </script>
 </body>
 </html>
