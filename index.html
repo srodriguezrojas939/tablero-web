@@ -57,25 +57,26 @@
         .editor-btns { display: flex; gap: 8px; }
         .editor-btns button { flex: 1; padding: 8px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; }
 
-        /* --- CONTENEDORES DEL TABLERO --- */
+      /* --- CONTENEDORES DEL TABLERO --- */
         #board-container { 
             width: 100vw; height: 100vh; position: relative; 
             background: var(--bg-canvas); overflow: hidden; 
         }
 
-        /* Estilo base para las 3 capas */
         .layer {
             position: absolute; top: 0; left: 0;
             width: 100%; height: 100%;
             background: transparent !important;
+            pointer-events: none; /* Esto permite que el click "atraviese" las capas vacías */
         }
 
-        /* ORDEN CRÍTICO DE APILAMIENTO */
-        #images-layer { z-index: 1; pointer-events: auto; } /* FONDO */
-        #svg-canvas    { z-index: 2; pointer-events: auto; } /* MEDIO */
-        #latex-layer   { z-index: 3; pointer-events: none; } /* FRENTE (el contenido interno recupera el click) */
+        /* Jerarquía de capas */
+        #images-layer { z-index: 1; }
+        #svg-canvas    { z-index: 2; pointer-events: all; } /* El dibujo necesita recibir clicks */
+        #latex-layer   { z-index: 3; }
 
-        .draggable-item { pointer-events: auto; } /* Asegura que LaTeX e Imágenes se puedan tocar */
+        /* Los elementos individuales sí deben recibir clicks */
+        .draggable-item, .sketch-path { pointer-events: auto; }
 
         /* --- ELEMENTOS DIBUJADOS Y SELECCIÓN --- */
         .draggable-item { position: absolute; cursor: move; padding: 10px; transform-origin: top left; pointer-events: auto; border: 1px dashed transparent; }
@@ -380,17 +381,41 @@ const gridStep = 20; // Tamaño de la cuadrícula
 
     // Modificar el movimiento del mouse para el paneo
     const originalMouseMove = svg.onmousemove;
-    svg.onmousemove = (e) => {
+  svg.onmousemove = (e) => {
+        // SI ESTAMOS PANEANDO (Barra espaciadora)
         if (isPanning && e.buttons === 1) {
-            const dx = e.movementX;
-            const dy = e.movementY;
-            viewBox.x -= dx;
-            viewBox.y -= dy;
+            viewBox.x -= e.movementX;
+            viewBox.y -= e.movementY;
             svg.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
             latexLayer.style.transform = `translate(${-viewBox.x}px, ${-viewBox.y}px)`;
+            imagesLayer.style.transform = `translate(${-viewBox.x}px, ${-viewBox.y}px)`;
             return;
         }
-        originalMouseMove(e); // Ejecuta tu dibujo normal si no estamos paneando
+
+        // SI ESTAMOS DIBUJANDO NORMAL
+        if (!isDrawing && mode !== 'POLY') return;
+        const x = snap(e.offsetX + viewBox.x), y = snap(e.offsetY + viewBox.y);
+
+        if (selectionRect) {
+            let w = x - startX, h = y - startY;
+            selectionRect.setAttribute('width', Math.abs(w)); 
+            selectionRect.setAttribute('height', Math.abs(h));
+            selectionRect.setAttribute('x', w < 0 ? x : startX); 
+            selectionRect.setAttribute('y', h < 0 ? y : startY);
+        } else if (currentPath) {
+            if (mode === 'DRAW') currentPath.setAttribute('d', currentPath.getAttribute('d') + ` L ${x} ${y}`);
+            else if (mode === 'RECT') {
+                currentPath.setAttribute('width', Math.abs(x - startX)); 
+                currentPath.setAttribute('height', Math.abs(y - startY));
+                currentPath.setAttribute('x', Math.min(x, startX)); 
+                currentPath.setAttribute('y', Math.min(y, startY));
+            } else if (mode === 'CIRCLE') {
+                currentPath.setAttribute('r', Math.sqrt((x-startX)**2 + (y-startY)**2));
+            } else if (mode === 'POLY') {
+                let tempPoints = [...polyPoints, `${x},${y}`].join(' ');
+                currentPath.setAttribute('points', tempPoints);
+            }
+        }
     };
 
     /* ============================================================
