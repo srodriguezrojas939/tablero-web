@@ -74,7 +74,7 @@
             fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;
             cursor: move; pointer-events: auto;
         }
-        .sketch-path.selected { stroke: #000; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); }
+        .sketch-path.selected { stroke: #000; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); outline: 2px solid #222222; }
 
         .selection-box {
             fill: rgba(136, 136, 136, 0.15); stroke: #888888; stroke-width: 1;
@@ -94,6 +94,22 @@
             color: var(--ui-gray-dark); font-weight: 600;
         }
         .tool-btn.active { background: var(--ui-gray-light); color: var(--text-main); border-color: var(--ui-gray-med); }
+        .divider { width: 1px; background: var(--ui-gray-med); margin: 0 5px; }
+
+        /* --- CUADRO LATEX PERSONALIZADO --- */
+        #latex-input-panel {
+            position: absolute; bottom: 85px; left: 50%; transform: translateX(-50%);
+            background: white; padding: 10px; border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid var(--ui-gray-med);
+            display: none; z-index: 2000; gap: 8px; align-items: center;
+        }
+        #latex-input-panel input {
+            padding: 8px; border: 1px solid var(--ui-gray-med); border-radius: 6px; width: 200px;
+        }
+        #latex-input-panel button {
+            background: var(--text-main); color: white; border: none; padding: 8px 12px;
+            border-radius: 6px; cursor: pointer; font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -103,21 +119,30 @@
     <span>√(Raiz) Cuadrada²</span>
 </header>
 
+<div id="latex-input-panel">
+    <input type="text" id="latex-input-field" placeholder="Escribe LaTeX aquí...">
+    <button onclick="confirmLatex()">Insertar</button>
+    <button onclick="closeLatexPanel()" style="background:#888">×</button>
+</div>
+
 <div class="symbol-library">
     <div class="pill-container" id="category-pills"></div>
     <div class="symbol-grid" id="symbol-display"></div>
 </div>
 
 <div class="toolbar">
+    <button class="tool-btn" onclick="undo()">↶</button>
+    <button class="tool-btn" onclick="redo()">↷</button>
+    <div class="divider"></div>
     <button class="tool-btn active" onclick="setMode('DRAW', this)"> 🖉 Lápiz</button>
     <button class="tool-btn" onclick="setMode('POLY', this)"> 𖡬 Polilínea</button>
     <button class="tool-btn" onclick="setMode('ERASE', this)"> ✄ Borrador</button>
     <button class="tool-btn" onclick="setMode('SELECT', this)">⬚ Seleccionar</button>
     <div class="divider"></div>
-    <button class="tool-btn" onclick="promptLatex()">∑ LaTeX</button>
+    <button class="tool-btn" onclick="openLatexPanel()">∑ LaTeX</button>
     <button class="tool-btn" onclick="setMode('RECT', this)"> ▢ </button>
     <button class="tool-btn" onclick="setMode('CIRCLE', this)">◯ </button>
-    <button class="tool-btn" onclick="setMode('TRI', this)">△ </button>
+    <div class="divider"></div>
     <button class="tool-btn" onclick="clearBoard()"> ⨯ Limpiar</button>
     <button class="tool-btn" onclick="exportPNG()"> ⇪ PNG</button>
 </div>
@@ -135,17 +160,58 @@
     let polyPoints = [];
     let selectedElements = [];
     let selectionRect = null;
+    let clipboard = [];
+
+    // Historial para Undo/Redo
+    let undoStack = [];
+    let redoStack = [];
 
     const svg = document.getElementById('svg-canvas');
     const latexLayer = document.getElementById('latex-layer');
     const symbolDisplay = document.getElementById('symbol-display');
     const categoryPills = document.getElementById('category-pills');
 
+    // --- GUARDAR ESTADO (Undo/Redo) ---
+    function saveState() {
+        const state = {
+            svg: svg.innerHTML,
+            latex: latexLayer.innerHTML
+        };
+        undoStack.push(JSON.stringify(state));
+        redoStack = []; // Limpiar redo al hacer algo nuevo
+        if(undoStack.length > 30) undoStack.shift(); // Límite de 30 pasos
+    }
+
+    function undo() {
+        if (undoStack.length <= 1) return;
+        redoStack.push(undoStack.pop());
+        const state = JSON.parse(undoStack[undoStack.length - 1]);
+        applyState(state);
+    }
+
+    function redo() {
+        if (redoStack.length === 0) return;
+        const state = JSON.parse(redoStack.pop());
+        undoStack.push(JSON.stringify(state));
+        applyState(state);
+    }
+
+    function applyState(state) {
+        svg.innerHTML = state.svg;
+        latexLayer.innerHTML = state.latex;
+        // Re-vincular eventos a los nuevos elementos del DOM
+        document.querySelectorAll('.sketch-path').forEach(el => makeMovable(el, 'path'));
+        document.querySelectorAll('.draggable-item').forEach(el => {
+            makeMovable(el, 'div');
+            makeManualResize(el, el.querySelector('.resize-handle'));
+        });
+    }
+
     // --- LIBRERÍA ---
     const library = {
-        "Griegas": [{ s: "\\alpha" }, { s: "\\beta" }, { s: "\\pi" }],
-        "Principales": [{ s: "\\sum" }, { s: "\\sqrt{x}" }, { s: "\\int" }],
-        "Matrices": [{ s: "\\begin{pmatrix} a & b \\end{pmatrix}" }]
+        "Letras Griegas": [{ s: "\\alpha" }, { s: "\\beta" }, { s: "\\pi" }, { s: "\\theta" }, { s: "\\omega" }],
+        "Principales": [{ s: "\\sum" }, { s: "\\sqrt{x}" }, { s: "\\int" }, { s: "\\infty" }, { s: "\\pm" }],
+        "Matrices": [{ s: "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}" }]
     };
 
     function initLibrary() {
@@ -161,6 +227,7 @@
             categoryPills.appendChild(btn);
         });
         renderSymbols(Object.keys(library)[0]);
+        saveState(); // Guardar estado inicial vacío
     }
 
     function renderSymbols(cat) {
@@ -183,7 +250,7 @@
         if(btn) btn.classList.add('active');
     }
 
-    // --- EVENTOS DE MOUSE (SVG) ---
+    // --- EVENTOS DE MOUSE ---
     svg.onmousedown = (e) => {
         const rect = svg.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -199,34 +266,30 @@
             return;
         }
 
+        isDrawing = true;
         if (mode === 'DRAW') {
-            isDrawing = true;
             currentPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            currentPath.setAttribute("class", "sketch-path");
             currentPath.setAttribute("d", `M ${x} ${y}`);
-            currentPath.setAttribute("stroke", "var(--text-main)");
-            currentPath.setAttribute("transform", "translate(0,0) scale(1)");
-            svg.appendChild(currentPath);
-        } else if (mode === 'RECT' || mode === 'CIRCLE' || mode === 'TRI') {
-            isDrawing = true;
-            const type = mode === 'RECT' ? 'rect' : (mode === 'CIRCLE' ? 'circle' : 'polygon');
-            currentPath = document.createElementNS("http://www.w3.org/2000/svg", type);
-            currentPath.setAttribute("class", "sketch-path");
-            currentPath.setAttribute("stroke", "var(--text-main)");
-            currentPath.setAttribute("fill", "none");
-            currentPath.setAttribute("transform", "translate(0,0) scale(1)");
-            svg.appendChild(currentPath);
+        } else if (mode === 'RECT') {
+            currentPath = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        } else if (mode === 'CIRCLE') {
+            currentPath = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         } else if (mode === 'POLY') {
             if (polyPoints.length === 0) {
                 currentPath = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-                currentPath.setAttribute("class", "sketch-path");
-                currentPath.setAttribute("stroke", "var(--text-main)");
-                currentPath.setAttribute("fill", "none");
-                currentPath.setAttribute("transform", "translate(0,0) scale(1)");
                 svg.appendChild(currentPath);
             }
             polyPoints.push(`${x},${y}`);
             currentPath.setAttribute("points", polyPoints.join(' '));
+        }
+
+        if (currentPath && mode !== 'POLY') {
+            currentPath.setAttribute("class", "sketch-path");
+            currentPath.setAttribute("stroke", "var(--text-main)");
+            currentPath.setAttribute("fill", "none");
+            currentPath.setAttribute("stroke-width", "3");
+            currentPath.setAttribute("transform", "translate(0,0) scale(1)");
+            svg.appendChild(currentPath);
         }
     };
 
@@ -242,20 +305,22 @@
             selectionRect.setAttribute("height", Math.abs(h));
             selectionRect.setAttribute("x", w < 0 ? x : startX);
             selectionRect.setAttribute("y", h < 0 ? y : startY);
-        } else if (mode === 'DRAW' && currentPath) {
-            const d = currentPath.getAttribute("d");
-            currentPath.setAttribute("d", `${d} L ${x} ${y}`);
-        } else if (mode === 'RECT' && currentPath) {
-            let w = x - startX, h = y - startY;
-            currentPath.setAttribute("width", Math.abs(w));
-            currentPath.setAttribute("height", Math.abs(h));
-            currentPath.setAttribute("x", w < 0 ? x : startX);
-            currentPath.setAttribute("y", h < 0 ? y : startY);
-        } else if (mode === 'CIRCLE' && currentPath) {
-            let r = Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2));
-            currentPath.setAttribute("cx", startX);
-            currentPath.setAttribute("cy", startY);
-            currentPath.setAttribute("r", r);
+        } else if (currentPath) {
+            if (mode === 'DRAW') {
+                const d = currentPath.getAttribute("d");
+                currentPath.setAttribute("d", `${d} L ${x} ${y}`);
+            } else if (mode === 'RECT') {
+                let w = x - startX, h = y - startY;
+                currentPath.setAttribute("width", Math.abs(w));
+                currentPath.setAttribute("height", Math.abs(h));
+                currentPath.setAttribute("x", w < 0 ? x : startX);
+                currentPath.setAttribute("y", h < 0 ? y : startY);
+            } else if (mode === 'CIRCLE') {
+                let r = Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2));
+                currentPath.setAttribute("cx", startX);
+                currentPath.setAttribute("cy", startY);
+                currentPath.setAttribute("r", r);
+            }
         }
     };
 
@@ -274,6 +339,7 @@
         }
         if (isDrawing && currentPath && mode !== 'POLY') {
             makeMovable(currentPath, 'path');
+            saveState();
             currentPath = null;
         }
         isDrawing = false;
@@ -282,16 +348,55 @@
     svg.ondblclick = () => {
         if (mode === 'POLY' && currentPath) {
             makeMovable(currentPath, 'path');
+            saveState();
             currentPath = null;
             polyPoints = [];
         }
         deselectAll();
     };
 
-    // --- LATEX ---
-    function promptLatex() {
-        const code = prompt("Código LaTeX:", "\\sqrt{x}");
-        if (code) addLatexItem(code);
+    // --- COPIAR Y PEGAR ---
+    window.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'c') {
+            clipboard = selectedElements.map(el => el.cloneNode(true));
+        }
+        if (e.ctrlKey && e.key === 'v') {
+            clipboard.forEach(clone => {
+                if (clone.tagName.toLowerCase() === 'div') {
+                    clone.style.left = (parseFloat(clone.style.left) + 20) + "px";
+                    clone.style.top = (parseFloat(clone.style.top) + 20) + "px";
+                    latexLayer.appendChild(clone);
+                    makeMovable(clone, 'div');
+                    makeManualResize(clone, clone.querySelector('.resize-handle'));
+                } else {
+                    let t = clone.getAttribute("transform");
+                    let match = t.match(/translate\(([^,)]+),? ?([^)]+)\)/);
+                    let tx = parseFloat(match[1]) + 20;
+                    let ty = parseFloat(match[2]) + 20;
+                    clone.setAttribute("transform", t.replace(/translate\([^)]+\)/, `translate(${tx},${ty})`));
+                    svg.appendChild(clone);
+                    makeMovable(clone, 'path');
+                }
+            });
+            saveState();
+        }
+        if (e.ctrlKey && e.key === 'z') undo();
+        if (e.ctrlKey && e.key === 'y') redo();
+    });
+
+    // --- LATEX PANEL ---
+    function openLatexPanel() {
+        document.getElementById('latex-input-panel').style.display = 'flex';
+        document.getElementById('latex-input-field').focus();
+    }
+    function closeLatexPanel() {
+        document.getElementById('latex-input-panel').style.display = 'none';
+        document.getElementById('latex-input-field').value = '';
+    }
+    function confirmLatex() {
+        const val = document.getElementById('latex-input-field').value;
+        if(val) addLatexItem(val);
+        closeLatexPanel();
     }
 
     function addLatexItem(tex) {
@@ -313,11 +418,12 @@
         wrapper.ondblclick = (e) => {
             e.stopPropagation();
             const n = prompt("Editar:", wrapper.dataset.tex);
-            if(n) { wrapper.dataset.tex = n; katex.render(n, content); }
+            if(n) { wrapper.dataset.tex = n; katex.render(n, content); saveState(); }
         };
 
         makeMovable(wrapper, 'div');
         makeManualResize(wrapper, handle);
+        saveState();
     }
 
     // --- MOVIMIENTO ---
@@ -329,6 +435,7 @@
             if (mode === 'ERASE') {
                 el.remove();
                 selectedElements = selectedElements.filter(i => i !== el);
+                saveState();
                 return;
             }
             if (!el.classList.contains('selected')) {
@@ -349,7 +456,9 @@
             iX = e.clientX; iY = e.clientY;
         });
 
-        window.addEventListener('mouseup', () => dragging = false);
+        window.addEventListener('mouseup', () => {
+            if(dragging) { dragging = false; saveState(); }
+        });
 
         el.addEventListener('wheel', (e) => {
             e.preventDefault();
@@ -361,6 +470,7 @@
             s = Math.max(0.1, s);
             if(type === 'path') el.setAttribute("transform", t.replace(/scale\([^)]+\)/, `scale(${s})`));
             else el.style.transform = `scale(${s})`;
+            saveState();
         }, { passive: false });
     }
 
@@ -387,7 +497,7 @@
             s += (e.movementX + e.movementY) * 0.01;
             el.style.transform = `scale(${Math.max(0.2, s)})`;
         });
-        document.addEventListener('mouseup', () => resizing = false);
+        document.addEventListener('mouseup', () => { if(resizing) { resizing = false; saveState(); } });
     }
 
     function deselectAll() {
@@ -395,9 +505,10 @@
         selectedElements = [];
     }
 
-    function clearBoard() { if(confirm("¿Borrar todo?")) { svg.innerHTML = ''; latexLayer.innerHTML = ''; } }
+    function clearBoard() { if(confirm("¿Borrar todo?")) { svg.innerHTML = ''; latexLayer.innerHTML = ''; saveState(); } }
 
     async function exportPNG() {
+        deselectAll();
         const canvas = await html2canvas(document.getElementById('board-container'));
         const link = document.createElement('a');
         link.download = 'tablero.png';
