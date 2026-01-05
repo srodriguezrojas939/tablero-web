@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -10,6 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 
     <style>
+        /* ============================================================
+           ESTILOS GENERALES Y VARIABLES
+           ============================================================ */
         :root {
             --bg-canvas: #FFFFFF;
             --ui-white: #FFFFFF;
@@ -22,6 +26,7 @@
 
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; background: var(--ui-gray-light); }
 
+        /* --- CABECERA --- */
         header {
             position: absolute; top: 15px; left: 20px; z-index: 100;
             display: flex; align-items: baseline; gap: 10px; pointer-events: none;
@@ -29,7 +34,7 @@
         header h1 { font-family: 'Playfair Display', serif; font-size: 28px; margin: 0; color: var(--text-main); }
         header span { font-family: 'Playfair Display', serif; font-size: 16px; color: var(--ui-gray-dark); font-weight: bold; }
 
-        /* --- LIBRERÍA --- */
+        /* --- LIBRERÍA DE SÍMBOLOS --- */
         .symbol-library {
             position: absolute; bottom: 90px; right: 20px; width: 300px;
             background: var(--ui-white); border-radius: 12px; padding: 12px;
@@ -41,7 +46,7 @@
         .pill.active { background: var(--text-main); color: var(--ui-white); }
         .symbol-btn { background: white; border: 1px solid var(--ui-gray-med); border-radius: 8px; min-width: 50px; height: 50px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-        /* --- EDITOR INTERNO (NO POPUPS) --- */
+        /* --- EDITOR DE LATEX --- */
         #editor-panel {
             position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%);
             background: white; padding: 15px; border-radius: 12px;
@@ -52,11 +57,12 @@
         .editor-btns { display: flex; gap: 8px; }
         .editor-btns button { flex: 1; padding: 8px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; }
 
-        /* --- TABLERO --- */
+        /* --- CONTENEDORES DEL TABLERO --- */
         #board-container { width: 100vw; height: 100vh; position: relative; background: var(--bg-canvas); overflow: hidden; }
         svg { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
         #latex-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
 
+        /* --- ELEMENTOS DIBUJADOS Y SELECCIÓN --- */
         .draggable-item { position: absolute; cursor: move; padding: 10px; transform-origin: top left; pointer-events: auto; border: 1px dashed transparent; }
         .draggable-item.selected { border: 1px dashed var(--accent) !important; background: rgba(74, 144, 226, 0.05); }
         .resize-handle { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background: var(--accent); cursor: nwse-resize; display: none; }
@@ -67,7 +73,7 @@
 
         .selection-box { fill: rgba(74, 144, 226, 0.1); stroke: var(--accent); stroke-width: 1; stroke-dasharray: 4; pointer-events: none; }
 
-        /* --- TOOLBAR --- */
+        /* --- BARRA DE HERRAMIENTAS --- */
         .toolbar {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
             background: var(--ui-white); padding: 8px 15px; border-radius: 50px;
@@ -123,20 +129,26 @@
 </div>
 
 <script>
+    /* ============================================================
+       1. VARIABLES GLOBALES Y ESTADO
+       ============================================================ */
     let mode = 'DRAW', isDrawing = false, startX, startY;
     let currentPath = null, polyPoints = [], selectedElements = [], selectionRect = null;
     let undoStack = [], redoStack = [], editingItem = null;
+    let clipboard = []; // Memoria para Ctrl+C y Ctrl+V
 
     const svg = document.getElementById('svg-canvas');
     const latexLayer = document.getElementById('latex-layer');
     const editorPanel = document.getElementById('editor-panel');
     const latexInput = document.getElementById('latex-input');
 
-    // --- LIBRERÍA (Estructura Limpia) ---
+    /* ============================================================
+       2. LIBRERÍA DE SÍMBOLOS (KATEX)
+       ============================================================ */
     const library = {
-        "Griegas": [{ s: "\\alpha" }],
-        "Cálculo": [{ s: "\\int_{a}^{b}" }],
-        "Álgebra": [{ s: "\\sqrt{x^2 + y^2}" }],
+        "Griegas": [{ s: "\\alpha" }, { s: "\\beta" }, { s: "\\gamma" }, { s: "\\theta" }],
+        "Cálculo": [{ s: "\\int_{a}^{b}" }, { s: "\\frac{df}{dx}" }, { s: "\\lim_{x \\to \\infty}" }],
+        "Álgebra": [{ s: "\\sqrt{x^2 + y^2}" }, { s: "x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}" }],
         "Matrices": [{ s: "\\begin{matrix} 1 & 0 \\\\ 0 & 1 \\end{matrix}" }]
     };
 
@@ -169,7 +181,9 @@
         });
     }
 
-    // --- MODOS Y DIBUJO ---
+    /* ============================================================
+       3. GESTIÓN DE MODOS Y HERRAMIENTAS
+       ============================================================ */
     function setMode(m, btn) {
         mode = m; 
         polyPoints = []; 
@@ -178,11 +192,20 @@
         if(btn) btn.classList.add('active');
     }
 
+    /* ============================================================
+       4. LÓGICA DE DIBUJO Y MOUSE
+       ============================================================ */
     svg.onmousedown = (e) => {
         const x = e.offsetX, y = e.offsetY;
         startX = x; startY = y;
 
-        if (mode === 'SELECT') { deselectAll(); isDrawing = true; selectionRect = createSVGElement('rect', {class: 'selection-box'}); svg.appendChild(selectionRect); return; }
+        if (mode === 'SELECT') { 
+            deselectAll(); 
+            isDrawing = true; 
+            selectionRect = createSVGElement('rect', {class: 'selection-box'}); 
+            svg.appendChild(selectionRect); 
+            return; 
+        }
         
         if (mode === 'POLY') {
             if (polyPoints.length === 0) {
@@ -250,19 +273,63 @@
         }
     };
 
-    // --- TECLADO (BORRAR / COPIAR) ---
+    /* ============================================================
+       5. GESTIÓN DE TECLADO (BORRAR, COPIAR, PEGAR, UNDO)
+       ============================================================ */
     window.onkeydown = (e) => {
         if (document.activeElement.tagName === 'INPUT') return;
+        
+        // BORRAR
         if (e.key === 'Backspace' || e.key === 'Delete') {
             selectedElements.forEach(el => el.remove());
             selectedElements = [];
             saveState();
         }
-        if (e.ctrlKey && e.key === 'c') { /* lógica copiar */ }
+
+        // COPIAR (Ctrl + C)
+        if (e.ctrlKey && e.key === 'c') {
+            clipboard = selectedElements.map(el => el.cloneNode(true));
+        }
+
+        // PEGAR (Ctrl + V)
+        if (e.ctrlKey && e.key === 'v') {
+            if (clipboard.length === 0) return;
+            deselectAll();
+            clipboard.forEach(clone => {
+                const newEl = clone.cloneNode(true);
+                // Desplazamiento visual
+                if (newEl.tagName.toLowerCase() === 'div') {
+                    newEl.style.left = (parseFloat(newEl.style.left) + 20) + "px";
+                    newEl.style.top = (parseFloat(newEl.style.top) + 20) + "px";
+                    latexLayer.appendChild(newEl);
+                    makeMovable(newEl, 'div');
+                    makeManualResize(newEl, newEl.querySelector('.resize-handle'));
+                    newEl.ondblclick = (e) => {
+                        e.stopPropagation(); editingItem = newEl;
+                        latexInput.value = newEl.dataset.tex;
+                        editorPanel.style.display = 'flex'; latexInput.focus();
+                    };
+                } else {
+                    let t = newEl.getAttribute("transform") || "translate(0,0) scale(1)";
+                    newEl.setAttribute("transform", t.replace(/translate\(([^,)]+),? ?([^)]+)\)/, (m, x, y) => `translate(${parseFloat(x)+20},${parseFloat(y)+20})`));
+                    svg.appendChild(newEl);
+                    makeMovable(newEl, 'path');
+                }
+                newEl.classList.add('selected');
+                selectedElements.push(newEl);
+            });
+            saveState();
+        }
+
+        // DESHACER (Ctrl + Z)
         if (e.ctrlKey && e.key === 'z') undo();
+        // REHACER (Ctrl + Y)
+        if (e.ctrlKey && e.key === 'y') redo();
     };
 
-    // --- LATEX INTERNO ---
+    /* ============================================================
+       6. EDITOR DE LATEX INTERNO
+       ============================================================ */
     function openEditorForNew() {
         editingItem = null;
         latexInput.value = '';
@@ -308,7 +375,9 @@
 
     function closeEditor() { editorPanel.style.display = 'none'; }
 
-    // --- UTILS ---
+    /* ============================================================
+       7. UTILIDADES (CREACIÓN, SELECCIÓN, MOVIMIENTO)
+       ============================================================ */
     function createSVGElement(tag, attrs) {
         const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
         for (let k in attrs) el.setAttribute(k, attrs[k]);
@@ -358,26 +427,55 @@
         document.addEventListener('mouseup', () => { if(resizing) { resizing = false; saveState(); } });
     }
 
+    /* ============================================================
+       8. HISTORIAL (UNDO/REDO) Y EXPORTACIÓN
+       ============================================================ */
     function saveState() {
         undoStack.push({svg: svg.innerHTML, latex: latexLayer.innerHTML});
+        redoStack = []; // Al hacer algo nuevo, se limpia el redo
         if(undoStack.length > 30) undoStack.shift();
+    }
+
+    function applyState(state) {
+        svg.innerHTML = state.svg; 
+        latexLayer.innerHTML = state.latex;
+        document.querySelectorAll('.sketch-path').forEach(el => makeMovable(el, 'path'));
+        document.querySelectorAll('.draggable-item').forEach(el => {
+            makeMovable(el, 'div'); 
+            makeManualResize(el, el.querySelector('.resize-handle'));
+            el.ondblclick = (e) => {
+                e.stopPropagation(); editingItem = el;
+                latexInput.value = el.dataset.tex;
+                editorPanel.style.display = 'flex'; latexInput.focus();
+            };
+        });
     }
 
     function undo() {
         if (undoStack.length < 2) return;
         redoStack.push(undoStack.pop());
-        const state = undoStack[undoStack.length - 1];
-        svg.innerHTML = state.svg; latexLayer.innerHTML = state.latex;
-        document.querySelectorAll('.sketch-path').forEach(el => makeMovable(el, 'path'));
-        document.querySelectorAll('.draggable-item').forEach(el => {
-            makeMovable(el, 'div'); makeManualResize(el, el.querySelector('.resize-handle'));
-        });
+        applyState(undoStack[undoStack.length - 1]);
     }
     
-    function redo() { /* lógica redo */ }
-    function clearBoard() { if(confirm("¿Limpiar todo?")) { svg.innerHTML = ''; latexLayer.innerHTML = ''; saveState(); } }
-    async function exportPNG() { deselectAll(); const canvas = await html2canvas(document.getElementById('board-container')); const link = document.createElement('a'); link.download = 'tablero.png'; link.href = canvas.toDataURL(); link.click(); }
+    function redo() {
+        if (redoStack.length === 0) return;
+        const state = redoStack.pop();
+        undoStack.push(state);
+        applyState(state);
+    }
 
+    function clearBoard() { if(confirm("¿Limpiar todo?")) { svg.innerHTML = ''; latexLayer.innerHTML = ''; saveState(); } }
+    
+    async function exportPNG() { 
+        deselectAll(); 
+        const canvas = await html2canvas(document.getElementById('board-container')); 
+        const link = document.createElement('a'); 
+        link.download = 'tablero.png'; 
+        link.href = canvas.toDataURL(); 
+        link.click(); 
+    }
+
+    // INICIALIZACIÓN
     initLibrary();
 </script>
 </body>
