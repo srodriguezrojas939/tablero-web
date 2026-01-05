@@ -84,18 +84,16 @@
         .tool-btn.active { background: var(--ui-gray-light); color: var(--text-main); border-color: var(--ui-gray-med); }
         .divider { width: 1px; background: var(--ui-gray-med); margin: 0 5px; }
 
-        /* Estilo para la grilla activada: Líneas continuas + Puntos en intersecciones */
-.grid-active {
-    background-image:
-        /* Capa 1 (Arriba): Puntos grises en las intersecciones */
-        radial-gradient(var(--ui-gray-dark) 1.5px, transparent 1.5px),
-        /* Capa 2: Líneas verticales sutiles */
-        linear-gradient(to right, var(--ui-gray-med) 1px, transparent 1px),
-        /* Capa 3 (Abajo): Líneas horizontales sutiles */
-        linear-gradient(to bottom, var(--ui-gray-med) 1px, transparent 1px);
-    /* El tamaño (20px) debe coincidir con la variable gridStep del JS */
-    background-size: 20px 20px;
-    /* Un pequeño ajuste para alinear perfectamente puntos y líneas */
+        /* Forzamos que la grilla se vea sobre el fondo blanco */
+#board-container.grid-active {
+    background-color: #ffffff !important;
+    background-image: 
+        /* Puntos en las intersecciones (Negro muy suave) */
+        radial-gradient(rgba(0, 0, 0, 0.2) 1px, transparent 1px),
+        /* Líneas horizontales y verticales (Gris muy claro) */
+        linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+    background-size: 20px 20px, 20px 20px, 20px 20px;
     background-position: -1px -1px;
 }
         
