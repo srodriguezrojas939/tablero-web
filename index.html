@@ -58,9 +58,24 @@
         .editor-btns button { flex: 1; padding: 8px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; }
 
         /* --- CONTENEDORES DEL TABLERO --- */
-        #board-container { width: 100vw; height: 100vh; position: relative; background: var(--bg-canvas); overflow: hidden; }
-        svg { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; background: transparent !important; }
-        #latex-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+        #board-container { 
+            width: 100vw; height: 100vh; position: relative; 
+            background: var(--bg-canvas); overflow: hidden; 
+        }
+
+        /* Estilo base para las 3 capas */
+        .layer {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: transparent !important;
+        }
+
+        /* ORDEN CRÍTICO DE APILAMIENTO */
+        #images-layer { z-index: 1; pointer-events: auto; } /* FONDO */
+        #svg-canvas    { z-index: 2; pointer-events: auto; } /* MEDIO */
+        #latex-layer   { z-index: 3; pointer-events: none; } /* FRENTE (el contenido interno recupera el click) */
+
+        .draggable-item { pointer-events: auto; } /* Asegura que LaTeX e Imágenes se puedan tocar */
 
         /* --- ELEMENTOS DIBUJADOS Y SELECCIÓN --- */
         .draggable-item { position: absolute; cursor: move; padding: 10px; transform-origin: top left; pointer-events: auto; border: 1px dashed transparent; }
@@ -103,12 +118,20 @@
     background-size: 20px 20px, 20px 20px, 20px 20px;
     background-position: -1px -1px;
 }
-        /* --- NUEVA BARRA DE ESTILOS Y CAPAS --- */
+      /* --- NUEVA BARRA DE ESTILOS (ESQUINA INFERIOR IZQUIERDA) --- */
         .style-bar {
-            position: absolute; top: 80px; left: 20px; /* Debajo del título "Tablero" */
-            background: var(--ui-white); padding: 12px; border-radius: 12px;
-            display: flex; flex-direction: column; gap: 12px;
-            border: 1px solid var(--ui-gray-med); box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 1000;
+            position: absolute; 
+            bottom: 25px; /* Ubicación en la parte inferior */
+            left: 20px;   /* Ubicación a la izquierda */
+            background: var(--ui-white); 
+            padding: 12px; 
+            border-radius: 12px;
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px;
+            border: 1px solid var(--ui-gray-med); 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+            z-index: 2000; /* Para que siempre esté visible sobre las capas */
         }
         .color-picker { 
             width: 35px; height: 35px; border: 2px solid var(--ui-gray-light); 
@@ -145,16 +168,10 @@
     <div class="symbol-grid" id="symbol-display"></div>
 </div>
 
-    <div class="style-bar">
-    <span style="font-size: 10px; color: var(--ui-gray-dark); font-weight: bold;">ESTILO</span>
+   <div class="style-bar">
+    <span style="font-size: 10px; color: var(--ui-gray-dark); font-weight: bold; text-align: center;">ESTILO</span>
     <input type="color" id="stroke-color" class="color-picker" value="#222222" title="Color del trazo">
     <input type="range" id="stroke-width" class="stroke-slider" min="1" max="15" value="3" title="Grosor">
-    
-    <div style="height:1px; background: var(--ui-gray-light); margin: 5px 0;"></div>
-    
-    <span style="font-size: 10px; color: var(--ui-gray-dark); font-weight: bold;">CAPAS</span>
-    <button class="layer-btn" onclick="changeLayer('front')" title="Traer al frente">⤒</button>
-    <button class="layer-btn" onclick="changeLayer('back')" title="Enviar al fondo">⤓</button>
 </div>
 
 <div class="toolbar">
@@ -208,6 +225,8 @@ const gridStep = 20; // Tamaño de la cuadrícula
     // Escuchadores para actualizar color y grosor instantáneamente
     document.getElementById('stroke-color').onchange = (e) => currentStrokeColor = e.target.value;
     document.getElementById('stroke-width').oninput = (e) => currentStrokeWidth = e.target.value;
+
+    const imagesLayer = document.getElementById('images-layer');
 
     /* ============================================================
        2. LIBRERÍA DE SÍMBOLOS (KATEX)
@@ -512,7 +531,7 @@ function addImageItem(src) {
         <div class="resize-handle"></div>
     `;
     
-    latexLayer.appendChild(wrapper);
+    imagesLayer.appendChild(wrapper); // Ahora se guarda en la capa de abajo
     
     // Reutilizamos tus funciones geniales
     makeMovable(wrapper, 'div');
@@ -534,13 +553,30 @@ function addImageItem(src) {
         selectedElements = [];
     }
 
-    function makeMovable(el, type) {
+   function makeMovable(el, type) {
         let dragging = false, iX, iY;
+        
         el.onmousedown = (e) => {
-            if (mode === 'ERASE') { el.remove(); saveState(); return; }
-            if (!el.classList.contains('selected')) { deselectAll(); el.classList.add('selected'); selectedElements = [el]; }
-            e.stopPropagation(); dragging = true; iX = e.clientX; iY = e.clientY;
+            // LÓGICA DEL BORRADOR: Si el modo es ERASE, elimina el elemento (sea imagen, trazo o latex)
+            if (mode === 'ERASE') { 
+                el.remove(); 
+                saveState(); 
+                return; 
+            }
+            
+            // Lógica de selección normal
+            if (!el.classList.contains('selected')) { 
+                deselectAll(); 
+                el.classList.add('selected'); 
+                selectedElements = [el]; 
+            }
+            e.stopPropagation(); 
+            dragging = true; 
+            iX = e.clientX; 
+            iY = e.clientY;
         };
+
+       
         window.addEventListener('mousemove', (e) => {
             if (!dragging) return;
             let dx = snap(e.clientX - iX), dy = snap(e.clientY - iY);
@@ -608,15 +644,20 @@ function snap(val) {
     /* ============================================================
        8. HISTORIAL (UNDO/REDO) Y EXPORTACIÓN
        ============================================================ */
-    function saveState() {
-        undoStack.push({svg: svg.innerHTML, latex: latexLayer.innerHTML});
-        redoStack = []; // Al hacer algo nuevo, se limpia el redo
+ function saveState() {
+        undoStack.push({
+            svg: svg.innerHTML, 
+            latex: latexLayer.innerHTML,
+            images: imagesLayer.innerHTML // <--- Añade esto
+        });
+        redoStack = [];
         if(undoStack.length > 30) undoStack.shift();
     }
 
 function applyState(state) {
-        svg.innerHTML = state.svg; 
+    svg.innerHTML = state.svg; 
         latexLayer.innerHTML = state.latex;
+        imagesLayer.innerHTML = state.images;
         document.querySelectorAll('.sketch-path').forEach(el => makeMovable(el, 'path'));
         
         document.querySelectorAll('.draggable-item').forEach(el => {
@@ -651,7 +692,14 @@ function applyState(state) {
         applyState(state);
     }
 
-    function clearBoard() { if(confirm("¿Limpiar todo?")) { svg.innerHTML = ''; latexLayer.innerHTML = ''; saveState(); } }
+   function clearBoard() { 
+        if(confirm("¿Limpiar todo?")) { 
+            svg.innerHTML = ''; 
+            latexLayer.innerHTML = ''; 
+            imagesLayer.innerHTML = ''; // <--- Añade esto
+            saveState(); 
+        } 
+    }
     
     async function exportPNG() { 
         deselectAll(); 
