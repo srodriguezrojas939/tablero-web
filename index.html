@@ -110,13 +110,16 @@
 </div>
 
 <div class="toolbar">
-    <button class="tool-btn active" onclick="setMode('DRAW')">✎ Lápiz</button>
-    <button class="tool-btn" onclick="setMode('POLY')">📏 Polilínea</button>
-    <button class="tool-btn" onclick="setMode('ERASE')">✖ Borrador</button>
+    <button class="tool-btn active" onclick="setMode('DRAW')"> 🖉 Lápiz</button>
+    <button class="tool-btn" onclick="setMode('POLY')"> 𖡬 Polilínea</button>
+    <button class="tool-btn" onclick="setMode('ERASE')"> ✄ Borrador</button>
     <div class="divider"></div>
     <button class="tool-btn" onclick="promptLatex()">∑ Escribir en LaTeX</button>
-    <button class="tool-btn" onclick="clearBoard()">🗑 Limpiar</button>
-    <button class="tool-btn" onclick="exportPNG()">⬇ PNG</button>
+    <button class="tool-btn" onclick="setMode('RECT')"> ▢ Rectángulo</button>
+<button class="tool-btn" onclick="setMode('CIRCLE')">◯ Círculo</button>
+<button class="tool-btn" onclick="setMode('TRI')">△ Triángulo</button>
+    <button class="tool-btn" onclick="clearBoard()"> ⨯ Limpiar</button>
+    <button class="tool-btn" onclick="exportPNG()"> ⇪ PNG</button>
 </div>
 
 <div id="board-container">
@@ -127,6 +130,7 @@
 <script>
     let mode = 'DRAW';
     let isDrawing = false;
+    let startX, startY; // Para guardar el punto exacto donde empiezas a dibujar
     let currentPath = null;
     let polyPoints = [];
     let selectedElement = null;
@@ -170,7 +174,11 @@
     }
     renderSymbols("Letras Griegas");
 
+    
+
     // --- FUNCIONES DE MODO ---
+
+    
     function setMode(m) {
         mode = m;
         polyPoints = []; // Reset polilínea al cambiar
@@ -178,42 +186,120 @@
         event.currentTarget.classList.add('active');
         svg.style.cursor = (m === 'DRAW' || m === 'POLY') ? 'crosshair' : 'default';
     }
+    
 
-    // --- MANEJO DE EVENTOS ---
-    svg.onmousedown = (e) => {
-        const rect = svg.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+    // --- MANEJO DE EVENTOS --- LOS MOUSE
 
-        if (mode === 'DRAW') {
-            isDrawing = true;
-            currentPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+
+    
+ svg.onmousedown = (e) => {
+    const rect = svg.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Guardamos el punto inicial para los cálculos de RECT, CIRCLE y TRI
+    startX = x; 
+    startY = y;
+
+    if (mode === 'DRAW') {
+        isDrawing = true;
+        currentPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        currentPath.setAttribute("class", "sketch-path"); // Clase para que el borrador lo detecte
+        currentPath.setAttribute("d", `M ${x} ${y}`);
+        currentPath.setAttribute("transform", "translate(0,0) scale(1)"); // Para que se pueda escalar
+        currentPath.setAttribute("stroke", "var(--text-main)"); // Color gris/negro del tema
+        svg.appendChild(currentPath);
+    } else if (mode === 'POLY') {
+        if (polyPoints.length === 0) {
+            currentPath = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
             currentPath.setAttribute("class", "sketch-path");
-            currentPath.setAttribute("d", `M ${x} ${y}`);
+            currentPath.setAttribute("points", `${x},${y}`);
             currentPath.setAttribute("transform", "translate(0,0) scale(1)");
+            currentPath.setAttribute("stroke", "var(--text-main)");
+            currentPath.setAttribute("fill", "none");
+            currentPath.setAttribute("stroke-width", "3");
             svg.appendChild(currentPath);
-            makeMovable(currentPath, 'path');
-        } else if (mode === 'POLY') {
-            if (polyPoints.length === 0) {
-                currentPath = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-                currentPath.setAttribute("class", "polyline-path");
-                currentPath.setAttribute("points", `${x},${y}`);
-                currentPath.setAttribute("transform", "translate(0,0) scale(1)");
-                svg.appendChild(currentPath);
-            }
-            polyPoints.push(`${x},${y}`);
-            currentPath.setAttribute("points", polyPoints.join(' '));
         }
-    };
+        polyPoints.push(`${x},${y}`);
+        currentPath.setAttribute("points", polyPoints.join(' '));
+    } else if (mode === 'RECT') {
+        isDrawing = true; // Activar arrastre
+        currentPath = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        currentPath.setAttribute("class", "sketch-path");
+        currentPath.setAttribute("x", x);
+        currentPath.setAttribute("y", y);
+        currentPath.setAttribute("fill", "none");
+        currentPath.setAttribute("stroke", "var(--text-main)");
+        currentPath.setAttribute("stroke-width", "3");
+        currentPath.setAttribute("transform", "translate(0,0) scale(1)");
+        svg.appendChild(currentPath);
+    } else if (mode === 'CIRCLE') {
+        isDrawing = true;
+        currentPath = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        currentPath.setAttribute("class", "sketch-path");
+        currentPath.setAttribute("cx", x);
+        currentPath.setAttribute("cy", y);
+        currentPath.setAttribute("fill", "none");
+        currentPath.setAttribute("stroke", "var(--text-main)");
+        currentPath.setAttribute("stroke-width", "3");
+        currentPath.setAttribute("transform", "translate(0,0) scale(1)");
+        svg.appendChild(currentPath);
+    } else if (mode === 'TRI') {
+        isDrawing = true;
+        currentPath = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+        currentPath.setAttribute("class", "sketch-path");
+        currentPath.setAttribute("fill", "none");
+        currentPath.setAttribute("stroke", "var(--text-main)");
+        currentPath.setAttribute("stroke-width", "3");
+        currentPath.setAttribute("transform", "translate(0,0) scale(1)");
+        svg.appendChild(currentPath);
+    }
+};
 
-    svg.onmousemove = (e) => {
-        if (!isDrawing || mode !== 'DRAW') return;
-        const rect = svg.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+   svg.onmousemove = (e) => {
+    // 1. Verificación básica: ¿Estamos dibujando algo?
+    if (!isDrawing || !currentPath) return;
+
+    const rect = svg.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // 2. Lógica para el Lápiz (DRAW)
+    if (mode === 'DRAW') {
         const d = currentPath.getAttribute("d");
         currentPath.setAttribute("d", `${d} L ${x} ${y}`);
-    };
+    } 
+    
+    // 3. Lógica para el Rectángulo
+    else if (mode === 'RECT') {
+        let width = x - startX;
+        let height = y - startY;
+        currentPath.setAttribute("width", Math.abs(width));
+        currentPath.setAttribute("height", Math.abs(height));
+        // Si arrastras hacia la izquierda o arriba, ajustamos la posición
+        if(width < 0) currentPath.setAttribute("x", x);
+        else currentPath.setAttribute("x", startX);
+        
+        if(height < 0) currentPath.setAttribute("y", y);
+        else currentPath.setAttribute("y", startY);
+    } 
+    
+    // 4. Lógica para el Círculo
+    else if (mode === 'CIRCLE') {
+        // Calculamos la distancia entre el centro y el mouse para el radio
+        let radius = Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2));
+        currentPath.setAttribute("r", radius);
+    } 
+    
+    // 5. Lógica para el Triángulo
+    else if (mode === 'TRI') {
+        // Punto 1: Cima (startX, startY)
+        // Punto 2: Esquina derecha (x, y)
+        // Punto 3: Esquina izquierda (espejo de la derecha)
+        let points = `${startX},${startY} ${x},${y} ${startX - (x - startX)},${y}`;
+        currentPath.setAttribute("points", points);
+    }
+};
 
     svg.ondblclick = () => {
         if (mode === 'POLY') {
@@ -223,9 +309,25 @@
         }
     };
 
-    window.onmouseup = () => { isDrawing = false; };
+window.onmouseup = () => {
+    // Si estamos en modo dibujo o figuras (excepto polilínea)
+    if (isDrawing && currentPath) {
+        
+        // Solo "cerramos" el dibujo si NO es una polilínea
+        if (mode !== 'POLY') {
+            makeMovable(currentPath, 'path'); // Le damos los poderes de mover/escalar
+            currentPath = null; // Limpiamos para el siguiente dibujo
+        }
+    }
+    
+    // El dibujo por arrastre (lápiz, rect, circ) siempre se detiene al soltar
+    isDrawing = false;
+};
 
+    
     // --- GESTIÓN DE LATEX ---
+
+    
     function promptLatex() {
         const code = prompt("Escribe tu código LaTeX:", "\\sqrt{x^2 + y^2}");
         if (code) addLatexItem(code);
