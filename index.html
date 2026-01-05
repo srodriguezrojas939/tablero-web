@@ -3,143 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tablero Grayscale Pro</title>
+    <title>Tablero Raiz Cuadrada</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 
     <style>
-        /* --- PALETA DE COLORES (SOLO BLANCOS Y GRISES) --- */
         :root {
-            --bg-outer: #F0F0F0;     /* Fondo exterior gris claro */
-            --board-bg: #FFFFFF;     /* Fondo del tablero BLANCO PURO */
-            --text-primary: #222222; /* Texto casi negro */
-            --text-secondary: #666666; /* Texto gris medio */
-            --accent-gray: #888888;  /* Acento gris para estados activos */
-            --ui-bg: #FFFFFF;        /* Fondo de elementos UI */
-            --pill-bg: #E0E0E0;      /* Fondo de pildoras inactivas */
-            --border-color: #CCCCCC; /* Color de bordes suaves */
-            --shadow: rgba(0,0,0,0.15); /* Sombra suave negra */
+            --bg-canvas: #FFFFFF;
+            --ui-white: #FFFFFF;
+            --ui-gray-light: #F2F2F2;
+            --ui-gray-med: #CCCCCC;
+            --ui-gray-dark: #888888;
+            --text-main: #222222;
         }
 
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; background: var(--bg-outer); }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; background: var(--ui-gray-light); }
 
-        /* --- HEADER (GRAYSCALE) --- */
         header {
             position: absolute; top: 15px; left: 20px; z-index: 100;
             display: flex; align-items: baseline; gap: 10px; pointer-events: none;
         }
-        header h1 { font-family: 'Playfair Display', serif; font-size: 28px; margin: 0; color: var(--text-primary); }
-        header span { font-family: 'Playfair Display', serif; font-size: 16px; color: var(--text-secondary); font-weight: bold; }
+        header h1 { font-family: 'Playfair Display', serif; font-size: 28px; margin: 0; color: var(--text-main); }
+        header span { font-family: 'Playfair Display', serif; font-size: 16px; color: var(--ui-gray-dark); font-weight: bold; }
 
-        /* --- LIBRERÍA DE SÍMBOLOS (ESQUINA INFERIOR DERECHA & SCROLLS) --- */
+        /* --- LIBRERÍA INFERIOR DERECHA --- */
         .symbol-library {
-            position: absolute;
-            bottom: 90px; /* Encima de la barra principal */
-            right: 20px;  /* Esquina derecha */
-            width: 400px; /* Más ancho para acomodar scrolls */
-            background: var(--ui-bg);
-            border-radius: 12px; padding: 15px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 20px var(--shadow);
-            z-index: 1000;
+            position: absolute; bottom: 90px; right: 20px; width: 380px;
+            background: var(--ui-white); border-radius: 12px; padding: 12px;
+            border: 1px solid var(--ui-gray-med); box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 1000;
         }
-
-        /* Scroll horizontal para categorías */
         .pill-container {
-            display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px;
-            scrollbar-width: thin; scrollbar-color: var(--accent-gray) transparent;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 12px;
+            display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px;
+            scrollbar-width: thin; scrollbar-color: var(--ui-gray-med) transparent;
+            border-bottom: 1px solid var(--ui-gray-light);
         }
-        /* Scroll horizontal para símbolos */
         .symbol-grid {
-            display: flex; /* Cambiado de grid a flex para scroll horizontal */
-            gap: 8px; overflow-x: auto; padding-bottom: 5px;
-            scrollbar-width: thin; scrollbar-color: var(--accent-gray) transparent;
+            display: flex; gap: 8px; overflow-x: auto; padding: 10px 0;
+            scrollbar-width: thin; scrollbar-color: var(--ui-gray-med) transparent;
         }
-
         .pill {
-            padding: 6px 14px; background: var(--pill-bg); border-radius: 20px;
-            font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
-            transition: 0.2s; border: none; color: var(--text-secondary); flex-shrink: 0;
+            padding: 5px 12px; background: var(--ui-gray-light); border-radius: 15px;
+            font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap;
+            transition: 0.2s; border: none; color: var(--ui-gray-dark);
         }
-        .pill.active { background: var(--text-primary); color: var(--board-bg); }
-
+        .pill.active { background: var(--text-main); color: var(--ui-white); }
         .symbol-btn {
-            background: var(--board-bg); border: 1px solid var(--border-color); border-radius: 8px;
-            height: 50px; width: 60px; /* Ancho fijo para scroll */
-            cursor: pointer; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; transition: 0.2s; flex-shrink: 0;
-            color: var(--text-primary);
+            background: white; border: 1px solid var(--ui-gray-med); border-radius: 8px;
+            min-width: 50px; height: 50px; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; flex-shrink: 0;
         }
-        .symbol-btn:hover { border-color: var(--text-primary); background: #f9f9f9; }
-        .symbol-btn span { font-size: 16px; margin-bottom: 2px; }
-        .symbol-btn small { font-size: 9px; text-transform: uppercase; color: var(--text-secondary); }
 
-        /* --- TABLERO (FONDO BLANCO) --- */
-        #board-container { width: 100vw; height: 100vh; position: relative; background: var(--board-bg); }
-        svg { width: 100%; height: 100%; cursor: crosshair; }
+        /* --- TABLERO --- */
+        #board-container { width: 100vw; height: 100vh; position: relative; background: var(--bg-canvas); }
+        svg { width: 100%; height: 100%; }
 
-        /* Elementos interactivos */
+        /* Elementos Manipulables */
         .draggable-item {
-            position: absolute; cursor: move; padding: 8px;
-            border-radius: 4px; transform-origin: center; /* Crucial para escalado */
+            position: absolute; cursor: move; padding: 10px;
+            transform-origin: top left; user-select: none;
         }
-        .draggable-item:hover { outline: 1px dashed var(--accent-gray); }
-        .draggable-item.delete-mode:hover { outline: 2px solid red; cursor: not-allowed; opacity: 0.7; } /* Indicador visual de borrado */
+        .draggable-item.selected { outline: 1px solid var(--ui-gray-med); }
+        
+        /* Flecha de expansión (Manija) */
+        .resize-handle {
+            position: absolute; bottom: -5px; right: -5px; width: 15px; height: 15px;
+            background: var(--ui-gray-dark); clip-path: polygon(100% 0, 100% 100%, 0 100%);
+            cursor: nwse-resize; display: none;
+        }
+        .draggable-item.selected .resize-handle { display: block; }
 
-        /* Estilos de Dibujo */
-        .sketch-path {
-            fill: none; stroke: var(--text-primary); stroke-width: 3;
+        .sketch-path, .polyline-path {
+            fill: none; stroke: var(--text-main); stroke-width: 3;
             stroke-linecap: round; stroke-linejoin: round; cursor: move;
-            transform-origin: center; /* Crucial para escalado */
-            pointer-events: all; /* Asegura que capture eventos de mouse */
+            transform-origin: center;
         }
-        .sketch-path:hover { opacity: 0.7; }
-        .sketch-path.delete-mode:hover { stroke: red; cursor: not-allowed; }
 
-        /* --- BARRA DE HERRAMIENTAS PRINCIPAL (REDISEÑADA) --- */
+        /* --- TOOLBAR --- */
         .toolbar {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: var(--ui-bg); padding: 8px 15px; border-radius: 50px;
-            display: flex; gap: 10px; box-shadow: 0 4px 15px var(--shadow);
-            border: 1px solid var(--border-color); z-index: 100;
+            background: var(--ui-white); padding: 8px 15px; border-radius: 50px;
+            display: flex; gap: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 1px solid var(--ui-gray-med); z-index: 100;
         }
         .tool-btn {
-            border: 1px solid transparent; background: none; font-size: 18px;
-            cursor: pointer; padding: 8px 12px; border-radius: 12px; color: var(--text-secondary);
-            display: flex; align-items: center; gap: 5px; font-family: 'Inter', sans-serif; font-weight: 600; font-size: 14px;
+            border: 1px solid transparent; background: none; font-size: 13px;
+            cursor: pointer; padding: 8px 12px; border-radius: 10px;
+            color: var(--ui-gray-dark); font-weight: 600;
         }
-        .tool-btn i { font-style: normal; font-size: 18px; }
-        .tool-btn:hover { background: var(--bg-outer); color: var(--text-primary); }
-        .tool-btn.active { background: var(--text-primary); color: var(--board-bg); }
-        .divider { width: 1px; background: var(--border-color); margin: 0 5px; }
+        .tool-btn.active { background: var(--ui-gray-light); color: var(--text-main); border-color: var(--ui-gray-med); }
+        .divider { width: 1px; background: var(--ui-gray-med); margin: 0 5px; }
+
     </style>
 </head>
 <body>
 
 <header>
     <h1>Tablero</h1>
-    <span>Escala de Grises</span>
+    <span>√(Raiz) Cuadrada²</span>
 </header>
 
 <div class="symbol-library">
-    <div class="pill-container" id="category-pills">
-        </div>
-    <div class="symbol-grid" id="symbol-display">
-        </div>
+    <div class="pill-container" id="category-pills"></div>
+    <div class="symbol-grid" id="symbol-display"></div>
 </div>
 
 <div class="toolbar">
-    <button class="tool-btn active" onclick="setMode('DRAW')" title="Dibujar"><i>✎</i> Lápiz</button>
-    <button class="tool-btn" onclick="setMode('DELETE')" title="Modo Borrador (Click para eliminar)"><i>✖</i> Borrador</button>
+    <button class="tool-btn active" onclick="setMode('DRAW')">✎ Lápiz</button>
+    <button class="tool-btn" onclick="setMode('POLY')">📏 Polilínea</button>
+    <button class="tool-btn" onclick="setMode('ERASE')">✖ Borrador</button>
     <div class="divider"></div>
-    <button class="tool-btn" onclick="copyLatex()" title="Copiar todo el LaTeX al portapapeles"><i>📋</i> Copiar LaTeX</button>
-    <button class="tool-btn" onclick="clearBoard()" title="Limpiar Tablero"><i>🗑</i> Limpiar</button>
-    <div class="divider"></div>
-    <button class="tool-btn" onclick="exportPNG()" title="Descargar Imagen"><i>⬇</i> PNG</button>
+    <button class="tool-btn" onclick="promptLatex()">∑ Escribir en LaTeX</button>
+    <button class="tool-btn" onclick="clearBoard()">🗑 Limpiar</button>
+    <button class="tool-btn" onclick="exportPNG()">⬇ PNG</button>
 </div>
 
 <div id="board-container">
@@ -148,47 +125,32 @@
 </div>
 
 <script>
-    let mode = 'DRAW'; // Modos: DRAW, DELETE, MOVE (Move es implícito al no estar en draw/delete)
+    let mode = 'DRAW';
     let isDrawing = false;
     let currentPath = null;
+    let polyPoints = [];
+    let selectedElement = null;
 
     const svg = document.getElementById('svg-canvas');
     const latexLayer = document.getElementById('latex-layer');
     const symbolDisplay = document.getElementById('symbol-display');
     const categoryPills = document.getElementById('category-pills');
-    const boardContainer = document.getElementById('board-container');
 
-    // --- CONFIGURACIÓN DE LIBRERÍA (Expandida para probar el scroll) ---
+    // --- CONFIGURACIÓN DE LIBRERÍA (Exactamente tus categorías) ---
     const library = {
-        "Principales": [
-            { s: "\\sum", n: "sum" }, { s: "\\int", n: "int" }, { s: "\\prod", n: "prod" },
-            { s: "\\sqrt{x}", n: "sqrt" }, { s: "\\frac{a}{b}", n: "frac" }, { s: "x^2", n: "pow" },
-            { s: "x_i", n: "sub" }, { s: "\\lim", n: "lim" }
-        ],
-        "Letras Griegas": [
-            { s: "\\alpha", n: "alpha" }, { s: "\\beta", n: "beta" }, { s: "\\gamma", n: "gamma" },
-            { s: "\\delta", n: "delta" }, { s: "\\epsilon", n: "epsilon" }, { s: "\\theta", n: "theta" },
-            { s: "\\lambda", n: "lambda" }, { s: "\\pi", n: "pi" }, { s: "\\sigma", n: "sigma" },
-            { s: "\\omega", n: "omega" }, { s: "\\Delta", n: "Delta" }, { s: "\\Omega", n: "Omega" }
-        ],
-        "Lógica/Conjuntos": [
-            { s: "\\forall", n: "forall" }, { s: "\\exists", n: "exists" }, { s: "\\in", n: "in" },
-            { s: "\\subset", n: "subset" }, { s: "\\cup", n: "cup" }, { s: "\\cap", n: "cap" },
-            { s: "\\rightarrow", n: "to" }, { s: "\\leftrightarrow", n: "iff" }, { s: "\\neg", n: "neg" }
-        ],
-        "Matrices/Otros": [
-             { s: "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}", n: "pmatrix" },
-             { s: "\\infty", n: "infty" }, { s: "\\partial", n: "partial" }, { s: "\\nabla", n: "nabla" },
-             { s: "\\neq", n: "neq" }, { s: "\\approx", n: "approx" }
-        ]
+        "Letras Griegas": [{ s: "\\alpha" }], "Flechas": [{ s: "\\rightarrow" }],
+        "Lógica": [{ s: "\\forall" }], "Principales": [{ s: "\\sum" }],
+        "Desigualdades": [{ s: "\\geq" }], "Cálculo": [{ s: "\\int" }],
+        "Conjuntos": [{ s: "\\in" }], "Matrices/Sist": [{ s: "\\begin{pmatrix} a & b \\end{pmatrix}" }],
+        "Paréntesis": [{ s: "\\left( x \\right)" }], "Otros": [{ s: "\\infty" }]
     };
 
-    // Cargar Pildoras
-    Object.keys(library).forEach((cat, index) => {
+    // Renderizado UI Librería
+    Object.keys(library).forEach((cat, i) => {
         const btn = document.createElement('button');
-        btn.className = `pill ${index === 0 ? 'active' : ''}`;
+        btn.className = `pill ${i === 0 ? 'active' : ''}`;
         btn.innerText = cat;
-        btn.onclick = () => {
+        btn.onclick = (e) => {
             document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
             btn.classList.add('active');
             renderSymbols(cat);
@@ -201,64 +163,51 @@
         library[cat].forEach(item => {
             const b = document.createElement('div');
             b.className = 'symbol-btn';
-            b.innerHTML = `<span></span><small>${item.n}</small>`;
             symbolDisplay.appendChild(b);
-            katex.render(item.s, b.querySelector('span'), { throwOnError: false });
+            katex.render(item.s, b);
             b.onclick = () => addLatexItem(item.s);
         });
     }
-    renderSymbols("Principales");
+    renderSymbols("Letras Griegas");
 
-    // --- LÓGICA DEL TABLERO Y MODOS ---
+    // --- FUNCIONES DE MODO ---
     function setMode(m) {
         mode = m;
-        // Actualizar UI de botones
-        document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+        polyPoints = []; // Reset polilínea al cambiar
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
         event.currentTarget.classList.add('active');
-
-        // Cursor y estado visual según modo
-        if (mode === 'DRAW') {
-            svg.style.cursor = 'crosshair';
-            boardContainer.classList.remove('delete-active');
-        } else if (mode === 'DELETE') {
-            svg.style.cursor = 'not-allowed';
-            boardContainer.classList.add('delete-active');
-        } else {
-            svg.style.cursor = 'default';
-            boardContainer.classList.remove('delete-active');
-        }
-        updateDeleteModeVisuals();
+        svg.style.cursor = (m === 'DRAW' || m === 'POLY') ? 'crosshair' : 'default';
     }
 
-    function updateDeleteModeVisuals() {
-        const elements = document.querySelectorAll('.draggable-item, .sketch-path');
-        elements.forEach(el => {
-            if (mode === 'DELETE') el.classList.add('delete-mode');
-            else el.classList.remove('delete-mode');
-        });
-    }
-
-    // --- DIBUJO (LÁPIZ) ---
+    // --- MANEJO DE EVENTOS ---
     svg.onmousedown = (e) => {
-        if (mode !== 'DRAW') return;
-        // Evitar dibujar si se hace click sobre un elemento existente (para moverlo)
-        if (e.target.classList.contains('sketch-path') || e.target.closest('.draggable-item')) return;
-
-        isDrawing = true;
         const rect = svg.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
-        currentPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        currentPath.setAttribute("class", "sketch-path");
-        currentPath.setAttribute("d", `M ${x} ${y}`);
-        // Inicializar transformación para que el escalado funcione bien
-        currentPath.setAttribute("transform", "translate(0,0) scale(1)");
-        svg.appendChild(currentPath);
+        if (mode === 'DRAW') {
+            isDrawing = true;
+            currentPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            currentPath.setAttribute("class", "sketch-path");
+            currentPath.setAttribute("d", `M ${x} ${y}`);
+            currentPath.setAttribute("transform", "translate(0,0) scale(1)");
+            svg.appendChild(currentPath);
+            makeMovable(currentPath, 'path');
+        } else if (mode === 'POLY') {
+            if (polyPoints.length === 0) {
+                currentPath = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+                currentPath.setAttribute("class", "polyline-path");
+                currentPath.setAttribute("points", `${x},${y}`);
+                currentPath.setAttribute("transform", "translate(0,0) scale(1)");
+                svg.appendChild(currentPath);
+            }
+            polyPoints.push(`${x},${y}`);
+            currentPath.setAttribute("points", polyPoints.join(' '));
+        }
     };
 
     svg.onmousemove = (e) => {
-        if (!isDrawing || !currentPath) return;
+        if (!isDrawing || mode !== 'DRAW') return;
         const rect = svg.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
@@ -266,193 +215,138 @@
         currentPath.setAttribute("d", `${d} L ${x} ${y}`);
     };
 
-    window.onmouseup = () => {
-        if (isDrawing && currentPath) {
-            // Al terminar de dibujar, añadir funcionalidades
-            makeInteractive(currentPath, 'path');
+    svg.ondblclick = () => {
+        if (mode === 'POLY') {
+            makeMovable(currentPath, 'path');
+            polyPoints = [];
+            currentPath = null;
         }
-        isDrawing = false;
-        currentPath = null;
     };
 
-    // --- LATEX ---
+    window.onmouseup = () => { isDrawing = false; };
+
+    // --- GESTIÓN DE LATEX ---
+    function promptLatex() {
+        const code = prompt("Escribe tu código LaTeX:", "\\sqrt{x^2 + y^2}");
+        if (code) addLatexItem(code);
+    }
+
     function addLatexItem(tex) {
         const wrapper = document.createElement('div');
         wrapper.className = 'draggable-item';
-        // Posición inicial centrada
-        wrapper.style.left = (boardContainer.offsetWidth / 2 - 50) + 'px';
-        wrapper.style.top = (boardContainer.offsetHeight / 2 - 50) + 'px';
-        wrapper.dataset.latex = tex; // Guardar el código LaTeX crudo para copiar
-        wrapper.style.transform = "scale(1)"; // Inicializar escala
+        wrapper.style.left = '100px';
+        wrapper.style.top = '100px';
+        wrapper.style.transform = "scale(1)";
+        wrapper.dataset.tex = tex;
 
         const content = document.createElement('div');
+        const handle = document.createElement('div');
+        handle.className = 'resize-handle';
+        
         wrapper.appendChild(content);
+        wrapper.appendChild(handle);
         latexLayer.appendChild(wrapper);
         
-        katex.render(tex, content, { throwOnError: false });
-        makeInteractive(wrapper, 'div');
-    }
+        katex.render(tex, content);
 
-    // --- FUNCIONES CENTRALES DE INTERACCIÓN (MOVER, ESCALAR, BORRAR) ---
-    function makeInteractive(el, type) {
-        makeMovable(el, type);
-        makeScalable(el);
-        makeDeletable(el);
-        if(mode === 'DELETE') el.classList.add('delete-mode');
-    }
-
-    function makeDeletable(el) {
-        el.addEventListener('click', (e) => {
-            if (mode === 'DELETE') {
-                e.stopPropagation(); // Evitar otros eventos
-                el.remove();
-            }
-        });
-        // Para elementos SVG, necesitamos mousedown también porque a veces no disparan click bien si se mueven un pixel
-        if (el.tagName === 'path') {
-             el.addEventListener('mousedown', (e) => {
-                if (mode === 'DELETE') {
-                    e.stopPropagation();
-                    el.remove();
-                }
-            });
-        }
-    }
-
-    // --- ESCALADO UNIVERSAL (LÁPIZ Y LATEX) ---
-    function makeScalable(el) {
-        el.addEventListener('wheel', (e) => {
-            // Permitir escalado en modo DRAW o si no hay modo activo (move implícito)
-            if (mode === 'DELETE') return;
-            e.preventDefault();
+        wrapper.ondblclick = (e) => {
             e.stopPropagation();
+            const newTex = prompt("Editar LaTeX:", wrapper.dataset.tex);
+            if (newTex) {
+                wrapper.dataset.tex = newTex;
+                katex.render(newTex, content);
+            }
+        };
 
-            // Obtener la transformación actual
-            let currentTransform = el.style.transform || el.getAttribute("transform") || "scale(1)";
-            
-            // Extraer la escala actual usando Regex
-            let scaleMatch = currentTransform.match(/scale\(([^)]+)\)/);
-            let scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+        wrapper.onclick = (e) => {
+            e.stopPropagation();
+            if (selectedElement) selectedElement.classList.remove('selected');
+            selectedElement = wrapper;
+            wrapper.classList.add('selected');
+        };
 
-            // Calcular nueva escala
-            scale += e.deltaY * -0.001;
-            scale = Math.min(Math.max(0.3, scale), 5); // Límites de escala (0.3x a 5x)
+        makeMovable(wrapper, 'div');
+        makeManualResize(wrapper, handle);
+    }
 
-            // Aplicar la nueva transformación manteniendo la traslación si existe
-            if (el.tagName === 'path') {
-                // Para SVG paths, mantenemos el translate existente en el atributo
-                let translateMatch = currentTransform.match(/translate\(([^)]+)\)/);
-                let translatePart = translateMatch ? translateMatch[0] : "translate(0,0)";
-                el.setAttribute("transform", `${translatePart} scale(${scale})`);
+    // --- MOVIMIENTO, ESCALADO Y BORRADO ---
+    function makeMovable(el, type) {
+        let dragging = false;
+        let startX, startY;
+
+        el.addEventListener('mousedown', (e) => {
+            if (mode === 'ERASE') {
+                el.remove();
+                return;
+            }
+            e.stopPropagation();
+            dragging = true;
+            startX = e.clientX; startY = e.clientY;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!dragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+
+            if (type === 'path') {
+                const t = el.getAttribute("transform") || "translate(0,0) scale(1)";
+                const mTranslate = t.match(/translate\(([^,]+),([^)]+)\)/);
+                const mScale = t.match(/scale\(([^)]+)\)/);
+                const tx = mTranslate ? parseFloat(mTranslate[1]) + dx : dx;
+                const ty = mTranslate ? parseFloat(mTranslate[2]) + dy : dy;
+                el.setAttribute("transform", `translate(${tx},${ty}) ${mScale ? mScale[0] : 'scale(1)'}`);
             } else {
-                // Para DIVs de LaTeX, usamos estilo CSS directo
+                el.style.left = (el.offsetLeft + dx) + 'px';
+                el.style.top = (el.offsetTop + dy) + 'px';
+            }
+            startX = e.clientX; startY = e.clientY;
+        });
+
+        document.addEventListener('mouseup', () => dragging = false);
+
+        // Escalado con rueda
+        el.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            let scale;
+            if (type === 'path') {
+                const t = el.getAttribute("transform") || "scale(1)";
+                scale = parseFloat(t.match(/scale\(([^)]+)\)/)[1]);
+                scale += e.deltaY * -0.001;
+                el.setAttribute("transform", t.replace(/scale\([^)]+\)/, `scale(${scale})`));
+            } else {
+                const t = el.style.transform || "scale(1)";
+                scale = parseFloat(t.match(/scale\(([^)]+)\)/)[1]);
+                scale += e.deltaY * -0.001;
                 el.style.transform = `scale(${scale})`;
             }
         });
     }
 
-    // --- MOVIMIENTO UNIVERSAL ---
-    function makeMovable(el, type) {
-        let isDragging = false;
-        let startX, startY;
-        // Posición inicial para SVG paths
-        let initialTranslateX = 0, initialTranslateY = 0;
-
-        el.addEventListener('mousedown', (e) => {
-            if (mode === 'DELETE') return;
-            // En modo DRAW, solo permitir mover si se hace click directo en el elemento, no en el fondo
-            if (mode === 'DRAW' && e.target !== el && !el.contains(e.target)) return;
-
+    function makeManualResize(el, handle) {
+        let resizing = false;
+        handle.onmousedown = (e) => {
             e.stopPropagation();
-            isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            svg.style.cursor = 'grabbing';
-
-            if (type === 'path') {
-                // Obtener la traslación actual del path SVG
-                const transform = el.getAttribute("transform") || "";
-                const match = transform.match(/translate\(([^,]+),([^)]+)\)/);
-                if (match) {
-                    initialTranslateX = parseFloat(match[1]);
-                    initialTranslateY = parseFloat(match[2]);
-                } else {
-                    initialTranslateX = 0; initialTranslateY = 0;
-                }
-            }
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            
-            if (type === 'path') {
-                // Mover path SVG actualizando el atributo transform translate, manteniendo scale
-                let currentTransform = el.getAttribute("transform") || "scale(1)";
-                let scalePart = currentTransform.match(/scale\([^)]+\)/) || ["scale(1)"];
-                el.setAttribute("transform", `translate(${initialTranslateX + dx},${initialTranslateY + dy}) ${scalePart[0]}`);
-            } else {
-                // Mover DIV LaTeX usando top/left CSS
-                el.style.left = (el.offsetLeft + dx) + 'px';
-                el.style.top = (el.offsetTop + dy) + 'px';
-            }
-            startX = e.clientX;
-            startY = e.clientY;
-        });
-
-        document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                isDragging = false;
-                 svg.style.cursor = mode === 'DRAW' ? 'crosshair' : (mode === 'DELETE' ? 'not-allowed' : 'default');
-            }
-        });
+            resizing = true;
+        };
+        document.onmousemove = (e) => {
+            if (!resizing) return;
+            const t = el.style.transform || "scale(1)";
+            let scale = parseFloat(t.match(/scale\(([^)]+)\)/)[1]);
+            scale += 0.01 * (e.movementX + e.movementY);
+            el.style.transform = `scale(${Math.max(0.2, scale)})`;
+        };
+        document.onmouseup = () => resizing = false;
     }
 
-    // --- FUNCIONALIDADES DE BARRA DE HERRAMIENTAS ---
-    function clearBoard() {
-        if (confirm('¿Borrar todo el tablero?')) {
-            svg.innerHTML = '';
-            latexLayer.innerHTML = '';
-        }
-    }
-
-    async function copyLatex() {
-        const latexItems = Array.from(latexLayer.getElementsByClassName('draggable-item'));
-        if (latexItems.length === 0) {
-            alert("No hay elementos LaTeX para copiar.");
-            return;
-        }
-        // Extraer el LaTeX crudo guardado en el dataset
-        const allLatex = latexItems.map(item => item.dataset.latex).join('\n');
-        try {
-            await navigator.clipboard.writeText(allLatex);
-            alert("LaTeX copiado al portapapeles:\n\n" + allLatex);
-        } catch (err) {
-            alert('Error al copiar: ' + err);
-        }
-    }
+    function clearBoard() { if(confirm("¿Limpiar todo?")) { svg.innerHTML = ''; latexLayer.innerHTML = ''; } }
 
     async function exportPNG() {
-        // Desactivar temporalmente los bordes de selección/borrado para la captura
-        const wasDeleteMode = mode === 'DELETE';
-        if (wasDeleteMode) {
-             setMode('MOVE'); // Cambiar a un modo neutro
-             updateDeleteModeVisuals();
-        }
-        
-        const canvas = await html2canvas(boardContainer, {
-            backgroundColor: '#FFFFFF', // Asegurar fondo blanco en la captura
-            scale: 2, // Mayor calidad
-            logging: false
-        });
-        
+        const canvas = await html2canvas(document.getElementById('board-container'));
         const link = document.createElement('a');
-        link.download = 'tablero-grayscale.png';
-        link.href = canvas.toDataURL('image/png');
+        link.download = 'tablero.png';
+        link.href = canvas.toDataURL();
         link.click();
-
-        if (wasDeleteMode) setMode('DELETE'); // Restaurar modo
     }
 </script>
 </body>
