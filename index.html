@@ -28,7 +28,7 @@
         header h1 { font-family: 'Playfair Display', serif; font-size: 28px; margin: 0; color: var(--text-main); }
         header span { font-family: 'Playfair Display', serif; font-size: 16px; color: var(--ui-gray-dark); font-weight: bold; }
 
-        /* --- LIBRERÍA INFERIOR DERECHA --- */
+        /* --- LIBRERÍA --- */
         .symbol-library {
             position: absolute; bottom: 90px; right: 20px; width: 380px;
             background: var(--ui-white); border-radius: 12px; padding: 12px;
@@ -36,17 +36,12 @@
         }
         .pill-container {
             display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px;
-            scrollbar-width: thin; scrollbar-color: var(--ui-gray-med) transparent;
             border-bottom: 1px solid var(--ui-gray-light);
         }
-        .symbol-grid {
-            display: flex; gap: 8px; overflow-x: auto; padding: 10px 0;
-            scrollbar-width: thin; scrollbar-color: var(--ui-gray-med) transparent;
-        }
+        .symbol-grid { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; }
         .pill {
             padding: 5px 12px; background: var(--ui-gray-light); border-radius: 15px;
-            font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap;
-            transition: 0.2s; border: none; color: var(--ui-gray-dark);
+            font-size: 11px; font-weight: 600; cursor: pointer; border: none; color: var(--ui-gray-dark);
         }
         .pill.active { background: var(--text-main); color: var(--ui-white); }
         .symbol-btn {
@@ -56,17 +51,18 @@
         }
 
         /* --- TABLERO --- */
-        #board-container { width: 100vw; height: 100vh; position: relative; background: var(--bg-canvas); }
-        svg { width: 100%; height: 100%; }
+        #board-container { width: 100vw; height: 100vh; position: relative; background: var(--bg-canvas); overflow: hidden; }
+        svg { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+        #latex-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
 
-        /* Elementos Manipulables */
+        /* Elementos */
         .draggable-item {
             position: absolute; cursor: move; padding: 10px;
-            transform-origin: top left; user-select: none;
+            transform-origin: top left; user-select: none; pointer-events: auto;
+            border: 1px dashed transparent;
         }
-        .draggable-item.selected { outline: 1px solid var(--ui-gray-med); }
+        .draggable-item.selected { border: 1px dashed #888888 !important; outline: 2px solid #222222; }
         
-        /* Flecha de expansión (Manija) */
         .resize-handle {
             position: absolute; bottom: -5px; right: -5px; width: 15px; height: 15px;
             background: var(--ui-gray-dark); clip-path: polygon(100% 0, 100% 100%, 0 100%);
@@ -74,10 +70,15 @@
         }
         .draggable-item.selected .resize-handle { display: block; }
 
-        .sketch-path, .polyline-path {
-            fill: none; stroke: var(--text-main); stroke-width: 3;
-            stroke-linecap: round; stroke-linejoin: round; cursor: move;
-            transform-origin: center;
+        .sketch-path {
+            fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;
+            cursor: move; pointer-events: auto;
+        }
+        .sketch-path.selected { stroke: #000; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); }
+
+        .selection-box {
+            fill: rgba(136, 136, 136, 0.15); stroke: #888888; stroke-width: 1;
+            stroke-dasharray: 4; pointer-events: none;
         }
 
         /* --- TOOLBAR --- */
@@ -85,7 +86,7 @@
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
             background: var(--ui-white); padding: 8px 15px; border-radius: 50px;
             display: flex; gap: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border: 1px solid var(--ui-gray-med); z-index: 100;
+            border: 1px solid var(--ui-gray-med); z-index: 1000;
         }
         .tool-btn {
             border: 1px solid transparent; background: none; font-size: 13px;
@@ -93,41 +94,7 @@
             color: var(--ui-gray-dark); font-weight: 600;
         }
         .tool-btn.active { background: var(--ui-gray-light); color: var(--text-main); border-color: var(--ui-gray-med); }
-        .divider { width: 1px; background: var(--ui-gray-med); margin: 0 5px; }
-/* --- ESTILOS DE SELECCIÓN (SOLO GRISES) --- */
-
-    /* El recuadro gris transparente que dibujas con el mouse */
-    .selection-box {
-        fill: rgba(136, 136, 136, 0.15); /* Gris muy clarito */
-        stroke: #888888;               /* Borde gris medio */
-        stroke-width: 1;
-        stroke-dasharray: 4;           /* Borde punteado */
-        pointer-events: none;
-    }
-
-    /* Lo que pasa cuando seleccionas un objeto (Lápiz, Figuras o LaTeX) */
-    .selected {
-        outline: 2px solid #222222 !important; /* Borde negro/gris oscuro resaltado */
-        box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
-    }
-
-    /* Limpieza de los bordes de LaTeX: solo se ven si pasas el mouse o seleccionas */
-    .draggable-item {
-        border: 1px dashed transparent !important; 
-        transition: border 0.2s;
-    }
-    .draggable-item:hover, .draggable-item.selected {
-        border: 1px dashed #888888 !important; 
-    }
-
-
-        
-
     </style>
-
-
-
-    
 </head>
 <body>
 
@@ -142,17 +109,17 @@
 </div>
 
 <div class="toolbar">
-    <button class="tool-btn active" onclick="setMode('DRAW')"> 🖉 Lápiz</button>
-    <button class="tool-btn" onclick="setMode('POLY')"> 𖡬 Polilínea</button>
-    <button class="tool-btn" onclick="setMode('ERASE')"> ✄ Borrador</button>
+    <button class="tool-btn active" onclick="setMode('DRAW', this)"> 🖉 Lápiz</button>
+    <button class="tool-btn" onclick="setMode('POLY', this)"> 𖡬 Polilínea</button>
+    <button class="tool-btn" onclick="setMode('ERASE', this)"> ✄ Borrador</button>
+    <button class="tool-btn" onclick="setMode('SELECT', this)">⬚ Seleccionar</button>
     <div class="divider"></div>
-    <button class="tool-btn" onclick="promptLatex()">∑ Escribir en LaTeX</button>
-    <button class="tool-btn" onclick="setMode('RECT')"> ▢ Rectángulo</button>
-<button class="tool-btn" onclick="setMode('CIRCLE')">◯ Círculo</button>
-<button class="tool-btn" onclick="setMode('TRI')">△ Triángulo</button>
+    <button class="tool-btn" onclick="promptLatex()">∑ LaTeX</button>
+    <button class="tool-btn" onclick="setMode('RECT', this)"> ▢ </button>
+    <button class="tool-btn" onclick="setMode('CIRCLE', this)">◯ </button>
+    <button class="tool-btn" onclick="setMode('TRI', this)">△ </button>
     <button class="tool-btn" onclick="clearBoard()"> ⨯ Limpiar</button>
     <button class="tool-btn" onclick="exportPNG()"> ⇪ PNG</button>
-    <button class="tool-btn" id="btn-select" onclick="setMode('SELECT')">⬚ Seleccionar</button>
 </div>
 
 <div id="board-container">
@@ -160,271 +127,177 @@
     <div id="latex-layer"></div>
 </div>
 
-    
-
 <script>
-
     let mode = 'DRAW';
     let isDrawing = false;
-    let startX, startY;        // Solo una vez aquí
+    let startX, startY;
     let currentPath = null;
     let polyPoints = [];
-    let selectedElements = []; // Lista para el grupo
-    let selectionRect = null;  // El recuadro visual
+    let selectedElements = [];
+    let selectionRect = null;
 
     const svg = document.getElementById('svg-canvas');
     const latexLayer = document.getElementById('latex-layer');
     const symbolDisplay = document.getElementById('symbol-display');
     const categoryPills = document.getElementById('category-pills');
 
-    // --- CONFIGURACIÓN DE LIBRERÍA (Exactamente tus categorías) ---
+    // --- LIBRERÍA ---
     const library = {
-        "Letras Griegas": [{ s: "\\alpha" }], "Flechas": [{ s: "\\rightarrow" }],
-        "Lógica": [{ s: "\\forall" }], "Principales": [{ s: "\\sum" }],
-        "Desigualdades": [{ s: "\\geq" }], "Cálculo": [{ s: "\\int" }],
-        "Conjuntos": [{ s: "\\in" }], "Matrices/Sist": [{ s: "\\begin{pmatrix} a & b \\end{pmatrix}" }],
-        "Paréntesis": [{ s: "\\left( x \\right)" }], "Otros": [{ s: "\\infty" }]
+        "Griegas": [{ s: "\\alpha" }, { s: "\\beta" }, { s: "\\pi" }],
+        "Principales": [{ s: "\\sum" }, { s: "\\sqrt{x}" }, { s: "\\int" }],
+        "Matrices": [{ s: "\\begin{pmatrix} a & b \\end{pmatrix}" }]
     };
 
-    // Renderizado UI Librería
-    Object.keys(library).forEach((cat, i) => {
-        const btn = document.createElement('button');
-        btn.className = `pill ${i === 0 ? 'active' : ''}`;
-        btn.innerText = cat;
-        btn.onclick = (e) => {
-            document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-            btn.classList.add('active');
-            renderSymbols(cat);
-        };
-        categoryPills.appendChild(btn);
-    });
+    function initLibrary() {
+        Object.keys(library).forEach((cat, i) => {
+            const btn = document.createElement('button');
+            btn.className = `pill ${i === 0 ? 'active' : ''}`;
+            btn.innerText = cat;
+            btn.onclick = () => {
+                document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                renderSymbols(cat);
+            };
+            categoryPills.appendChild(btn);
+        });
+        renderSymbols(Object.keys(library)[0]);
+    }
 
     function renderSymbols(cat) {
         symbolDisplay.innerHTML = '';
         library[cat].forEach(item => {
             const b = document.createElement('div');
             b.className = 'symbol-btn';
-            symbolDisplay.appendChild(b);
             katex.render(item.s, b);
             b.onclick = () => addLatexItem(item.s);
+            symbolDisplay.appendChild(b);
         });
     }
-    renderSymbols("Letras Griegas");
+    initLibrary();
 
-    
-
-    // --- FUNCIONES DE MODO ---
-
-    
-    function setMode(m) {
+    // --- MODOS ---
+    function setMode(m, btn) {
         mode = m;
-        polyPoints = []; // Reset polilínea al cambiar
+        polyPoints = [];
         document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-        event.currentTarget.classList.add('active');
-        svg.style.cursor = (m === 'DRAW' || m === 'POLY') ? 'crosshair' : 'default';
+        if(btn) btn.classList.add('active');
     }
-    
 
-    // --- MANEJO DE EVENTOS --- LOS MOUSE
+    // --- EVENTOS DE MOUSE (SVG) ---
+    svg.onmousedown = (e) => {
+        const rect = svg.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        startX = x; startY = y;
 
+        if (mode === 'SELECT') {
+            deselectAll();
+            isDrawing = true;
+            selectionRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            selectionRect.setAttribute("class", "selection-box");
+            svg.appendChild(selectionRect);
+            return;
+        }
 
-    
- svg.onmousedown = (e) => {
-    const rect = svg.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    // Guardamos el punto inicial para los cálculos de RECT, CIRCLE y TRI
-    startX = x; 
-    startY = y;
-
-    if (mode === 'DRAW') {
-        isDrawing = true;
-        currentPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        currentPath.setAttribute("class", "sketch-path"); // Clase para que el borrador lo detecte
-        currentPath.setAttribute("d", `M ${x} ${y}`);
-        currentPath.setAttribute("transform", "translate(0,0) scale(1)"); // Para que se pueda escalar
-        currentPath.setAttribute("stroke", "var(--text-main)"); // Color gris/negro del tema
-        svg.appendChild(currentPath);
-    } else if (mode === 'POLY') {
-        if (polyPoints.length === 0) {
-            currentPath = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+        if (mode === 'DRAW') {
+            isDrawing = true;
+            currentPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
             currentPath.setAttribute("class", "sketch-path");
-            currentPath.setAttribute("points", `${x},${y}`);
+            currentPath.setAttribute("d", `M ${x} ${y}`);
+            currentPath.setAttribute("stroke", "var(--text-main)");
             currentPath.setAttribute("transform", "translate(0,0) scale(1)");
+            svg.appendChild(currentPath);
+        } else if (mode === 'RECT' || mode === 'CIRCLE' || mode === 'TRI') {
+            isDrawing = true;
+            const type = mode === 'RECT' ? 'rect' : (mode === 'CIRCLE' ? 'circle' : 'polygon');
+            currentPath = document.createElementNS("http://www.w3.org/2000/svg", type);
+            currentPath.setAttribute("class", "sketch-path");
             currentPath.setAttribute("stroke", "var(--text-main)");
             currentPath.setAttribute("fill", "none");
-            currentPath.setAttribute("stroke-width", "3");
+            currentPath.setAttribute("transform", "translate(0,0) scale(1)");
             svg.appendChild(currentPath);
-        }
-        polyPoints.push(`${x},${y}`);
-        currentPath.setAttribute("points", polyPoints.join(' '));
-    } else if (mode === 'RECT') {
-        isDrawing = true; // Activar arrastre
-        currentPath = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        currentPath.setAttribute("class", "sketch-path");
-        currentPath.setAttribute("x", x);
-        currentPath.setAttribute("y", y);
-        currentPath.setAttribute("fill", "none");
-        currentPath.setAttribute("stroke", "var(--text-main)");
-        currentPath.setAttribute("stroke-width", "3");
-        currentPath.setAttribute("transform", "translate(0,0) scale(1)");
-        svg.appendChild(currentPath);
-    } else if (mode === 'CIRCLE') {
-        isDrawing = true;
-        currentPath = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        currentPath.setAttribute("class", "sketch-path");
-        currentPath.setAttribute("cx", x);
-        currentPath.setAttribute("cy", y);
-        currentPath.setAttribute("fill", "none");
-        currentPath.setAttribute("stroke", "var(--text-main)");
-        currentPath.setAttribute("stroke-width", "3");
-        currentPath.setAttribute("transform", "translate(0,0) scale(1)");
-        svg.appendChild(currentPath);
-    } else if (mode === 'TRI') {
-        isDrawing = true;
-        currentPath = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-        currentPath.setAttribute("class", "sketch-path");
-        currentPath.setAttribute("fill", "none");
-        currentPath.setAttribute("stroke", "var(--text-main)");
-        currentPath.setAttribute("stroke-width", "3");
-        currentPath.setAttribute("transform", "translate(0,0) scale(1)");
-        svg.appendChild(currentPath);
-    }
-     if (mode === 'SELECT') {
-    deselectAll(); // Limpiar selección previa
-    
-    selectionRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    selectionRect.setAttribute("class", "selection-box");
-    selectionRect.setAttribute("x", x);
-    selectionRect.setAttribute("y", y);
-    svg.appendChild(selectionRect);
-    
-    startX = x;
-    startY = y;
-    isDrawing = true;
-}
-};
-
-   svg.onmousemove = (e) => {
-    // 1. Verificación básica: ¿Estamos dibujando algo?
-    if (!isDrawing || (!currentPath && !selectionRect)) return;
-
-    const rect = svg.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    // 2. Lógica para el Lápiz (DRAW)
-    if (mode === 'DRAW') {
-        const d = currentPath.getAttribute("d");
-        currentPath.setAttribute("d", `${d} L ${x} ${y}`);
-    } 
-    
-    // 3. Lógica para el Rectángulo
-    else if (mode === 'RECT') {
-        let width = x - startX;
-        let height = y - startY;
-        currentPath.setAttribute("width", Math.abs(width));
-        currentPath.setAttribute("height", Math.abs(height));
-        // Si arrastras hacia la izquierda o arriba, ajustamos la posición
-        if(width < 0) currentPath.setAttribute("x", x);
-        else currentPath.setAttribute("x", startX);
-        
-        if(height < 0) currentPath.setAttribute("y", y);
-        else currentPath.setAttribute("y", startY);
-    } 
-    
-    // 4. Lógica para el Círculo
-    else if (mode === 'CIRCLE') {
-        // Calculamos la distancia entre el centro y el mouse para el radio
-        let radius = Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2));
-        currentPath.setAttribute("r", radius);
-    } 
-    
-    // 5. Lógica para el Triángulo
-    else if (mode === 'TRI') {
-        // Punto 1: Cima (startX, startY)
-        // Punto 2: Esquina derecha (x, y)
-        // Punto 3: Esquina izquierda (espejo de la derecha)
-        let points = `${startX},${startY} ${x},${y} ${startX - (x - startX)},${y}`;
-        currentPath.setAttribute("points", points);
-    }
-       if (mode === 'SELECT' && isDrawing && selectionRect) {
-    let width = x - startX;
-    let height = y - startY;
-    
-    selectionRect.setAttribute("width", Math.abs(width));
-    selectionRect.setAttribute("height", Math.abs(height));
-    selectionRect.setAttribute("x", width < 0 ? x : startX);
-    selectionRect.setAttribute("y", height < 0 ? y : startY);
-}
-};
-
-   svg.ondblclick = (e) => {
-    // 1. Si estás terminando una polilínea
-    if (mode === 'POLY' && currentPath) {
-        makeMovable(currentPath, 'path');
-        polyPoints = [];
-        currentPath = null;
-    }
-
-    // 2. Si haces doble clic en el FONDO (para limpiar selección y bordes)
-    // Usamos e.target para saber si tocaste el lienzo vacío o un objeto
-    if (e.target === svg || e.target.id === 'latex-layer') {
-        deselectAll(); // Esta es la función que borra los bordes grises y la lista
-    }
-};
-
-window.onmouseup = () => {
-    // 1. Lógica para terminar la SELECCIÓN (La red de pesca)
-    if (mode === 'SELECT' && selectionRect) {
-        const box = selectionRect.getBoundingClientRect();
-        // Buscamos dibujos SVG (.sketch-path) y cajas LaTeX (.draggable-item)
-        const items = document.querySelectorAll('.sketch-path, .draggable-item');
-        
-        items.forEach(item => {
-            const itemRect = item.getBoundingClientRect();
-            // Verificamos si hay colisión (si el objeto está dentro del cuadro gris)
-            const isInside = !(itemRect.left > box.right || 
-                               itemRect.right < box.left || 
-                               itemRect.top > box.bottom || 
-                               itemRect.bottom < box.top);
-            
-            if (isInside) {
-                item.classList.add('selected'); // Se ilumina el borde
-                selectedElements.push(item);    // Se guarda en la lista de grupo
+        } else if (mode === 'POLY') {
+            if (polyPoints.length === 0) {
+                currentPath = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+                currentPath.setAttribute("class", "sketch-path");
+                currentPath.setAttribute("stroke", "var(--text-main)");
+                currentPath.setAttribute("fill", "none");
+                currentPath.setAttribute("transform", "translate(0,0) scale(1)");
+                svg.appendChild(currentPath);
             }
-        });
-
-        selectionRect.remove(); // Borramos el cuadro gris visual
-        selectionRect = null;
-    }
-
-    // 2. Tu lógica original para DIBUJO y FIGURAS
-    if (isDrawing && currentPath) {
-        // Añadimos "mode !== 'SELECT'" para que no intente procesar el cuadro gris como dibujo
-        if (mode !== 'POLY' && mode !== 'SELECT') {
-            makeMovable(currentPath, 'path'); 
-            currentPath = null; 
+            polyPoints.push(`${x},${y}`);
+            currentPath.setAttribute("points", polyPoints.join(' '));
         }
-    }
-    
-    isDrawing = false;
-};
-    
-    // --- GESTIÓN DE LATEX ---
+    };
 
-    
+    svg.onmousemove = (e) => {
+        if (!isDrawing) return;
+        const rect = svg.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        if (mode === 'SELECT' && selectionRect) {
+            let w = x - startX, h = y - startY;
+            selectionRect.setAttribute("width", Math.abs(w));
+            selectionRect.setAttribute("height", Math.abs(h));
+            selectionRect.setAttribute("x", w < 0 ? x : startX);
+            selectionRect.setAttribute("y", h < 0 ? y : startY);
+        } else if (mode === 'DRAW' && currentPath) {
+            const d = currentPath.getAttribute("d");
+            currentPath.setAttribute("d", `${d} L ${x} ${y}`);
+        } else if (mode === 'RECT' && currentPath) {
+            let w = x - startX, h = y - startY;
+            currentPath.setAttribute("width", Math.abs(w));
+            currentPath.setAttribute("height", Math.abs(h));
+            currentPath.setAttribute("x", w < 0 ? x : startX);
+            currentPath.setAttribute("y", h < 0 ? y : startY);
+        } else if (mode === 'CIRCLE' && currentPath) {
+            let r = Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2));
+            currentPath.setAttribute("cx", startX);
+            currentPath.setAttribute("cy", startY);
+            currentPath.setAttribute("r", r);
+        }
+    };
+
+    window.onmouseup = () => {
+        if (mode === 'SELECT' && selectionRect) {
+            const box = selectionRect.getBoundingClientRect();
+            document.querySelectorAll('.sketch-path, .draggable-item').forEach(item => {
+                const r = item.getBoundingClientRect();
+                if (!(r.left > box.right || r.right < box.left || r.top > box.bottom || r.bottom < box.top)) {
+                    item.classList.add('selected');
+                    selectedElements.push(item);
+                }
+            });
+            selectionRect.remove();
+            selectionRect = null;
+        }
+        if (isDrawing && currentPath && mode !== 'POLY') {
+            makeMovable(currentPath, 'path');
+            currentPath = null;
+        }
+        isDrawing = false;
+    };
+
+    svg.ondblclick = () => {
+        if (mode === 'POLY' && currentPath) {
+            makeMovable(currentPath, 'path');
+            currentPath = null;
+            polyPoints = [];
+        }
+        deselectAll();
+    };
+
+    // --- LATEX ---
     function promptLatex() {
-        const code = prompt("Escribe tu código LaTeX:", "\\sqrt{x^2 + y^2}");
+        const code = prompt("Código LaTeX:", "\\sqrt{x}");
         if (code) addLatexItem(code);
     }
 
     function addLatexItem(tex) {
         const wrapper = document.createElement('div');
         wrapper.className = 'draggable-item';
-        wrapper.style.left = '100px';
-        wrapper.style.top = '100px';
+        wrapper.style.left = '150px'; wrapper.style.top = '150px';
         wrapper.style.transform = "scale(1)";
         wrapper.dataset.tex = tex;
 
@@ -435,167 +308,95 @@ window.onmouseup = () => {
         wrapper.appendChild(content);
         wrapper.appendChild(handle);
         latexLayer.appendChild(wrapper);
-        
         katex.render(tex, content);
 
         wrapper.ondblclick = (e) => {
             e.stopPropagation();
-            const newTex = prompt("Editar LaTeX:", wrapper.dataset.tex);
-            if (newTex) {
-                wrapper.dataset.tex = newTex;
-                katex.render(newTex, content);
-            }
+            const n = prompt("Editar:", wrapper.dataset.tex);
+            if(n) { wrapper.dataset.tex = n; katex.render(n, content); }
         };
-
-
 
         makeMovable(wrapper, 'div');
         makeManualResize(wrapper, handle);
     }
-    
 
-    // --- MOVIMIENTO, ESCALADO Y BORRADO ---
+    // --- MOVIMIENTO ---
+    function makeMovable(el, type) {
+        let dragging = false;
+        let iX, iY;
 
-// --- SISTEMA DE MOVIMIENTO, ESCALADO Y BORRADO UNIFICADO ---
-
-function makeMovable(el, type) {
-    let dragging = false;
-    let initialX, initialY;
-
-    el.addEventListener('mousedown', (e) => {
-        if (mode === 'ERASE') {
-            el.remove();
-            selectedElements = selectedElements.filter(item => item !== el);
-            return;
-        }
-
-        // Selección automática al hacer clic
-        if (mode === 'SELECT' || mode === 'DRAW') {
+        el.addEventListener('mousedown', (e) => {
+            if (mode === 'ERASE') {
+                el.remove();
+                selectedElements = selectedElements.filter(i => i !== el);
+                return;
+            }
             if (!el.classList.contains('selected')) {
                 deselectAll();
                 el.classList.add('selected');
                 selectedElements = [el];
             }
-        }
+            e.stopPropagation();
+            dragging = true;
+            iX = e.clientX; iY = e.clientY;
+        });
 
-        e.stopPropagation();
-        dragging = true;
-        initialX = e.clientX;
-        initialY = e.clientY;
-    });
-
-    window.addEventListener('mousemove', (e) => {
-        if (!dragging) return;
-        
-        let dx = e.clientX - initialX;
-        let dy = e.clientY - initialY;
-
-        if (el.classList.contains('selected')) {
-            // Mover todos los seleccionados en grupo
+        window.addEventListener('mousemove', (e) => {
+            if (!dragging) return;
+            let dx = e.clientX - iX;
+            let dy = e.clientY - iY;
             selectedElements.forEach(item => moverElementoIndividual(item, dx, dy));
-        } else {
-            // Mover solo este si no está en un grupo
-            moverElementoIndividual(el, dx, dy);
-        }
+            iX = e.clientX; iY = e.clientY;
+        });
 
-        initialX = e.clientX;
-        initialY = e.clientY;
-    });
+        window.addEventListener('mouseup', () => dragging = false);
 
-    window.addEventListener('mouseup', () => {
-        dragging = false;
-    });
-
-    // --- ESCALADO CON RUEDA ---
-    el.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        let scale;
-        
-        if (type === 'path') {
-            const t = el.getAttribute("transform") || "translate(0,0) scale(1)";
-            const match = t.match(/scale\(([^)]+)\)/);
-            scale = match ? parseFloat(match[1]) : 1;
-            scale += e.deltaY * -0.001;
-            el.setAttribute("transform", t.replace(/scale\([^)]+\)/, `scale(${Math.max(0.1, scale)})`));
-        } else {
-            const t = el.style.transform || "scale(1)";
-            const match = t.match(/scale\(([^)]+)\)/);
-            scale = match ? parseFloat(match[1]) : 1;
-            scale += e.deltaY * -0.001;
-            el.style.transform = `scale(${Math.max(0.1, scale)})`;
-        }
-    }, { passive: false });
-}
-
-// Función auxiliar para aplicar el movimiento real
-function moverElementoIndividual(item, dx, dy) {
-    if (item.tagName.toLowerCase() === 'div') {
-        // Mover LaTeX (HTML)
-        let x = parseFloat(item.style.left) || 0;
-        let y = parseFloat(item.style.top) || 0;
-        item.style.left = (x + dx) + "px";
-        item.style.top = (y + dy) + "px";
-    } else {
-        // Mover Figuras/Lápiz (SVG)
-        let transform = item.getAttribute("transform") || "translate(0,0) scale(1)";
-        
-        // Usamos Regex para capturar translate(x, y) de forma segura
-        let translateMatch = transform.match(/translate\(([^,)]+),? ?([^)]+)\)/);
-        let tx = 0, ty = 0;
-        
-        if (translateMatch) {
-            tx = parseFloat(translateMatch[1]);
-            ty = parseFloat(translateMatch[2]);
-        }
-
-        let newTx = tx + dx;
-        let newTy = ty + dy;
-
-        // Mantener la escala que ya tenía
-        let scalePart = transform.includes("scale") ? transform.match(/scale\([^)]+\)/)[0] : "scale(1)";
-        
-        item.setAttribute("transform", `translate(${newTx},${newTy}) ${scalePart}`);
+        el.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            let s = 1;
+            const t = type === 'path' ? el.getAttribute("transform") : el.style.transform;
+            const m = t.match(/scale\(([^)]+)\)/);
+            if(m) s = parseFloat(m[1]);
+            s += e.deltaY * -0.001;
+            s = Math.max(0.1, s);
+            if(type === 'path') el.setAttribute("transform", t.replace(/scale\([^)]+\)/, `scale(${s})`));
+            else el.style.transform = `scale(${s})`;
+        }, { passive: false });
     }
-}
 
-   function makeManualResize(el, handle) {
-    let resizing = false;
+    function moverElementoIndividual(item, dx, dy) {
+        if (item.tagName.toLowerCase() === 'div') {
+            item.style.left = (parseFloat(item.style.left) + dx) + "px";
+            item.style.top = (parseFloat(item.style.top) + dy) + "px";
+        } else {
+            let t = item.getAttribute("transform") || "translate(0,0) scale(1)";
+            let translateMatch = t.match(/translate\(([^,)]+),? ?([^)]+)\)/);
+            let tx = parseFloat(translateMatch[1]) + dx;
+            let ty = parseFloat(translateMatch[2]) + dy;
+            let scalePart = t.match(/scale\([^)]+\)/)[0];
+            item.setAttribute("transform", `translate(${tx},${ty}) ${scalePart}`);
+        }
+    }
 
-    handle.onmousedown = (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        resizing = true;
-    };
+    function makeManualResize(el, handle) {
+        let resizing = false;
+        handle.onmousedown = (e) => { e.stopPropagation(); resizing = true; };
+        document.addEventListener('mousemove', (e) => {
+            if (!resizing) return;
+            let s = parseFloat(el.style.transform.match(/scale\(([^)]+)\)/)[1]);
+            s += (e.movementX + e.movementY) * 0.01;
+            el.style.transform = `scale(${Math.max(0.2, s)})`;
+        });
+        document.addEventListener('mouseup', () => resizing = false);
+    }
 
-    document.addEventListener('mousemove', (e) => {
-        if (!resizing) return;
-        
-        // Obtenemos la escala actual del elemento
-        const t = el.style.transform || "scale(1)";
-        const match = t.match(/scale\(([^)]+)\)/);
-        let scale = match ? parseFloat(match[1]) : 1;
+    function deselectAll() {
+        document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+        selectedElements = [];
+    }
 
-        // Ajustamos la escala según el movimiento del mouse (sensibilidad 0.01)
-        scale += 0.01 * (e.movementX + e.movementY);
-        
-        // Aplicamos la nueva escala con un mínimo de 0.2
-        el.style.transform = `scale(${Math.max(0.2, scale)})`;
-    });
+    function clearBoard() { if(confirm("¿Borrar todo?")) { svg.innerHTML = ''; latexLayer.innerHTML = ''; } }
 
-    document.addEventListener('mouseup', () => {
-        resizing = false;
-    });
-}
-
-    function clearBoard() { 
-    if(confirm("¿Limpiar todo?")) { 
-        svg.innerHTML = ''; 
-        latexLayer.innerHTML = ''; 
-        selectedElements = []; // Añade esta línea para resetear la memoria
-    } 
-}
-
-    // --- FUNCIÓN DE EXPORTACIÓN ---
     async function exportPNG() {
         const canvas = await html2canvas(document.getElementById('board-container'));
         const link = document.createElement('a');
@@ -603,30 +404,6 @@ function moverElementoIndividual(item, dx, dy) {
         link.href = canvas.toDataURL();
         link.click();
     }
-
-    // --- FUNCIÓN DE LIMPIEZA ---
-    function deselectAll() {
-        // 1. Quita el borde visual de todos los elementos
-        document.querySelectorAll('.selected').forEach(el => {
-            el.classList.remove('selected');
-        });
-        // 2. Vacía la lista en la memoria del programa
-        selectedElements = [];
-    }
-
-    // --- ESCUCHADORES GLOBALES (FUERA DE LAS FUNCIONES) ---
-    
-    // Detectan el doble clic en el lienzo SVG
-    svg.addEventListener('dblclick', (e) => {
-        if (e.target === svg) deselectAll();
-    });
-
-    // Detectan el doble clic en la capa de LaTeX
-    latexLayer.addEventListener('dblclick', (e) => {
-        if (e.target === latexLayer) deselectAll();
-    });
-    
-    
 </script>
 </body>
 </html>
