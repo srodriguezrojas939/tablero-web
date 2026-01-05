@@ -524,17 +524,26 @@ function snap(val) {
         if(undoStack.length > 30) undoStack.shift();
     }
 
-    function applyState(state) {
+function applyState(state) {
         svg.innerHTML = state.svg; 
         latexLayer.innerHTML = state.latex;
         document.querySelectorAll('.sketch-path').forEach(el => makeMovable(el, 'path'));
+        
         document.querySelectorAll('.draggable-item').forEach(el => {
             makeMovable(el, 'div'); 
             makeManualResize(el, el.querySelector('.resize-handle'));
+            
+            // CORRECCIÓN AQUÍ: Solo re-asignar doble clic si es LaTeX
             el.ondblclick = (e) => {
-                e.stopPropagation(); editingItem = el;
-                latexInput.value = el.dataset.tex;
-                editorPanel.style.display = 'flex'; latexInput.focus();
+                e.stopPropagation();
+                if (el.dataset.tex) { // Si tiene datos de LaTeX, abrimos editor
+                    editingItem = el;
+                    latexInput.value = el.dataset.tex;
+                    editorPanel.style.display = 'flex'; 
+                    latexInput.focus();
+                } else {
+                    console.log("Imagen detectada en Undo/Redo, sin edición de texto.");
+                }
             };
         });
     }
