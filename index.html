@@ -170,7 +170,19 @@
     z-index: 2;
 }
 
-        
+        /* SVG normalmente debajo */
+/* SVG por defecto NO captura mouse */
+#svg-canvas {
+    pointer-events: none;
+    z-index: 3;
+}
+
+/* Cuando dibujamos, el SVG sí captura mouse */
+.draw-mode #svg-canvas {
+    pointer-events: auto;
+}
+
+
     </style>
 </head>
 <body>
@@ -327,19 +339,16 @@ function setMode(m, btn) {
 
     const board = document.getElementById('board-container');
 
-    // 4️⃣ CONTROL ÚNICO DE INTERACCIÓN (CLAVE)
-    const DRAW_MODES = ['DRAW', 'POLY', 'RECT', 'CIRCLE'];
+   // 4️⃣ CONTROL DE INTERACCIÓN POR MODO
+const DRAW_MODES = ['DRAW', 'POLY', 'RECT', 'CIRCLE'];
 
-    if (DRAW_MODES.includes(m)) {
-        board.classList.add('draw-mode');
-    } else {
-        board.classList.remove('draw-mode');
-    }
+board.classList.remove('draw-mode', 'select-mode');
 
-    // 5️⃣ Seguridad extra: nunca bloquear interacción en SELECT
-    if (m === 'SELECT') {
-        board.classList.remove('draw-mode');
-    }
+if (DRAW_MODES.includes(m)) {
+    board.classList.add('draw-mode');
+} else if (m === 'SELECT') {
+    board.classList.add('select-mode');
+}
 
     // 6️⃣ Cursor consistente (previene confusión UX)
     board.style.cursor =
