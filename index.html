@@ -158,8 +158,8 @@
     z-index: 2;
 }
 
-        /* ============================================================
-   INTERACCIÓN DEL SVG (DIBUJO Y SELECCIÓN)
+  /* ============================================================
+   0. CAPAS E INTERACCIÓN DEL SVG
    ============================================================ */
 
 #svg-canvas {
@@ -178,6 +178,13 @@
 .select-mode #svg-canvas {
     pointer-events: auto;
 }
+
+/* Cuando se arrastra un item, el SVG NO intercepta */
+.select-mode.dragging-item #svg-canvas {
+    pointer-events: none;
+}
+
+        
 
 
     </style>
@@ -243,6 +250,7 @@
        1. VARIABLES GLOBALES Y ESTADO
        ============================================================ */
     let mode = 'DRAW', isDrawing = false, startX, startY;
+    let isDraggingItem = false;
     let currentPath = null, polyPoints = [], selectedElements = [], selectionRect = null;
     let undoStack = [], redoStack = [], editingItem = null;
     let clipboard = []; // Memoria para Ctrl+C y Ctrl+V
@@ -304,57 +312,115 @@ const gridStep = 20; // Tamaño de la cuadrícula
         });
     }
 
-    /* ============================================================
-       3. GESTIÓN DE MODOS Y HERRAMIENTAS
-       ============================================================ */
-function setMode(m, btn) {
-    // 1️⃣ Normalizamos el modo
-    const VALID_MODES = ['DRAW', 'POLY', 'RECT', 'CIRCLE', 'SELECT', 'ERASE'];
-    if (!VALID_MODES.includes(m)) {
-        console.warn(`Modo inválido: ${m}`);
+/* ============================================================
+   3. GESTIÓN DE MODOS Y HERRAMIENTAS
+   ============================================================ */
+
+/**
+ * Cambia el modo activo del tablero de forma segura.
+ * Esta función SOLO controla:
+ * - estado global del modo
+ * - clases del board (interacción)
+ * - estado visual de botones
+ *
+ * ❌ No maneja mouse
+ * ❌ No maneja SVG
+ * ❌ No maneja drag de items
+ */
+function setMode(m, btn = null) {
+
+    /* ========================================================
+       3.1. VALIDACIÓN DEL MODO (EXTENSIBLE)
+       ======================================================== */
+    const MODES = {
+        DRAW: 'DRAW',
+        POLY: 'POLY',
+        RECT: 'RECT',
+        CIRCLE: 'CIRCLE',
+        SELECT: 'SELECT',
+        ERASE: 'ERASE'
+        // FUTURO:
+        // LASSO: 'LASSO',
+        // PAN: 'PAN',
+        // TEXT: 'TEXT'
+    };
+
+    if (!Object.values(MODES).includes(m)) {
+        console.warn(`[setMode] Modo inválido: ${m}`);
         return;
     }
 
+    /* ========================================================
+       3.2. ESTADO GLOBAL
+       ======================================================== */
     mode = m;
 
-    // 2️⃣ Limpieza de estados temporales
-    polyPoints = [];
+    /* ========================================================
+       3.3. LIMPIEZA DE ESTADOS TEMPORALES
+       ======================================================== */
+    polyPoints.length = 0;
     isDrawing = false;
 
-    if (currentPath && m !== 'POLY') {
+    if (currentPath && m !== MODES.POLY) {
         currentPath.remove();
         currentPath = null;
     }
 
-    // 3️⃣ Estado visual de botones (a prueba de errores)
-    document.querySelectorAll('.tool-btn.active')
+    /* ========================================================
+       3.4. ESTADO VISUAL DE BOTONES (A PRUEBA DE ERRORES)
+       ======================================================== */
+    document
+        .querySelectorAll('.tool-btn.active')
         .forEach(b => b.classList.remove('active'));
 
-    if (btn && btn.classList.contains('tool-btn')) {
+    if (btn?.classList?.contains('tool-btn')) {
         btn.classList.add('active');
     }
 
+    /* ========================================================
+    3.5. CLASES DE INTERACCIÓN DEL TABLERO
+       ======================================================== */
     const board = document.getElementById('board-container');
 
-   // 4️⃣ CONTROL DE INTERACCIÓN POR MODO
-const DRAW_MODES = ['DRAW', 'POLY', 'RECT', 'CIRCLE'];
+    board.classList.remove(
+        'draw-mode',
+        'select-mode'
+        // futuro:
+        // 'lasso-mode',
+        // 'pan-mode'
+    );
 
-board.classList.remove('draw-mode', 'select-mode');
+    const DRAW_MODES = [
+        MODES.DRAW,
+        MODES.POLY,
+        MODES.RECT,
+        MODES.CIRCLE
+    ];
 
-if (DRAW_MODES.includes(m)) {
-    board.classList.add('draw-mode');
-} else if (m === 'SELECT') {
-    board.classList.add('select-mode');
-}
+    if (DRAW_MODES.includes(m)) {
+        board.classList.add('draw-mode');
+    }
 
-    // 6️⃣ Cursor consistente (previene confusión UX)
+    if (m === MODES.SELECT) {
+        board.classList.add('select-mode');
+    }
+
+    /* ========================================================
+       3.6. CURSOR CONSISTENTE (UX)
+       ======================================================== */
     board.style.cursor =
-        m === 'DRAW' || m === 'POLY' || m === 'RECT' || m === 'CIRCLE'
+        DRAW_MODES.includes(m)
             ? 'crosshair'
-            : m === 'SELECT'
+            : m === MODES.SELECT
                 ? 'default'
                 : 'default';
+
+    /* ========================================================
+       3.7. HOOK FUTURO (NO TOCAR POR AHORA)
+       ======================================================== */
+    // onModeChanged?.(m);
 }
+
 
 
     /* ============================================================
@@ -364,7 +430,7 @@ if (DRAW_MODES.includes(m)) {
         const x = snap(e.offsetX), y = snap(e.offsetY);
         startX = x; startY = y;
 
-        if (mode === 'SELECT') { 
+      if (mode === 'SELECT' && !isDraggingItem) {
             deselectAll(); 
             isDrawing = true; 
             selectionRect = createSVGElement('rect', {class: 'selection-box'}); 
@@ -400,6 +466,7 @@ if (DRAW_MODES.includes(m)) {
     };
 
     svg.onmousemove = (e) => {
+        if (isDraggingItem) return;
         if (!isDrawing && mode !== 'POLY') return;
         const x = snap(e.offsetX), y = snap(e.offsetY);
 
@@ -639,32 +706,80 @@ function addImageItem(src) {
         document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
         selectedElements = [];
     }
+function makeMovable(el, type) {
+    let dragging = false;
+    let iX = 0, iY = 0;
+    const board = document.getElementById('board-container');
 
-    function makeMovable(el, type) {
-        let dragging = false, iX, iY;
-        el.onmousedown = (e) => {
-            if (mode === 'ERASE') { el.remove(); saveState(); return; }
-            if (!el.classList.contains('selected')) { deselectAll(); el.classList.add('selected'); selectedElements = [el]; }
-            e.stopPropagation(); dragging = true; iX = e.clientX; iY = e.clientY;
-        };
-        window.addEventListener('mousemove', (e) => {
-            if (!dragging) return;
-            let dx = snap(e.clientX - iX), dy = snap(e.clientY - iY);
-            selectedElements.forEach(item => {
-                if (item.tagName.toLowerCase() === 'div') {
-                    item.style.left = (parseFloat(item.style.left) + dx) + "px";
-                    item.style.top = (parseFloat(item.style.top) + dy) + "px";
-                } else {
-                    let t = item.getAttribute("transform") || "translate(0,0) scale(1)";
-                    let m = t.match(/translate\(([^,)]+),? ?([^)]+)\)/);
-                    let tx = parseFloat(m[1]) + dx, ty = parseFloat(m[2]) + dy;
-                    item.setAttribute("transform", t.replace(/translate\([^)]+\)/, `translate(${tx},${ty})`));
-                }
-            });
-            iX = e.clientX; iY = e.clientY;
+    el.onmousedown = (e) => {
+
+        // Borrado
+        if (mode === 'ERASE') {
+            el.remove();
+            saveState();
+            return;
+        }
+
+        // Selección segura
+        if (!el.classList.contains('selected')) {
+            deselectAll();
+            el.classList.add('selected');
+            selectedElements = [el];
+        }
+
+        e.stopPropagation();
+
+        // Activar drag
+        dragging = true;
+        isDraggingItem = true;
+        board.classList.add('dragging-item');
+
+        iX = e.clientX;
+        iY = e.clientY;
+    };
+
+    window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+
+        const dx = snap(e.clientX - iX);
+        const dy = snap(e.clientY - iY);
+
+        selectedElements.forEach(item => {
+
+            // HTML (imágenes, LaTeX)
+            if (item.tagName.toLowerCase() === 'div') {
+                item.style.left = (parseFloat(item.style.left) + dx) + 'px';
+                item.style.top  = (parseFloat(item.style.top)  + dy) + 'px';
+
+            // SVG
+            } else {
+                const t = item.getAttribute('transform') || 'translate(0,0) scale(1)';
+                const m = t.match(/translate\(([^,)]+),\s*([^)]+)\)/);
+
+                const tx = (m ? parseFloat(m[1]) : 0) + dx;
+                const ty = (m ? parseFloat(m[2]) : 0) + dy;
+
+                item.setAttribute(
+                    'transform',
+                    t.replace(/translate\([^)]+\)/, `translate(${tx},${ty})`)
+                );
+            }
         });
-        window.addEventListener('mouseup', () => { if(dragging) { dragging = false; saveState(); } });
-    }
+
+        iX = e.clientX;
+        iY = e.clientY;
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (!dragging) return;
+
+        dragging = false;
+        isDraggingItem = false;
+        board.classList.remove('dragging-item');
+
+        saveState();
+    });
+}
 
     function makeManualResize(el, handle) {
         let resizing = false;
