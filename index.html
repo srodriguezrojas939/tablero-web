@@ -312,7 +312,8 @@ const gridStep = 20; // Tamaño de la cuadrícula
     const board = document.getElementById('board-container');
 
     // SOLO controlamos interacción, no capas visuales
-    if (['DRAW', 'POLY', 'RECT', 'CIRCLE'].includes(m)) {
+if (['DRAW', 'POLY', 'RECT', 'CIRCLE', 'SELECT'].includes(m)) {
+
         board.classList.add('draw-mode');
     } else {
         board.classList.remove('draw-mode');
