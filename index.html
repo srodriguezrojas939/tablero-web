@@ -223,7 +223,9 @@
     <button class="tool-btn active" onclick="setMode('DRAW', this)">🖉 Lápiz</button>
     <button class="tool-btn" onclick="setMode('POLY', this)">𖡬 Polilínea</button>
     <button class="tool-btn" onclick="setMode('ERASE', this)">✄</button>
-    <button class="tool-btn" onclick="setMode('SELECT', this)">⬚</button>
+    <button class="tool-btn" onclick="setMode('SELECT', this)">⬚ </button>
+    <button class="tool-btn" onclick="setMode('LASSO', this)">⬚ Lasso </button>
+
     <div class="divider"></div>
     <button class="tool-btn" onclick="openEditorForNew()"> ∑ LaTeX</button>
     <button class="tool-btn" onclick="setMode('RECT', this)">▢</button>
@@ -268,6 +270,10 @@ const gridStep = 20; // Tamaño de la cuadrícula
     document.getElementById('stroke-color').onchange = (e) => currentStrokeColor = e.target.value;
     document.getElementById('stroke-width').oninput = (e) => currentStrokeWidth = e.target.value;
 
+    let lassoPath = null;
+let lassoPoints = [];
+
+    
     /* ============================================================
        2. LIBRERÍA DE SÍMBOLOS (KATEX)
        ============================================================ */
@@ -312,7 +318,7 @@ const gridStep = 20; // Tamaño de la cuadrícula
        ============================================================ */
 function setMode(m, btn) {
     // 1️⃣ Normalizamos el modo
-    const VALID_MODES = ['DRAW', 'POLY', 'RECT', 'CIRCLE', 'SELECT', 'ERASE'];
+    const VALID_MODES = ['DRAW', 'POLY', 'RECT', 'CIRCLE', 'SELECT', 'ERASE', 'LASSO'];
     if (!VALID_MODES.includes(m)) {
         console.warn(`Modo inválido: ${m}`);
         return;
@@ -400,9 +406,33 @@ if (DRAW_MODES.includes(m)) {
             currentPath.setAttribute('transform', 'translate(0,0) scale(1)');
             svg.appendChild(currentPath);
         }
+
+        if (mode === 'LASSO') {
+        lassoPoints = [{ x: e.offsetX, y: e.offsetY }];
+        lassoPath = createSVGElement('path', {
+            d: `M ${e.offsetX} ${e.offsetY}`,
+            fill: 'none',
+            stroke: '#3b82f6',
+            'stroke-width': 2,
+            'stroke-dasharray': '6 4',
+            'pointer-events': 'none'
+        });
+        svg.appendChild(lassoPath);
+        isDrawing = true;
+        return;
+    }
     };
 
     svg.onmousemove = (e) => {
+
+        if (mode === 'LASSO' && isDrawing && lassoPath) {
+        lassoPoints.push({ x: e.offsetX, y: e.offsetY });
+        const d = lassoPoints
+            .map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`))
+            .join(' ');
+        lassoPath.setAttribute('d', d);
+        return;
+    }
         if (!isDrawing && mode !== 'POLY') return;
         const x = snap(e.offsetX), y = snap(e.offsetY);
 
@@ -425,6 +455,16 @@ if (DRAW_MODES.includes(m)) {
     };
 
     window.onmouseup = () => {
+
+         if (mode === 'LASSO' && lassoPath) {
+        applyLassoSelection();
+        lassoPath.remove();
+        lassoPath = null;
+        lassoPoints = [];
+        isDrawing = false;
+        return;
+    }
+        
         if (selectionRect) {
             const box = selectionRect.getBoundingClientRect();
             document.querySelectorAll('.sketch-path, .draggable-item').forEach(el => {
@@ -722,6 +762,52 @@ function changeLayer(dir) {
     
     saveState(); // Guardamos el cambio en el historial
 }
+
+    function applyLassoSelection() {
+    deselectAll();
+
+    const elements = document.querySelectorAll('.draggable-item, svg > *');
+
+    elements.forEach(el => {
+        const box = el.getBoundingClientRect();
+
+        for (let i = 0; i < lassoPoints.length - 1; i++) {
+            const p1 = lassoPoints[i];
+            const p2 = lassoPoints[i + 1];
+
+            if (
+                lineIntersectsRect(
+                    p1.x, p1.y,
+                    p2.x, p2.y,
+                    box.left, box.top,
+                    box.right, box.bottom
+                )
+            ) {
+                selectElement(el);
+                break;
+            }
+        }
+    });
+}
+function lineIntersectsRect(x1, y1, x2, y2, left, top, right, bottom) {
+    return (
+        lineIntersectsLine(x1,y1,x2,y2, left,top, right,top) ||
+        lineIntersectsLine(x1,y1,x2,y2, right,top, right,bottom) ||
+        lineIntersectsLine(x1,y1,x2,y2, right,bottom, left,bottom) ||
+        lineIntersectsLine(x1,y1,x2,y2, left,bottom, left,top)
+    );
+}
+
+function lineIntersectsLine(x1,y1,x2,y2, x3,y3,x4,y4) {
+    const d = (x1-x2)*(y3-y4)-(y1-y2)*(x3-x4);
+    if (d === 0) return false;
+
+    const t = ((x1-x3)*(y3-y4)-(y1-y3)*(x3-x4)) / d;
+    const u = ((x1-x3)*(y1-y2)-(y1-y3)*(x1-x2)) / d;
+
+    return t >= 0 && t <= 1 && u >= 0 && u <= 1;
+}
+
 
     /* ============================================================
        8. HISTORIAL (UNDO/REDO) Y EXPORTACIÓN
