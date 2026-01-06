@@ -141,7 +141,21 @@
     transform: none !important; 
     left: 30%; /* Posición inicial manual */
 }
-        
+        /* Quitamos jerarquías fijas para que los botones manden */
+#latex-layer, #svg-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Eliminamos cualquier z-index fijo aquí */
+    pointer-events: none;
+}
+
+/* Solo los elementos dentro deben reaccionar al mouse */
+.draggable-item, .sketch-path {
+    pointer-events: auto !important;
+}
     </style>
 </head>
 <body>
@@ -610,28 +624,29 @@ function snap(val) {
     return snapEnabled ? Math.round(val / gridStep) * gridStep : val;
 }
 
-    // --- GESTIÓN DE CAPAS (Z-INDEX) ---
-    
+  // --- GESTIÓN DE CAPAS DINÁMICA ---
 function changeLayer(dir) {
-    if (selectedElements.length === 0) {
-        console.log("No hay nada seleccionado para mover");
-        return;
-    }
+    if (selectedElements.length === 0) return;
+    
+    const board = document.getElementById('board-container');
     
     selectedElements.forEach(el => {
-        const parent = el.parentNode;
-        if (!parent) return;
+        const parent = el.parentNode; // Puede ser el SVG o el Latex-Layer
 
         if (dir === 'front') {
-            // Lo mueve al final del contenedor (se dibuja de último, por tanto, queda arriba)
-            parent.appendChild(el);
-        } else if (dir === 'back') {
-            // Lo mueve al principio del contenedor (se dibuja primero, por tanto, queda al fondo)
+            // 1. Lo mandamos al frente de su propio contenedor
+            parent.appendChild(el); 
+            // 2. Mandamos el contenedor al frente del tablero (encima de todo)
+            board.appendChild(parent);
+        } else {
+            // 1. Lo mandamos al fondo de su propio contenedor
             parent.insertBefore(el, parent.firstChild);
+            // 2. Mandamos el contenedor al fondo del tablero (detrás de todo)
+            board.insertBefore(parent, board.firstChild);
         }
     });
     
-    saveState(); // Guardamos el cambio en el historial
+    saveState();
 }
 
     /* ============================================================
