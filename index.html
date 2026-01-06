@@ -298,25 +298,58 @@ const gridStep = 20; // Tamaño de la cuadrícula
     /* ============================================================
        3. GESTIÓN DE MODOS Y HERRAMIENTAS
        ============================================================ */
- function setMode(m, btn) {
-    mode = m;
-    polyPoints = [];
-    if (currentPath && m !== 'POLY') currentPath.remove();
+function setMode(m, btn) {
+    // 1️⃣ Normalizamos el modo
+    const VALID_MODES = ['DRAW', 'POLY', 'RECT', 'CIRCLE', 'SELECT', 'ERASE'];
+    if (!VALID_MODES.includes(m)) {
+        console.warn(`Modo inválido: ${m}`);
+        return;
+    }
 
-    document.querySelectorAll('.tool-btn')
+    mode = m;
+
+    // 2️⃣ Limpieza de estados temporales
+    polyPoints = [];
+    isDrawing = false;
+
+    if (currentPath && m !== 'POLY') {
+        currentPath.remove();
+        currentPath = null;
+    }
+
+    // 3️⃣ Estado visual de botones (a prueba de errores)
+    document.querySelectorAll('.tool-btn.active')
         .forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
+
+    if (btn && btn.classList.contains('tool-btn')) {
+        btn.classList.add('active');
+    }
 
     const board = document.getElementById('board-container');
 
-    // SOLO controlamos interacción, no capas visuales
-if (['DRAW', 'POLY', 'RECT', 'CIRCLE', 'SELECT'].includes(m)) {
+    // 4️⃣ CONTROL ÚNICO DE INTERACCIÓN (CLAVE)
+    const DRAW_MODES = ['DRAW', 'POLY', 'RECT', 'CIRCLE'];
 
+    if (DRAW_MODES.includes(m)) {
         board.classList.add('draw-mode');
     } else {
         board.classList.remove('draw-mode');
     }
+
+    // 5️⃣ Seguridad extra: nunca bloquear interacción en SELECT
+    if (m === 'SELECT') {
+        board.classList.remove('draw-mode');
+    }
+
+    // 6️⃣ Cursor consistente (previene confusión UX)
+    board.style.cursor =
+        m === 'DRAW' || m === 'POLY' || m === 'RECT' || m === 'CIRCLE'
+            ? 'crosshair'
+            : m === 'SELECT'
+                ? 'default'
+                : 'default';
 }
+
 
     /* ============================================================
        4. LÓGICA DE DIBUJO Y MOUSE
