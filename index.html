@@ -122,6 +122,25 @@
             transition: 0.2s;
         }
         .layer-btn:hover { background: var(--ui-gray-med); }
+
+
+        /* Modifica estas clases en tu bloque <style> */
+
+.toolbar, .symbol-library, .style-bar {
+    cursor: grab; /* Indica que se puede agarrar */
+    user-select: none; /* Evita seleccionar texto al arrastrar */
+}
+
+.toolbar:active, .symbol-library:active, .style-bar:active {
+    cursor: grabbing; /* Cambia el cursor al mover */
+}
+
+/* Ajuste específico para que la toolbar se deje mover sin saltos */
+.toolbar {
+    /* Quitamos el transform negativo que solía centrarla */
+    transform: none !important; 
+    left: 30%; /* Posición inicial manual */
+}
         
     </style>
 </head>
@@ -663,8 +682,59 @@ function applyState(state) {
         link.click(); 
     }
 
+    /* ============================================================
+   NUEVA FUNCIÓN: HACER PANELES UI DRAGGABLES
+   ============================================================ */
+function makePanelDraggable(el) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+
+    el.onmousedown = dragMouseDown;
+
+    function dragMouseDown(e) {
+        // Si haces clic en un botón o input, no arrastramos el panel
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.classList.contains('pill')) {
+            return;
+        }
+
+        e.preventDefault();
+        // Posición inicial del mouse
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e.preventDefault();
+        // Calcular nueva posición
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+
+        // Aplicar nueva posición al elemento
+        // Limpiamos bottom/right para que no hereden estilos fijos de CSS
+        el.style.bottom = "auto";
+        el.style.right = "auto";
+        el.style.top = (el.offsetTop - pos2) + "px";
+        el.style.left = (el.offsetLeft - pos1) + "px";
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+}
+
     // INICIALIZACIÓN
     initLibrary();
+    // Activar arrastre para los tres paneles
+makePanelDraggable(document.querySelector('.toolbar'));
+makePanelDraggable(document.querySelector('.symbol-library'));
+makePanelDraggable(document.querySelector('.style-bar'));
+
+    
 </script>
 </body>
 </html>
