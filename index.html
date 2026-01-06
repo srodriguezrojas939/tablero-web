@@ -154,8 +154,15 @@
 
 
         /* SVG normalmente debajo */
+/* SVG por defecto NO captura mouse */
 #svg-canvas {
+    pointer-events: none;
     z-index: 3;
+}
+
+/* Cuando dibujamos, el SVG sí captura mouse */
+.draw-mode #svg-canvas {
+    pointer-events: auto;
 }
 
 /* LaTeX e imágenes encima */
