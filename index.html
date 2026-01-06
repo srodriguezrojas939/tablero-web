@@ -202,8 +202,6 @@
     <div style="height:1px; background: var(--ui-gray-light); margin: 5px 0;"></div>
     
     <span style="font-size: 10px; color: var(--ui-gray-dark); font-weight: bold;">CAPAS</span>
-    <button class="layer-btn" onclick="changeLayer('front')" title="Traer al frente">⤒</button>
-    <button class="layer-btn" onclick="changeLayer('back')" title="Enviar al fondo">⤓</button>
 </div>
 
 <div class="toolbar">
@@ -791,6 +789,12 @@ function makePanelDraggable(el) {
 makePanelDraggable(document.querySelector('.toolbar'));
 makePanelDraggable(document.querySelector('.symbol-library'));
 makePanelDraggable(document.querySelector('.style-bar'));
+    const styleBar = document.querySelector('.style-bar');
+
+styleBar.style.left = '20px';
+styleBar.style.bottom = '20px';
+styleBar.style.top = 'auto';
+
 setMode('DRAW', document.querySelector('.tool-btn.active'));
 
     
