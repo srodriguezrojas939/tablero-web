@@ -434,6 +434,14 @@ const gridStep = 20; // Tamaño de la cuadrícula
         originalMouseMove(e); // Ejecuta tu dibujo normal si no estamos paneando
     };
 
+    // Doble click en el fondo → deseleccionar todo
+document.getElementById('board-container').addEventListener('dblclick', (e) => {
+    // Si hicimos doble click sobre un elemento, no hacemos nada
+    if (e.target.closest('.draggable-item') || e.target.closest('.sketch-path')) return;
+    
+    deselectAll();
+});
+
     /* ============================================================
        5. GESTIÓN DE TECLADO (BORRAR, COPIAR, PEGAR, UNDO)
        ============================================================ */
