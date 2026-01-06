@@ -587,13 +587,13 @@ svg.onmousemove = (e) => {
 };
 
 
-    // Doble click en el fondo → deseleccionar todo
-document.getElementById('board-container').addEventListener('dblclick', (e) => {
-    // Si hicimos doble click sobre un elemento, no hacemos nada
-    if (e.target.closest('.draggable-item') || e.target.closest('.sketch-path')) return;
-    
-    deselectAll();
+   document.getElementById('board-container').addEventListener('dblclick', (e) => {
+    // Solo si se hace doble click en el fondo (no en divs ni SVGs)
+    if (e.target.id === 'board-container') {
+        deselectAll();
+    }
 });
+
 
     /* ============================================================
        5. GESTIÓN DE TECLADO (BORRAR, COPIAR, PEGAR, UNDO)
@@ -871,8 +871,20 @@ function makeMovable(el, type) {
             const dy = snap(ev.clientY - startY);
 
             if (el.tagName.toLowerCase() === 'div') {
-                el.style.width = Math.max(20, startW + dx) + 'px';
-                el.style.height = Math.max(20, startH + dy) + 'px';
+                if (el.dataset.tex) {
+                    // Para LaTeX: escalamos el font-size
+                    let scaleW = Math.max(20, startW + dx) / startW;
+                    let scaleH = Math.max(20, startH + dy) / startH;
+                    let scale = Math.min(scaleW, scaleH); // usar el menor para no deformar
+                    const texDiv = el.querySelector('div');
+                    if (texDiv) {
+                        texDiv.style.fontSize = `${16 * scale}px`; // 16px es tamaño base
+                    }
+                } else {
+                    // Para imágenes u otros divs: cambiamos width/height
+                    el.style.width = Math.max(20, startW + dx) + 'px';
+                    el.style.height = Math.max(20, startH + dy) + 'px';
+                }
             }
             else if (el.tagName === 'rect') {
                 el.setAttribute('width', Math.max(10, startW + dx));
@@ -891,6 +903,7 @@ function makeMovable(el, type) {
     };
 }
 
+      
     function toggleGrid() {
     snapEnabled = !snapEnabled;
     const btn = document.getElementById('grid-btn');
