@@ -150,6 +150,21 @@
     pointer-events: none;
 }
 
+        /* SVG normalmente debajo */
+#svg-canvas {
+    z-index: 1;
+}
+
+/* LaTeX e imágenes encima */
+#latex-layer {
+    z-index: 2;
+}
+
+/* CUANDO DIBUJAMOS → el SVG pasa arriba */
+.draw-mode #svg-canvas {
+    z-index: 3;
+}
+
         
     </style>
 </head>
@@ -280,9 +295,9 @@ const gridStep = 20; // Tamaño de la cuadrícula
     /* ============================================================
        3. GESTIÓN DE MODOS Y HERRAMIENTAS
        ============================================================ */
-    function setMode(m, btn) {
-    mode = m; 
-    polyPoints = []; 
+   function setMode(m, btn) {
+    mode = m;
+    polyPoints = [];
     if (currentPath && m !== 'POLY') currentPath.remove();
 
     document.querySelectorAll('.tool-btn')
@@ -291,13 +306,14 @@ const gridStep = 20; // Tamaño de la cuadrícula
 
     const board = document.getElementById('board-container');
 
-    // MODOS DE DIBUJO → dejar pasar el mouse
+    // MODOS DE DIBUJO → SVG ARRIBA
     if (['DRAW', 'POLY', 'RECT', 'CIRCLE'].includes(m)) {
         board.classList.add('draw-mode');
     } else {
         board.classList.remove('draw-mode');
     }
 }
+
 
     /* ============================================================
        4. LÓGICA DE DIBUJO Y MOUSE
