@@ -153,32 +153,29 @@
 }
 
 
-        /* SVG normalmente debajo */
-/* SVG por defecto NO captura mouse */
-#svg-canvas {
-    pointer-events: none;
-    z-index: 3;
-}
-
-/* Cuando dibujamos, el SVG sí captura mouse */
-.draw-mode #svg-canvas {
-    pointer-events: auto;
-}
-
 /* LaTeX e imágenes encima */
 #latex-layer {
     z-index: 2;
 }
 
-        /* SVG normalmente debajo */
-/* SVG por defecto NO captura mouse */
+        /* ============================================================
+   INTERACCIÓN DEL SVG (DIBUJO Y SELECCIÓN)
+   ============================================================ */
+
 #svg-canvas {
-    pointer-events: none;
+    position: absolute;
+    inset: 0;
     z-index: 3;
+    pointer-events: none;
 }
 
-/* Cuando dibujamos, el SVG sí captura mouse */
+/* Modos de dibujo */
 .draw-mode #svg-canvas {
+    pointer-events: auto;
+}
+
+/* Modo selección por recuadro */
+.select-mode #svg-canvas {
     pointer-events: auto;
 }
 
