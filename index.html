@@ -611,19 +611,28 @@ function snap(val) {
 }
 
     // --- GESTIÓN DE CAPAS (Z-INDEX) ---
-    function changeLayer(dir) {
-        if (selectedElements.length === 0) return;
-        
-        selectedElements.forEach(el => {
-            const parent = el.parentNode;
-            if (dir === 'front') {
-                parent.appendChild(el); // Lo mueve al final del HTML (se ve arriba)
-            } else {
-                parent.insertBefore(el, parent.firstChild); // Lo mueve al inicio (se ve abajo)
-            }
-        });
-        saveState();
+    
+function changeLayer(dir) {
+    if (selectedElements.length === 0) {
+        console.log("No hay nada seleccionado para mover");
+        return;
     }
+    
+    selectedElements.forEach(el => {
+        const parent = el.parentNode;
+        if (!parent) return;
+
+        if (dir === 'front') {
+            // Lo mueve al final del contenedor (se dibuja de último, por tanto, queda arriba)
+            parent.appendChild(el);
+        } else if (dir === 'back') {
+            // Lo mueve al principio del contenedor (se dibuja primero, por tanto, queda al fondo)
+            parent.insertBefore(el, parent.firstChild);
+        }
+    });
+    
+    saveState(); // Guardamos el cambio en el historial
+}
 
     /* ============================================================
        8. HISTORIAL (UNDO/REDO) Y EXPORTACIÓN
