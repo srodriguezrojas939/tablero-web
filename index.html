@@ -436,9 +436,9 @@ svg.onmousedown = (e) => {
     if (currentPath) {
         Object.assign(currentPath.style, {
             stroke: currentStrokeColor,
-            fill: 'none',
-            strokeWidth: currentStrokeWidth
+            fill: 'none'
         });
+        currentPath.setAttribute('stroke-width', currentStrokeWidth);
         currentPath.setAttribute('class', 'sketch-path');
         currentPath.setAttribute('transform', 'translate(0,0) scale(1)');
         svg.appendChild(currentPath);
