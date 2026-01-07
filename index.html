@@ -173,6 +173,7 @@
 
 /* Modos de dibujo */
 .draw-mode #svg-canvas {
+    z-index: 10 !important; /* Por encima del latex-layer que tiene 4 */
     pointer-events: auto;
 }
 
@@ -200,6 +201,14 @@
 }
 .select-mode.is-drawing .draggable-item {
     pointer-events: none;
+}
+        #svg-canvas {
+    background: transparent !important;
+}
+
+/* Asegurar que el contenedor de LaTeX no bloquee el paso si no es necesario */
+#latex-layer {
+    z-index: 4;
 }
 
     </style>
@@ -344,10 +353,8 @@ const gridStep = 20; // Tamaño de la cuadrícula
  */
 
     function setMode(m, btn = null) {
-    // 1. Limpieza Física de elementos huérfanos
+    // 1. Limpieza de estados
     document.querySelectorAll('.selection-box').forEach(el => el.remove());
-    
-    // 2. Reset de variables de estado
     if (currentPath && mode !== 'POLY') {
         currentPath.remove();
         currentPath = null;
@@ -357,25 +364,30 @@ const gridStep = 20; // Tamaño de la cuadrícula
     polyPoints.length = 0;
     mode = m;
 
-    // 3. UI: Botones
+    // 2. UI: Actualizar botones
     document.querySelectorAll('.tool-btn.active').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
 
-    // 4. Clases del Tablero
     const board = document.getElementById('board-container');
-    board.classList.remove('draw-mode', 'select-mode', 'has-selection');
-    
     const DRAW_MODES = ['DRAW', 'POLY', 'RECT', 'CIRCLE'];
-    if (DRAW_MODES.includes(m)) {
+    const isDrawingMode = DRAW_MODES.includes(m);
+
+    // 3. GESTIÓN DE CAPAS E INTERACCIÓN
+    if (isDrawingMode) {
         board.classList.add('draw-mode');
-        deselectAll(); 
-    } else if (m === 'SELECT') {
-        board.classList.add('select-mode');
+        board.classList.remove('select-mode');
+        // Bloqueamos la capa de LaTeX para que los clics atraviesen las imágenes y lleguen al SVG
+        latexLayer.style.pointerEvents = 'none'; 
+        deselectAll();
+    } else {
+        board.classList.remove('draw-mode');
+        // Devolvemos la interacción a las imágenes para que puedas moverlas o editarlas
+        latexLayer.style.pointerEvents = 'auto'; 
+        if (m === 'SELECT') board.classList.add('select-mode');
     }
 
-    board.style.cursor = DRAW_MODES.includes(m) ? 'crosshair' : 'default';
+    board.style.cursor = isDrawingMode ? 'crosshair' : 'default';
 }
-
     
 
     /* ============================================================
