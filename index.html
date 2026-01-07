@@ -330,97 +330,43 @@ const gridStep = 20; // Tamaño de la cuadrícula
  * ❌ No maneja drag de items
  */
 function setMode(m, btn = null) {
-
-    /* ========================================================
-       3.1. VALIDACIÓN DEL MODO (EXTENSIBLE)
-       ======================================================== */
-    const MODES = {
-        DRAW: 'DRAW',
-        POLY: 'POLY',
-        RECT: 'RECT',
-        CIRCLE: 'CIRCLE',
-        SELECT: 'SELECT',
-        ERASE: 'ERASE'
-        // FUTURO:
-        // LASSO: 'LASSO',
-        // PAN: 'PAN',
-        // TEXT: 'TEXT'
-    };
-
-    if (!Object.values(MODES).includes(m)) {
-        console.warn(`[setMode] Modo inválido: ${m}`);
-        return;
+    /* 1. LIMPIEZA DE ESTADO (Para evitar que las herramientas se mezclen) */
+    // Si había un cuadro de selección a medio hacer, lo borramos
+    if (selectionRect) {
+        selectionRect.remove();
+        selectionRect = null;
     }
-
-    /* ========================================================
-       3.2. ESTADO GLOBAL
-       ======================================================== */
-    mode = m;
-
-    /* ========================================================
-       3.3. LIMPIEZA DE ESTADOS TEMPORALES
-       ======================================================== */
-    polyPoints.length = 0;
-    isDrawing = false;
-
-    if (currentPath && m !== MODES.POLY) {
+    
+    // Si había un trazo (línea, círculo) a medio hacer, lo borramos [cite: 97]
+    if (currentPath && mode !== 'POLY') {
         currentPath.remove();
         currentPath = null;
     }
 
-    /* ========================================================
-       3.4. ESTADO VISUAL DE BOTONES (A PRUEBA DE ERRORES)
-       ======================================================== */
-    document
-        .querySelectorAll('.tool-btn.active')
-        .forEach(b => b.classList.remove('active'));
+    isDrawing = false;      // Reset fundamental: detiene cualquier acción de mouse activa
+    polyPoints.length = 0;  // Limpia puntos de polilínea [cite: 95]
+    mode = m;               // Cambia el modo global [cite: 94]
 
-    if (btn?.classList?.contains('tool-btn')) {
-        btn.classList.add('active');
-    }
+    /* 2. GESTIÓN VISUAL DE BOTONES  */
+    document.querySelectorAll('.tool-btn.active').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
 
-    /* ========================================================
-    3.5. CLASES DE INTERACCIÓN DEL TABLERO
-       ======================================================== */
+    /* 3. CLASES DE INTERACCIÓN DEL TABLERO [cite: 102, 105] */
     const board = document.getElementById('board-container');
-
-    board.classList.remove(
-        'draw-mode',
-        'select-mode'
-        // futuro:
-        // 'lasso-mode',
-        // 'pan-mode'
-    );
-
-    const DRAW_MODES = [
-        MODES.DRAW,
-        MODES.POLY,
-        MODES.RECT,
-        MODES.CIRCLE
-    ];
-
+    board.classList.remove('draw-mode', 'select-mode', 'has-selection');
+    
+    const DRAW_MODES = ['DRAW', 'POLY', 'RECT', 'CIRCLE'];
+    
     if (DRAW_MODES.includes(m)) {
         board.classList.add('draw-mode');
-    }
-
-    if (m === MODES.SELECT) {
+        // Al elegir dibujar, deseleccionamos lo que esté marcado para evitar mover cosas por error
+        deselectAll(); 
+    } else if (m === 'SELECT') {
         board.classList.add('select-mode');
     }
 
-    /* ========================================================
-       3.6. CURSOR CONSISTENTE (UX)
-       ======================================================== */
-    board.style.cursor =
-        DRAW_MODES.includes(m)
-            ? 'crosshair'
-            : m === MODES.SELECT
-                ? 'default'
-                : 'default';
-
-    /* ========================================================
-       3.7. HOOK FUTURO (NO TOCAR POR AHORA)
-       ======================================================== */
-    // onModeChanged?.(m);
+    /* 4. CURSOR CONSISTENTE  */
+    board.style.cursor = DRAW_MODES.includes(m) ? 'crosshair' : 'default';
 }
 
 
@@ -434,32 +380,33 @@ function setMode(m, btn = null) {
     startX = x;
     startY = y;
 
-    // MODO SELECCIÓN
-    if (mode === 'SELECT' && !isDraggingItem) {
-        // Limpiar selección previa
-        deselectAll();
-
-        // Eliminar cualquier rectángulo pendiente
-        if (selectionRect) {
-            selectionRect.remove();
-            selectionRect = null;
-        }
-
-        isDrawing = true;
-
-        // Crear rectángulo de selección
-        selectionRect = createSVGElement('rect', { class: 'selection-box' });
-        selectionRect.setAttribute('x', x);
-        selectionRect.setAttribute('y', y);
-        selectionRect.setAttribute('width', 0);
-        selectionRect.setAttribute('height', 0);
-
-        svg.appendChild(selectionRect);
-        return; // No hacemos nada más
+    // VALIDACIÓN INTELIGENTE: Si no estamos en SELECT, eliminar cualquier cuadro fantasma
+    if (mode !== 'SELECT' && selectionRect) {
+        selectionRect.remove();
+        selectionRect = null;
     }
 
-    // MODO POLYLINE
+    // MODO SELECCIÓN
+    if (mode === 'SELECT') {
+        if (isDraggingItem) return; // Si estamos moviendo un objeto, no crear recuadro
+        
+        deselectAll();
+        isDrawing = true; 
+        
+        selectionRect = createSVGElement('rect', { 
+            class: 'selection-box',
+            x: x,
+            y: y,
+            width: 0,
+            height: 0
+        });
+        svg.appendChild(selectionRect);
+        return;
+    }
+
+    // MODO POLYLINE (Solo si no estamos en selección)
     if (mode === 'POLY') {
+        // ... (mantener el código existente de POLY)
         if (polyPoints.length === 0) {
             currentPath = createSVGElement('polyline', {
                 class: 'sketch-path',
@@ -516,12 +463,12 @@ function setMode(m, btn = null) {
     };
 
     window.onmouseup = () => {
+    isDrawing = false; // Resetear siempre al soltar
 
-    // TERMINAR SELECCIÓN
     if (selectionRect) {
         const box = selectionRect.getBoundingClientRect();
-
-        selectedElements = []; // Limpiar selección previa
+        selectedElements = []; 
+        
         document.querySelectorAll('.sketch-path, .draggable-item').forEach(el => {
             const r = el.getBoundingClientRect();
             if (!(r.left > box.right || r.right < box.left || r.top > box.bottom || r.bottom < box.top)) {
@@ -629,11 +576,13 @@ svg.onmousemove = (e) => {
         if (document.activeElement.tagName === 'INPUT') return;
         
         // BORRAR
-        if (e.key === 'Backspace' || e.key === 'Delete') {
-            selectedElements.forEach(el => el.remove());
-            selectedElements = [];
-            saveState();
-        }
+if (e.key === 'Backspace' || e.key === 'Delete') {
+    selectedElements.forEach(el => el.remove());
+    selectedElements = [];
+    // Limpiar clases de estado del tablero
+    document.getElementById('board-container').classList.remove('has-selection');
+    saveState();
+}
 
         // COPIAR (Ctrl + C)
         if (e.ctrlKey && e.key === 'c') {
