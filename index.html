@@ -176,12 +176,7 @@
     pointer-events: auto;
 }
 
-        /* Activar SVG cuando dibujas o seleccionas */
-/* Activar SVG en modos dibujo y selección */
-.draw-mode #svg-canvas,
-.select-mode #svg-canvas {
-    pointer-events: auto;
-}
+
 
 /* Modo selección por recuadro */
 .select-mode #svg-canvas {
@@ -193,22 +188,19 @@
     pointer-events: none;
 }
 
-        /* Desactivar layer LaTeX mientras dibujas o seleccionas box, para pasar clics al SVG */
-.draw-mode.is-drawing #latex-layer,
-.poly-mode.is-drawing #latex-layer,
-.rect-mode.is-drawing #latex-layer,
-.circle-mode.is-drawing #latex-layer,
-.select-mode.is-drawing #latex-layer {
+        /* Activar SVG en modos dibujo y selección */
+.draw-mode #svg-canvas,
+.select-mode #svg-canvas {
+    pointer-events: auto;
+}
+
+/* Desactivar items LaTeX/imágenes solo mientras dibujas activamente (para pasar clics al SVG) */
+.draw-mode.is-drawing .draggable-item {
     pointer-events: none;
 }
-
-        /* FIX FINAL: Desactivar layer LaTeX solo mientras presionas mouse para dibujar/seleccionar */
-
-.draw-mode.is-drawing #latex-layer,
-.select-mode.is-drawing #latex-layer {
-    pointer-events: none !important;
+.select-mode.is-drawing .draggable-item {
+    pointer-events: none;
 }
-
 
     </style>
 </head>
