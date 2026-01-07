@@ -1,11 +1,9 @@
-
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tablero - Raiz Cuadrada</title>
+    <title>Tablero Pro - Raiz Cuadrada</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -13,7 +11,7 @@
 
     <style>
         /* ============================================================
-           ESTILOS GENERALES Y VARIABLES
+           ESTILOS GENERALES Y VARIABLES (Fácil de modificar: agrega variables aquí)
            ============================================================ */
         :root {
             --bg-canvas: #FFFFFF;
@@ -58,30 +56,20 @@
         .editor-btns { display: flex; gap: 8px; }
         .editor-btns button { flex: 1; padding: 8px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; }
 
-        /* --- CONTENEDORES DEL TABLERO --- */
+        /* --- CONTENEDORES DEL TABLERO (Jerarquía: images 1, latex 2, svg 3) --- */
         #board-container { width: 100vw; height: 100vh; position: relative; background: var(--bg-canvas); overflow: hidden; }
-        svg { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; background: transparent !important; }
-   #latex-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 4; pointer-events: auto; }
+        #image-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        #latex-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+        #svg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 3; background: transparent !important; pointer-events: none; }
 
-        /* --- ELEMENTOS DIBUJADOS Y SELECCIÓN --- */
+        /* --- ELEMENTOS INTERACTIVOS --- */
         .draggable-item { position: absolute; cursor: move; padding: 10px; transform-origin: top left; pointer-events: auto; border: 1px dashed transparent; }
         .draggable-item.selected { border: 1px dashed var(--accent) !important; background: rgba(74, 144, 226, 0.05); }
-        .draggable-item img {
-    width: 100%;
-    height: 100%;
-    display: block;
-    user-select: none;
-    -webkit-user-drag: none;
-}
+        .draggable-item img { width: 100%; height: 100%; display: block; user-select: none; -webkit-user-drag: none; }
         .resize-handle { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background: var(--accent); cursor: nwse-resize; display: none; }
         .draggable-item.selected .resize-handle { display: block; }
-        /* FIX: Asegurar que items seleccionados siempre capturen clics */
-.draggable-item.selected {
-    pointer-events: auto !important;
-    z-index: 10; /* Pequeño boost para que queden encima si hay overlap */
-}
 
-        .sketch-path { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; cursor: move; pointer-events: auto; }
+        .sketch-path { fill: none; stroke-linecap: round; stroke-linejoin: round; cursor: move; pointer-events: auto; }
         .sketch-path.selected { stroke: var(--accent); filter: drop-shadow(0 0 3px rgba(74, 144, 226, 0.5)); }
 
         .selection-box { fill: rgba(74, 144, 226, 0.1); stroke: var(--accent); stroke-width: 1; stroke-dasharray: 4; pointer-events: none; }
@@ -97,19 +85,17 @@
         .tool-btn.active { background: var(--ui-gray-light); color: var(--text-main); border-color: var(--ui-gray-med); }
         .divider { width: 1px; background: var(--ui-gray-med); margin: 0 5px; }
 
-        /* Forzamos que la grilla se vea sobre el fondo blanco */
-#board-container.grid-active {
-    background-color: #ffffff !important;
-    background-image: 
-        /* Puntos en las intersecciones (Negro muy suave) */
-        radial-gradient(rgba(0, 0, 0, 0.2) 1px, transparent 1px),
-        /* Líneas horizontales y verticales (Gris muy claro) */
-        linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-    background-size: 20px 20px, 20px 20px, 20px 20px;
-    background-position: -1px -1px;
-}
-        /* --- NUEVA BARRA DE ESTILOS Y CAPAS --- */
+        #board-container.grid-active {
+            background-color: #ffffff !important;
+            background-image: 
+                radial-gradient(rgba(0, 0, 0, 0.2) 1px, transparent 1px),
+                linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px, 20px 20px, 20px 20px;
+            background-position: -1px -1px;
+        }
+
+        /* --- BARRA DE ESTILOS Y CAPAS --- */
         .style-bar {
             position: absolute; top: 80px; left: 20px; /* Debajo del título "Tablero" */
             background: var(--ui-white); padding: 12px; border-radius: 12px;
@@ -127,7 +113,6 @@
             transition: 0.2s;
         }
         .layer-btn:hover { background: var(--ui-gray-med); }
-
 
         /* Modifica estas clases en tu bloque <style> */
 
@@ -147,18 +132,21 @@
     left: 30%; /* Posición inicial manual */
 }
         /* Permitir dibujar sobre imágenes y LaTeX */
-/* Normalmente, imágenes y LaTeX capturan mouse */
+ /* Normalmente, imágenes y LaTeX capturan mouse */
 .draggable-item {
     pointer-events: auto;
 }
 
 /* Cuando dibujamos, dejan pasar el mouse */
-/* FIX: Solo desactivar interacción mientras estás dibujando activamente */
-.draw-mode.is-drawing .draggable-item {
+.draw-mode .draggable-item {
     pointer-events: none;
 }
 
 
+/* LaTeX e imágenes encima */
+#latex-layer {
+    z-index: 2;
+}
 
   /* ============================================================
    0. CAPAS E INTERACCIÓN DEL SVG
@@ -167,7 +155,7 @@
 #svg-canvas {
     position: absolute;
     inset: 0;
-    z-index: 1;
+    z-index: 3;
     pointer-events: none;
 }
 
@@ -176,8 +164,6 @@
     pointer-events: auto;
 }
 
-
-
 /* Modo selección por recuadro */
 .select-mode #svg-canvas {
     pointer-events: auto;
@@ -185,20 +171,6 @@
 
 /* Cuando se arrastra un item, el SVG NO intercepta */
 .select-mode.dragging-item #svg-canvas {
-    pointer-events: none;
-}
-
-        /* Activar SVG en modos dibujo y selección */
-.draw-mode #svg-canvas,
-.select-mode #svg-canvas {
-    pointer-events: auto;
-}
-
-/* Desactivar items LaTeX/imágenes solo mientras dibujas activamente (para pasar clics al SVG) */
-.draw-mode.is-drawing .draggable-item {
-    pointer-events: none;
-}
-.select-mode.is-drawing .draggable-item {
     pointer-events: none;
 }
 
@@ -244,786 +216,297 @@
     <button class="tool-btn" onclick="setMode('ERASE', this)">✄</button>
     <button class="tool-btn" onclick="setMode('SELECT', this)">⬚</button>
     <div class="divider"></div>
-    <button class="tool-btn" onclick="openEditorForNew()"> ∑ LaTeX</button>
-    <button class="tool-btn" onclick="setMode('RECT', this)">▢</button>
-    <button class="tool-btn" onclick="setMode('CIRCLE', this)">◯</button>
-    <div class="divider"></div>
-    <button class="tool-btn" onclick="clearBoard()">⨯</button>
-    <button class="tool-btn" onclick="exportPNG()">⇪ PNG</button>
-    <button id="grid-btn" class="tool-btn" onclick="toggleGrid()"> ⌗ Grilla</button>
-    <button class="tool-btn" onclick="document.getElementById('image-input').click()">🗎 Imagen</button>
-<input type="file" id="image-input" style="display:none" accept="image/*" onchange="handleImageUpload(event)">
+    <button class="tool-btn" onclick="toggleGrid()">◰ Cuadrícula</button>
+    <button class="tool-btn" onclick="clearBoard()">🗑 Limpiar</button>
+    <button class="tool-btn" onclick="exportPNG()">📷 Exportar</button>
+    <button class="tool-btn" onclick="openLatexEditor()">✎ LaTeX</button>
+    <label class="tool-btn" style="cursor:pointer;">🖼 Imagen <input type="file" id="image-upload" accept="image/*" style="display:none;" onchange="handleImageUpload(event)"></label>
 </div>
 
 <div id="board-container">
-    <svg id="svg-canvas"></svg>
+    <div id="image-layer"></div>
     <div id="latex-layer"></div>
+    <svg id="svg-canvas"></svg>
 </div>
 
 <script>
-    /* ============================================================
-       1. VARIABLES GLOBALES Y ESTADO
-       ============================================================ */
-    let mode = 'DRAW', isDrawing = false, startX, startY;
-    let isDraggingItem = false;
-    let currentPath = null, polyPoints = [], selectedElements = [], selectionRect = null;
-    let undoStack = [], redoStack = [], editingItem = null;
-    let clipboard = []; // Memoria para Ctrl+C y Ctrl+V
+    // ============================================================
+    // 1. VARIABLES GLOBALES Y CONFIGURACIÓN (Agrega nuevas aquí para extender)
+    // ============================================================
 
+    let currentMode = 'DRAW';
+    let currentColor = '#222222';
+    let currentWidth = 3;
+    let isDrawing = false;
+    let currentPath = null;
+    let paths = [];
+    let redoStack = [];
+    let gridActive = false;
+
+    let selectedObject = null; // Para edición de LaTeX
+
+    // Inicializar canvas SVG
     const svg = document.getElementById('svg-canvas');
     const latexLayer = document.getElementById('latex-layer');
-    const editorPanel = document.getElementById('editor-panel');
-    const latexInput = document.getElementById('latex-input');
-    let snapEnabled = false;
-const gridStep = 20; // Tamaño de la cuadrícula
+    const imageLayer = document.getElementById('image-layer');
 
-    // --- NUEVAS VARIABLES DE ESTADO ---
-    let currentStrokeColor = '#222222';
-    let currentStrokeWidth = 3;
-    let isPanning = false;
-    let startPanX, startPanY;
-    let viewBox = { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight };
+    // Eventos de resize para el tablero
+    window.addEventListener('resize', () => {
+        svg.setAttribute('width', window.innerWidth);
+        svg.setAttribute('height', window.innerHeight);
+    });
 
-    // Escuchadores para actualizar color y grosor instantáneamente
-    document.getElementById('stroke-color').onchange = (e) => currentStrokeColor = e.target.value;
-    document.getElementById('stroke-width').oninput = (e) => currentStrokeWidth = e.target.value;
+    // ============================================================
+    // 2. MODOS DE HERRAMIENTA (Fácil agregar nuevos modos aquí)
+    // ============================================================
 
-    /* ============================================================
-       2. LIBRERÍA DE SÍMBOLOS (KATEX)
-       ============================================================ */
-    const library = {
-        "Griegas": [{ s: "\\alpha" }, { s: "\\beta" }, { s: "\\gamma" }, { s: "\\theta" }],
-        "Cálculo": [{ s: "\\int_{a}^{b}" }, { s: "\\frac{df}{dx}" }, { s: "\\lim_{x \\to \\infty}" }],
-        "Álgebra": [{ s: "\\sqrt{x^2 + y^2}" }, { s: "x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}" }],
-        "Matrices": [{ s: "\\begin{matrix} 1 & 0 \\\\ 0 & 1 \\end{matrix}" }]
-    };
+    function setMode(mode, btn) {
+        currentMode = mode;
 
-    function initLibrary() {
-        const container = document.getElementById('category-pills');
-        Object.keys(library).forEach((cat, i) => {
-            const btn = document.createElement('button');
-            btn.className = `pill ${i === 0 ? 'active' : ''}`;
-            btn.innerText = cat;
-            btn.onclick = () => {
-                document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-                btn.classList.add('active');
-                renderSymbols(cat);
-            };
-            container.appendChild(btn);
-        });
-        renderSymbols(Object.keys(library)[0]);
-        saveState();
+        // Actualizar botón activo
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Cambiar clases en body para CSS
+        document.body.className = mode.toLowerCase() + '-mode';
     }
 
-    function renderSymbols(cat) {
-        const grid = document.getElementById('symbol-display');
-        grid.innerHTML = '';
-        library[cat].forEach(item => {
-            const b = document.createElement('div');
-            b.className = 'symbol-btn';
-            katex.render(item.s, b);
-            b.onclick = () => addLatexItem(item.s);
-            grid.appendChild(b);
-        });
-    }
+    // ============================================================
+    // 3. DIBUJO LIBRE Y FORMAS (Agregar nuevas formas aquí)
+    // ============================================================
 
-/* ============================================================
-   3. GESTIÓN DE MODOS Y HERRAMIENTAS
-   ============================================================ */
+    function handleMouseDown(e) {
+        if (currentMode !== 'DRAW' && currentMode !== 'POLY' && currentMode !== 'RECT' && currentMode !== 'CIRCLE') return;
 
-/**
- * Cambia el modo activo del tablero de forma segura.
- * Esta función SOLO controla:
- * - estado global del modo
- * - clases del board (interacción)
- * - estado visual de botones
- *
- * ❌ No maneja mouse
- * ❌ No maneja SVG
- * ❌ No maneja drag de items
- */
+        isDrawing = true;
+        const pointer = e.offsetX, e.offsetY;
 
-    function setMode(m, btn = null) {
-    // 1. Limpieza Física de elementos huérfanos
-    document.querySelectorAll('.selection-box').forEach(el => el.remove());
-    
-    // 2. Reset de variables de estado
-    if (currentPath && mode !== 'POLY') {
-        currentPath.remove();
-        currentPath = null;
-    }
-    selectionRect = null;
-    isDrawing = false; 
-    polyPoints.length = 0;
-    mode = m;
-
-    // 3. UI: Botones
-    document.querySelectorAll('.tool-btn.active').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
-
-    // 4. Clases del Tablero
-    const board = document.getElementById('board-container');
-    board.classList.remove('draw-mode', 'select-mode', 'has-selection');
-    
-    const DRAW_MODES = ['DRAW', 'POLY', 'RECT', 'CIRCLE'];
-    if (DRAW_MODES.includes(m)) {
-        board.classList.add('draw-mode');
-        deselectAll(); 
-    } else if (m === 'SELECT') {
-        board.classList.add('select-mode');
-    }
-
-    board.style.cursor = DRAW_MODES.includes(m) ? 'crosshair' : 'default';
-}
-
-    
-
-    /* ============================================================
-       4. LÓGICA DE DIBUJO Y MOUSE
-       ============================================================ */
-svg.onmousedown = (e) => {
-    // --- ESCUDO DE SEGURIDAD ---
-    latexLayer.style.pointerEvents = 'none';
-    // Si ya existe un cuadro de selección por error, lo eliminamos físicamente antes de seguir
-    document.querySelectorAll('.selection-box').forEach(el => el.remove());
-    isDrawing = false; 
-    // ---------------------------
-
-    const x = snap(e.offsetX);
-    const y = snap(e.offsetY);
-    startX = x;
-    startY = y;
-
-    if (mode === 'SELECT') {
-        if (isDraggingItem) return;
-        
-        deselectAll();
-        isDrawing = true; 
-        
-        selectionRect = createSVGElement('rect', { 
-            class: 'selection-box',
-            x: x, y: y, width: 0, height: 0
-        });
-        svg.appendChild(selectionRect);
-        return;
-    }
-
-
-    // MODO POLYLINE (Solo si no estamos en selección)
-    if (mode === 'POLY') {
-        // ... (mantener el código existente de POLY)
-        if (polyPoints.length === 0) {
-            currentPath = createSVGElement('polyline', {
-                class: 'sketch-path',
-                stroke: 'var(--text-main)',
-                fill: 'none',
-                transform: 'translate(0,0) scale(1)'
+        if (currentMode === 'DRAW') {
+            currentPath = new fabric.Path(`M ${pointer.x} ${pointer.y}`, {
+                stroke: currentColor,
+                strokeWidth: currentWidth,
+                fill: null,
+                strokeLineCap: 'round',
+                strokeLineJoin: 'round',
+                selectable: true,
+                hasControls: true,
+                objectCaching: false
             });
-            svg.appendChild(currentPath);
-        }
-        polyPoints.push(`${x},${y}`);
-        currentPath.setAttribute('points', polyPoints.join(' '));
-        return;
-    }
-
-    // MODO DIBUJO / RECT / CIRCLE
-    isDrawing = true;
-    document.getElementById('board-container').classList.add('is-drawing');
-    if (mode === 'DRAW') currentPath = createSVGElement('path', { d: `M ${x} ${y}` });
-    else if (mode === 'RECT') currentPath = createSVGElement('rect', { x, y, width: 0, height: 0 });
-    else if (mode === 'CIRCLE') currentPath = createSVGElement('circle', { cx: x, cy: y, r: 0 });
-
-    if (currentPath) {
-        Object.assign(currentPath.style, {
-            stroke: currentStrokeColor,
-            fill: 'none'
-        });
-        currentPath.setAttribute('stroke-width', currentStrokeWidth);
-        currentPath.setAttribute('class', 'sketch-path');
-        currentPath.setAttribute('transform', 'translate(0,0) scale(1)');
-        svg.appendChild(currentPath);
-    }
-};
-
-
-window.onmouseup = () => {
-    if (selectionRect) {
-        const box = selectionRect.getBoundingClientRect();
-        selectedElements = []; 
-        
-        document.querySelectorAll('.sketch-path, .draggable-item').forEach(el => {
-            const r = el.getBoundingClientRect();
-            if (!(r.left > box.right || r.right < box.left || r.top > box.bottom || r.bottom < box.top)) {
-                el.classList.add('selected');
-                selectedElements.push(el);
+        } else if (currentMode === 'RECT') {
+            currentPath = new fabric.Rect({
+                left: pointer.x,
+                top: pointer.y,
+                width: 0,
+                height: 0,
+                stroke: currentColor,
+                strokeWidth: currentWidth,
+                fill: null,
+                selectable: true,
+                hasControls: true
+            });
+        } else if (currentMode === 'CIRCLE') {
+            currentPath = new fabric.Circle({
+                left: pointer.x,
+                top: pointer.y,
+                radius: 0,
+                stroke: currentColor,
+                strokeWidth: currentWidth,
+                fill: null,
+                selectable: true,
+                hasControls: true
+            });
+        } else if (currentMode === 'POLY') {
+            // Lógica para polilínea
+            if (!currentPath) {
+                currentPath = new fabric.Polyline([pointer], {
+                    stroke: currentColor,
+                    strokeWidth: currentWidth,
+                    fill: null,
+                    selectable: true,
+                    hasControls: true
+                });
+            } else {
+                currentPath.path.push(pointer);
             }
-        });
-
-        if (selectedElements.length > 0) {
-            document.getElementById('board-container').classList.add('has-selection');
         }
 
-        selectionRect.remove();
-        selectionRect = null;
+        canvas.add(currentPath);
+        paths.push(currentPath);
+        redoStack = [];
     }
 
-    // Seguridad: Si estamos en modo dibujo y soltamos, terminamos el trazo
-    if (isDrawing && currentPath && mode !== 'POLY') {
-        makeMovable(currentPath, 'path');
-        saveState();
-        currentPath = null;
-    }
+    function handleMouseMove(e) {
+        if (!isDrawing || !currentPath) return;
 
-    // Reset final e innegociable de estados
-    isDrawing = false;
-    document.getElementById('board-container').classList.remove('is-drawing');
-    // Limpiamos cualquier cuadro azul que haya sobrevivido por error de lógica
-    document.querySelectorAll('.selection-box').forEach(el => el.remove());
+        const pointer = e.offsetX, e.offsetY;
 
-    latexLayer.style.pointerEvents = 'auto';
-
-};
-
-
-
-    svg.ondblclick = () => {
-        if (mode === 'POLY' && currentPath) {
-            makeMovable(currentPath, 'path'); saveState(); currentPath = null; polyPoints = [];
-        }
-    };
-
-    // --- LÓGICA DE PANEO (BARRA ESPACIADORA) ---
-    window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT') {
-            isPanning = true;
-            document.body.style.cursor = 'grab';
-        }
-    });
-
-    window.addEventListener('keyup', (e) => {
-        if (e.code === 'Space') {
-            isPanning = false;
-            document.body.style.cursor = 'auto';
-        }
-    });
-
-    // Modificar el movimiento del mouse para el paneo
- svg.onmousemove = (e) => {
-    if (isPanning && e.buttons === 1) {
-        const dx = e.movementX;
-        const dy = e.movementY;
-        viewBox.x -= dx;
-        viewBox.y -= dy;
-        svg.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
-        latexLayer.style.transform = `translate(${-viewBox.x}px, ${-viewBox.y}px)`;
-        return;
-    }
-
-    if (isDraggingItem) return;
-    if (!isDrawing && mode !== 'POLY') return;
-    const x = snap(e.offsetX), y = snap(e.offsetY);
-    if (selectionRect) {
-        let w = x - startX, h = y - startY;
-        selectionRect.setAttribute('width', Math.abs(w));
-        selectionRect.setAttribute('height', Math.abs(h));
-        selectionRect.setAttribute('x', w < 0 ? x : startX);
-        selectionRect.setAttribute('y', h < 0 ? y : startY);
-    } else if (currentPath) {
-        if (mode === 'DRAW') currentPath.setAttribute('d', currentPath.getAttribute('d') + ` L ${x} ${y}`);
-        else if (mode === 'RECT') {
-            currentPath.setAttribute('width', Math.abs(x - startX));
-            currentPath.setAttribute('height', Math.abs(y - startY));
-            currentPath.setAttribute('x', Math.min(x, startX));
-            currentPath.setAttribute('y', Math.min(y, startY));
-        } else if (mode === 'CIRCLE') {
-            currentPath.setAttribute('r', Math.sqrt((x-startX)**2 + (y-startY)**2));
-        } else if (mode === 'POLY') {
-            currentPath.setAttribute('points', [...polyPoints, `${x},${y}`].join(' '));
-        }
-    }
-};
-
-
-   document.getElementById('board-container').addEventListener('dblclick', (e) => {
-    // Solo si se hace doble click en el fondo (no en divs ni SVGs)
-    if (e.target.id === 'board-container') {
-        deselectAll();
-    }
-});
-
-
-    /* ============================================================
-       5. GESTIÓN DE TECLADO (BORRAR, COPIAR, PEGAR, UNDO)
-       ============================================================ */
-    window.onkeydown = (e) => {
-        if (document.activeElement.tagName === 'INPUT') return;
-        
-        // BORRAR
-if (e.key === 'Backspace' || e.key === 'Delete') {
-    selectedElements.forEach(el => el.remove());
-    selectedElements = [];
-    // Limpiar clases de estado del tablero
-    document.getElementById('board-container').classList.remove('has-selection');
-    saveState();
-}
-
-        // COPIAR (Ctrl + C)
-        if (e.ctrlKey && e.key === 'c') {
-            clipboard = selectedElements.map(el => el.cloneNode(true));
-        }
-
-       // PEGAR (Ctrl + V) - Versión compatible con Imágenes y LaTeX
-        if (e.ctrlKey && e.key === 'v') {
-            if (clipboard.length === 0) return;
-            deselectAll();
-            clipboard.forEach(clone => {
-                const newEl = clone.cloneNode(true);
-                
-                // Desplazamiento visual para que no queden uno encima de otro
-                if (newEl.tagName.toLowerCase() === 'div') {
-                    newEl.style.left = (parseFloat(newEl.style.left) + 20) + "px";
-                    newEl.style.top = (parseFloat(newEl.style.top) + 20) + "px";
-                    latexLayer.appendChild(newEl);
-                    
-                    makeMovable(newEl, 'div');
-                    makeManualResize(newEl, newEl.querySelector('.resize-handle'));
-
-                    // INTEGRACIÓN PASO 4: Lógica de doble clic diferenciada
-                    newEl.ondblclick = (e) => {
-                        e.stopPropagation();
-                        // Solo abre el editor si el elemento tiene datos de LaTeX
-                        if (newEl.dataset.tex) {
-                            editingItem = newEl;
-                            latexInput.value = newEl.dataset.tex;
-                            editorPanel.style.display = 'flex';
-                            latexInput.focus();
-                        } else {
-                            console.log("Es una imagen, no se edita como texto.");
-                        }
-                    };
-                } else {
-                    // Lógica para elementos SVG (trazos, rectángulos, etc)
-                    let t = newEl.getAttribute("transform") || "translate(0,0) scale(1)";
-                    newEl.setAttribute("transform", t.replace(/translate\(([^,)]+),? ?([^)]+)\)/, (m, x, y) => 
-                        `translate(${parseFloat(x)+20},${parseFloat(y)+20})`));
-                    svg.appendChild(newEl);
-                    makeMovable(newEl, 'path');
-                }
-                newEl.classList.add('selected');
-                selectedElements.push(newEl);
+        if (currentMode === 'DRAW') {
+            currentPath.path.push(['L', pointer.x, pointer.y]);
+        } else if (currentMode === 'RECT') {
+            currentPath.set({
+                width: pointer.x - currentPath.left,
+                height: pointer.y - currentPath.top
             });
-            saveState();
+        } else if (currentMode === 'CIRCLE') {
+            currentPath.set({
+                radius: Math.sqrt(Math.pow(pointer.x - currentPath.left, 2) + Math.pow(pointer.y - currentPath.top, 2))
+            });
+        } else if (currentMode === 'POLY') {
+            currentPath.path[currentPath.path.length - 1] = ['L', pointer.x, pointer.y];
         }
 
-        // DESHACER (Ctrl + Z)
-        if (e.ctrlKey && e.key === 'z') undo();
-        // REHACER (Ctrl + Y)
-        if (e.ctrlKey && e.key === 'y') redo();
-    };
-
-    /* ============================================================
-       6. EDITOR DE LATEX INTERNO
-       ============================================================ */
-    function openEditorForNew() {
-        editingItem = null;
-        latexInput.value = '';
-        editorPanel.style.display = 'flex';
-        latexInput.focus();
+        canvas.renderAll();
     }
 
-    function addLatexItem(tex) {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'draggable-item';
-        wrapper.style.left = '100px'; wrapper.style.top = '100px';
-        wrapper.style.transform = 'scale(1)';
-        wrapper.dataset.tex = tex;
-        wrapper.innerHTML = `<div></div><div class="resize-handle"></div>`;
-        latexLayer.appendChild(wrapper);
-        katex.render(tex, wrapper.querySelector('div'));
-        
-     wrapper.ondblclick = (e) => {
-    e.stopPropagation();
-    e.preventDefault(); // Agrega esto nuevo, para prevenir bubbling extra
-    editingItem = wrapper;
-    latexInput.value = wrapper.dataset.tex;
-    editorPanel.style.display = 'flex';
-    latexInput.focus();
-};
+    function handleMouseUp() {
+        if (!isDrawing) return;
+        isDrawing = false;
+        currentPath = null;
+        canvas.renderAll();
+    }
 
-        makeMovable(wrapper, 'div');
-        makeManualResize(wrapper, wrapper.querySelector('.resize-handle'));
-        saveState();
+    // ============================================================
+    // 4. FUNCIONES UTILIDADES (Undo, Redo, Clear, Export)
+    // ============================================================
+
+    function undo() {
+        if (paths.length === 0) return;
+        const last = paths.pop();
+        canvas.remove(last);
+        redoStack.push(last);
+        canvas.renderAll();
+    }
+
+    function redo() {
+        if (redoStack.length === 0) return;
+        const next = redoStack.pop();
+        canvas.add(next);
+        paths.push(next);
+        canvas.renderAll();
+    }
+
+    function clearBoard() {
+        canvas.clear();
+        paths = [];
+        redoStack = [];
+    }
+
+    function exportPNG() {
+        html2canvas(document.getElementById('board-container')).then(c => {
+            const link = document.createElement('a');
+            link.download = 'tablero.png';
+            link.href = c.toDataURL();
+            link.click();
+        });
+    }
+
+    // ============================================================
+    // 5. CUADRÍCULA
+    // ============================================================
+
+    function toggleGrid() {
+        gridActive = !gridActive;
+        const container = document.getElementById('board-container');
+        if (gridActive) {
+            container.classList.add('grid-active');
+        } else {
+            container.classList.remove('grid-active');
+        }
+    }
+
+    // ============================================================
+    // 6. LATEX E IMÁGENES (Agregar nuevos tipos de objetos aquí)
+    // ============================================================
+
+    function openLatexEditor() {
+        document.getElementById('editor-panel').style.display = 'flex';
+        document.getElementById('latex-input').focus();
+    }
+
+    function closeEditor() {
+        document.getElementById('editor-panel').style.display = 'none';
+        selectedObject = null;
     }
 
     function confirmEdit() {
-        const val = latexInput.value;
-        if (!val) return;
-        if (editingItem) {
-            editingItem.dataset.tex = val;
-            katex.render(val, editingItem.querySelector('div'));
-        } else {
-            addLatexItem(val);
-        }
-        closeEditor();
-        saveState();
-    }
+        const latex = document.getElementById('latex-input').value.trim();
+        if (!latex) return;
 
-    function closeEditor() { editorPanel.style.display = 'none'; }
+        // Renderizar con KaTeX
+        const container = document.createElement('div');
+        container.style.padding = '20px';
+        container.style.background = 'white';
+        container.style.display = 'inline-block';
+        katex.render(latex, container, { throwOnError: false, displayMode: true });
+
+        html2canvas(container).then(c => {
+            const dataURL = c.toDataURL('image/png');
+
+            fabric.Image.fromURL(dataURL, function(img) {
+                img.set({
+                    left: canvas.width / 2 - img.width / 2,
+                    top: canvas.height / 2 - img.height / 2,
+                    selectable: true,
+                    hasControls: true,
+                    hasBorders: true
+                });
+
+                img.setControlsVisibility({
+                    mt: true, mb: true, ml: true, mr: true,
+                    mtr: true, tl: true, tr: true, bl: true, br: true
+                });
+
+                canvas.add(img);
+                canvas.setActiveObject(img);
+                canvas.renderAll();
+            });
+        });
+
+        closeEditor();
+    }
 
     function handleImageUpload(event) {
-    const file = event.target.files[0];
-    if (file) {
+        const file = event.target.files[0];
+        if (!file) return;
+
         const reader = new FileReader();
-        reader.onload = (e) => addImageItem(e.target.result);
+        reader.onload = function(e) {
+            fabric.Image.fromURL(e.target.result, function(img) {
+                img.set({
+                    left: canvas.width / 2 - img.width / 2,
+                    top: canvas.height / 2 - img.height / 2,
+                    selectable: true,
+                    hasControls: true,
+                    hasBorders: true
+                });
+
+                img.setControlsVisibility({
+                    mt: true, mb: true, ml: true, mr: true,
+                    mtr: true, tl: true, tr: true, bl: true, br: true
+                });
+
+                img.scaleToWidth(300);
+                canvas.add(img);
+                canvas.setActiveObject(img);
+                canvas.renderAll();
+            });
+        };
         reader.readAsDataURL(file);
     }
-    event.target.value = ''; // Reset para poder subir la misma imagen
-}
 
-function addImageItem(src) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'draggable-item';
-    // La posicionamos un poco alejada del borde
-    wrapper.style.left = '50px'; wrapper.style.top = '50px';
-    wrapper.style.width = '200px'; // Tamaño inicial
-    wrapper.style.transform = 'scale(1)';
-    
-    wrapper.innerHTML = `
-        <img src="${src}">
-        <div class="resize-handle"></div>
-    `;
-    
-    latexLayer.appendChild(wrapper);
-    
-    // Reutilizamos tus funciones geniales
-    makeMovable(wrapper, 'div');
-    makeManualResize(wrapper, wrapper.querySelector('.resize-handle'));
-    saveState();
-}
+    // ============================================================
+    // INICIALIZACIÓN (Agrega nuevos listeners o init aquí)
+    // ============================================================
 
-    /* ============================================================
-       7. UTILIDADES (CREACIÓN, SELECCIÓN, MOVIMIENTO)
-       ============================================================ */
-    function createSVGElement(tag, attrs) {
-        const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
-        for (let k in attrs) el.setAttribute(k, attrs[k]);
-        return el;
+    function init() {
+        initCanvas();
+        initLibrary();
+        makePanelDraggable(document.querySelector('.toolbar'));
+        makePanelDraggable(document.querySelector('.symbol-library'));
+        makePanelDraggable(document.querySelector('.style-bar'));
     }
 
-   function deselectAll() {
-    document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
-    selectedElements = [];
-
-    // 🔹 IMPORTANTE: al no haber selección, el SVG vuelve a capturar mouse
-    document
-        .getElementById('board-container')
-        .classList.remove('has-selection');
-}
-
-function makeMovable(el, type) {
-    let dragging = false;
-    let iX = 0, iY = 0;
-    const board = document.getElementById('board-container');
-
-    el.onmousedown = (e) => {
-
-        // Borrado
-        if (mode === 'ERASE') {
-            el.remove();
-            saveState();
-            return;
-        }
-
-        // Selección segura
-     if (!el.classList.contains('selected')) {
-    deselectAll();
-    el.classList.add('selected');
-    selectedElements = [el];
-         document.getElementById('board-container').classList.add('has-selection');
-
-    // 🔹 IMPORTANTE: hay selección activa
-    document
-        .getElementById('board-container')
-        .classList.add('has-selection');
-}
-
-
-        e.stopPropagation();
-
-        // Activar drag
-        dragging = true;
-        isDraggingItem = true;
-        board.classList.add('dragging-item');
-
-        iX = e.clientX;
-        iY = e.clientY;
-    };
-
-    window.addEventListener('mousemove', (e) => {
-        if (!dragging) return;
-
-        const dx = snap(e.clientX - iX);
-        const dy = snap(e.clientY - iY);
-
-        selectedElements.forEach(item => {
-
-            // HTML (imágenes, LaTeX)
-            if (item.tagName.toLowerCase() === 'div') {
-                item.style.left = (parseFloat(item.style.left) + dx) + 'px';
-                item.style.top  = (parseFloat(item.style.top)  + dy) + 'px';
-
-            // SVG
-            } else {
-                const t = item.getAttribute('transform') || 'translate(0,0) scale(1)';
-                const m = t.match(/translate\(([^,)]+),\s*([^)]+)\)/);
-
-                const tx = (m ? parseFloat(m[1]) : 0) + dx;
-                const ty = (m ? parseFloat(m[2]) : 0) + dy;
-
-                item.setAttribute(
-                    'transform',
-                    t.replace(/translate\([^)]+\)/, `translate(${tx},${ty})`)
-                );
-            }
-        });
-
-        iX = e.clientX;
-        iY = e.clientY;
-    });
-
-    window.addEventListener('mouseup', () => {
-        if (!dragging) return;
-
-        dragging = false;
-        isDraggingItem = false;
-        board.classList.remove('dragging-item');
-
-        saveState();
-    });
-}
-
-   function makeManualResize(el, handle) {
-    let startX, startY;
-    let startW, startH, startLeft, startTop, startR;
-
-    handle.onmousedown = (e) => {
-        e.stopPropagation();
-        startX = e.clientX;
-        startY = e.clientY;
-
-        if (el.tagName.toLowerCase() === 'div') {
-            startW = el.offsetWidth;
-            startH = el.offsetHeight;
-            startLeft = parseFloat(el.style.left);
-            startTop = parseFloat(el.style.top);
-        } 
-        else if (el.tagName === 'rect') {
-            startW = parseFloat(el.getAttribute('width'));
-            startH = parseFloat(el.getAttribute('height'));
-            startLeft = parseFloat(el.getAttribute('x'));
-            startTop = parseFloat(el.getAttribute('y'));
-        } 
-        else if (el.tagName === 'circle') {
-            startR = parseFloat(el.getAttribute('r'));
-        }
-
-        window.onmousemove = (ev) => {
-            const dx = snap(ev.clientX - startX);
-            const dy = snap(ev.clientY - startY);
-
-            if (el.tagName.toLowerCase() === 'div') {
-                if (el.dataset.tex) {
-                    // Para LaTeX: escalamos el font-size
-                    let scaleW = Math.max(20, startW + dx) / startW;
-                    let scaleH = Math.max(20, startH + dy) / startH;
-                    let scale = Math.min(scaleW, scaleH); // usar el menor para no deformar
-                    const texDiv = el.querySelector('div');
-                    if (texDiv) {
-                        texDiv.style.fontSize = `${16 * scale}px`; // 16px es tamaño base
-                    }
-                } else {
-                    // Para imágenes u otros divs: cambiamos width/height
-                    el.style.width = Math.max(20, startW + dx) + 'px';
-                    el.style.height = Math.max(20, startH + dy) + 'px';
-                }
-            }
-            else if (el.tagName === 'rect') {
-                el.setAttribute('width', Math.max(10, startW + dx));
-                el.setAttribute('height', Math.max(10, startH + dy));
-            }
-            else if (el.tagName === 'circle') {
-                el.setAttribute('r', Math.max(5, startR + dx));
-            }
-        };
-
-        window.onmouseup = () => {
-            window.onmousemove = null;
-            window.onmouseup = null;
-            saveState();
-        };
-    };
-}
-
-      
-    function toggleGrid() {
-    snapEnabled = !snapEnabled;
-    const btn = document.getElementById('grid-btn');
-    const container = document.getElementById('board-container');
-    
-    if (snapEnabled) {
-        btn.classList.add('active');
-        container.classList.add('grid-active');
-    } else {
-        btn.classList.remove('active');
-        container.classList.remove('grid-active');
-    }
-}
-
-function snap(val) {
-    return snapEnabled ? Math.round(val / gridStep) * gridStep : val;
-}
-
-    // --- GESTIÓN DE CAPAS (Z-INDEX) ---
-    
-function changeLayer(dir) {
-    if (selectedElements.length === 0) {
-        console.log("No hay nada seleccionado para mover");
-        return;
-    }
-    
-    selectedElements.forEach(el => {
-        const parent = el.parentNode;
-        if (!parent) return;
-
-        if (dir === 'front') {
-            // Lo mueve al final del contenedor (se dibuja de último, por tanto, queda arriba)
-            parent.appendChild(el);
-        } else if (dir === 'back') {
-            // Lo mueve al principio del contenedor (se dibuja primero, por tanto, queda al fondo)
-            parent.insertBefore(el, parent.firstChild);
-        }
-    });
-    
-    saveState(); // Guardamos el cambio en el historial
-}
-
-    /* ============================================================
-       8. HISTORIAL (UNDO/REDO) Y EXPORTACIÓN
-       ============================================================ */
-    function saveState() {
-        undoStack.push({svg: svg.innerHTML, latex: latexLayer.innerHTML});
-        redoStack = []; // Al hacer algo nuevo, se limpia el redo
-        if(undoStack.length > 30) undoStack.shift();
-    }
-
-function applyState(state) {
-        svg.innerHTML = state.svg; 
-        latexLayer.innerHTML = state.latex;
-        document.querySelectorAll('.sketch-path').forEach(el => makeMovable(el, 'path'));
-        
-        document.querySelectorAll('.draggable-item').forEach(el => {
-            makeMovable(el, 'div'); 
-            makeManualResize(el, el.querySelector('.resize-handle'));
-            
-            // CORRECCIÓN AQUÍ: Solo re-asignar doble clic si es LaTeX
-            el.ondblclick = (e) => {
-                e.stopPropagation();
-                if (el.dataset.tex) { // Si tiene datos de LaTeX, abrimos editor
-                    editingItem = el;
-                    latexInput.value = el.dataset.tex;
-                    editorPanel.style.display = 'flex'; 
-                    latexInput.focus();
-                } else {
-                    console.log("Imagen detectada en Undo/Redo, sin edición de texto.");
-                }
-            };
-        });
-    }
-
-    function undo() {
-        if (undoStack.length < 2) return;
-        redoStack.push(undoStack.pop());
-        applyState(undoStack[undoStack.length - 1]);
-    }
-    
-    function redo() {
-        if (redoStack.length === 0) return;
-        const state = redoStack.pop();
-        undoStack.push(state);
-        applyState(state);
-    }
-
-    function clearBoard() { if(confirm("¿Limpiar todo?")) { svg.innerHTML = ''; latexLayer.innerHTML = ''; saveState(); } }
-    
-    async function exportPNG() { 
-        deselectAll(); 
-        const canvas = await html2canvas(document.getElementById('board-container')); 
-        const link = document.createElement('a'); 
-        link.download = 'tablero.png'; 
-        link.href = canvas.toDataURL(); 
-        link.click(); 
-    }
-
-    /* ============================================================
-   NUEVA FUNCIÓN: HACER PANELES UI DRAGGABLES
-   ============================================================ */
-function makePanelDraggable(el) {
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-
-    el.onmousedown = dragMouseDown;
-
-    function dragMouseDown(e) {
-        // Si haces clic en un botón o input, no arrastramos el panel
-        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.classList.contains('pill')) {
-            return;
-        }
-
-        e.preventDefault();
-        // Posición inicial del mouse
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        
-        document.onmouseup = closeDragElement;
-        document.onmousemove = elementDrag;
-    }
-
-    function elementDrag(e) {
-        e.preventDefault();
-        // Calcular nueva posición
-        pos1 = pos3 - e.clientX;
-        pos2 = pos4 - e.clientY;
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-
-        // Aplicar nueva posición al elemento
-        // Limpiamos bottom/right para que no hereden estilos fijos de CSS
-        el.style.bottom = "auto";
-        el.style.right = "auto";
-        el.style.top = (el.offsetTop - pos2) + "px";
-        el.style.left = (el.offsetLeft - pos1) + "px";
-    }
-
-    function closeDragElement() {
-        document.onmouseup = null;
-        document.onmousemove = null;
-    }
-}
-
-    // INICIALIZACIÓN
-    initLibrary();
-    // Activar arrastre para los tres paneles
-makePanelDraggable(document.querySelector('.toolbar'));
-makePanelDraggable(document.querySelector('.symbol-library'));
-makePanelDraggable(document.querySelector('.style-bar'));
-    const styleBar = document.querySelector('.style-bar');
-
-styleBar.style.left = '20px';
-styleBar.style.bottom = '20px';
-styleBar.style.top = 'auto';
-
-setMode('DRAW', document.querySelector('.tool-btn.active'));
-
-    
+    init();
 </script>
 </body>
 </html>
