@@ -61,7 +61,7 @@
         /* --- CONTENEDORES DEL TABLERO --- */
         #board-container { width: 100vw; height: 100vh; position: relative; background: var(--bg-canvas); overflow: hidden; }
         svg { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; background: transparent !important; }
-        #latex-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: auto; }
+   #latex-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 4; pointer-events: auto; }
 
         /* --- ELEMENTOS DIBUJADOS Y SELECCIÓN --- */
         .draggable-item { position: absolute; cursor: move; padding: 10px; transform-origin: top left; pointer-events: auto; border: 1px dashed transparent; }
@@ -170,12 +170,21 @@
 #svg-canvas {
     position: absolute;
     inset: 0;
-    z-index: 3;
+    z-index: 1;
     pointer-events: none;
 }
 
 /* Modos de dibujo */
 .draw-mode #svg-canvas {
+    pointer-events: auto;
+}
+
+        /* Activar SVG cuando dibujas o seleccionas */
+.draw-mode #svg-canvas,
+.poly-mode #svg-canvas,
+.rect-mode #svg-canvas,
+.circle-mode #svg-canvas,
+.select-mode #svg-canvas {
     pointer-events: auto;
 }
 
@@ -186,6 +195,15 @@
 
 /* Cuando se arrastra un item, el SVG NO intercepta */
 .select-mode.dragging-item #svg-canvas {
+    pointer-events: none;
+}
+
+        /* Desactivar layer LaTeX mientras dibujas o seleccionas box, para pasar clics al SVG */
+.draw-mode.is-drawing #latex-layer,
+.poly-mode.is-drawing #latex-layer,
+.rect-mode.is-drawing #latex-layer,
+.circle-mode.is-drawing #latex-layer,
+.select-mode.is-drawing #latex-layer {
     pointer-events: none;
 }
 
@@ -652,13 +670,14 @@ if (e.key === 'Backspace' || e.key === 'Delete') {
         latexLayer.appendChild(wrapper);
         katex.render(tex, wrapper.querySelector('div'));
         
-        wrapper.ondblclick = (e) => {
-            e.stopPropagation();
-            editingItem = wrapper;
-            latexInput.value = wrapper.dataset.tex;
-            editorPanel.style.display = 'flex';
-            latexInput.focus();
-        };
+     wrapper.ondblclick = (e) => {
+    e.stopPropagation();
+    e.preventDefault(); // Agrega esto nuevo, para prevenir bubbling extra
+    editingItem = wrapper;
+    latexInput.value = wrapper.dataset.tex;
+    editorPanel.style.display = 'flex';
+    latexInput.focus();
+};
 
         makeMovable(wrapper, 'div');
         makeManualResize(wrapper, wrapper.querySelector('.resize-handle'));
