@@ -184,11 +184,6 @@
     pointer-events: none;
 }
 
-/* Cuando hay selección activa, el SVG NO bloquea interacción */
-.select-mode.has-selection #svg-canvas {
-    pointer-events: none;
-}
-
     </style>
 </head>
 <body>
@@ -329,80 +324,71 @@ const gridStep = 20; // Tamaño de la cuadrícula
  * ❌ No maneja SVG
  * ❌ No maneja drag de items
  */
-function setMode(m, btn = null) {
-    /* 1. LIMPIEZA DE ESTADO (Para evitar que las herramientas se mezclen) */
-    // Si había un cuadro de selección a medio hacer, lo borramos
-    if (selectionRect) {
-        selectionRect.remove();
-        selectionRect = null;
-    }
+
+    function setMode(m, btn = null) {
+    // 1. Limpieza Física de elementos huérfanos
+    document.querySelectorAll('.selection-box').forEach(el => el.remove());
     
-    // Si había un trazo (línea, círculo) a medio hacer, lo borramos [cite: 97]
+    // 2. Reset de variables de estado
     if (currentPath && mode !== 'POLY') {
         currentPath.remove();
         currentPath = null;
     }
+    selectionRect = null;
+    isDrawing = false; 
+    polyPoints.length = 0;
+    mode = m;
 
-    isDrawing = false;      // Reset fundamental: detiene cualquier acción de mouse activa
-    polyPoints.length = 0;  // Limpia puntos de polilínea [cite: 95]
-    mode = m;               // Cambia el modo global [cite: 94]
-
-    /* 2. GESTIÓN VISUAL DE BOTONES  */
+    // 3. UI: Botones
     document.querySelectorAll('.tool-btn.active').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
 
-    /* 3. CLASES DE INTERACCIÓN DEL TABLERO [cite: 102, 105] */
+    // 4. Clases del Tablero
     const board = document.getElementById('board-container');
     board.classList.remove('draw-mode', 'select-mode', 'has-selection');
     
     const DRAW_MODES = ['DRAW', 'POLY', 'RECT', 'CIRCLE'];
-    
     if (DRAW_MODES.includes(m)) {
         board.classList.add('draw-mode');
-        // Al elegir dibujar, deseleccionamos lo que esté marcado para evitar mover cosas por error
         deselectAll(); 
     } else if (m === 'SELECT') {
         board.classList.add('select-mode');
     }
 
-    /* 4. CURSOR CONSISTENTE  */
     board.style.cursor = DRAW_MODES.includes(m) ? 'crosshair' : 'default';
 }
 
-
+    
 
     /* ============================================================
        4. LÓGICA DE DIBUJO Y MOUSE
        ============================================================ */
-   svg.onmousedown = (e) => {
+svg.onmousedown = (e) => {
+    // --- ESCUDO DE SEGURIDAD ---
+    // Si ya existe un cuadro de selección por error, lo eliminamos físicamente antes de seguir
+    document.querySelectorAll('.selection-box').forEach(el => el.remove());
+    isDrawing = false; 
+    // ---------------------------
+
     const x = snap(e.offsetX);
     const y = snap(e.offsetY);
     startX = x;
     startY = y;
 
-    // VALIDACIÓN INTELIGENTE: Si no estamos en SELECT, eliminar cualquier cuadro fantasma
-    if (mode !== 'SELECT' && selectionRect) {
-        selectionRect.remove();
-        selectionRect = null;
-    }
-
-    // MODO SELECCIÓN
     if (mode === 'SELECT') {
-        if (isDraggingItem) return; // Si estamos moviendo un objeto, no crear recuadro
+        if (isDraggingItem) return;
         
         deselectAll();
         isDrawing = true; 
         
         selectionRect = createSVGElement('rect', { 
             class: 'selection-box',
-            x: x,
-            y: y,
-            width: 0,
-            height: 0
+            x: x, y: y, width: 0, height: 0
         });
         svg.appendChild(selectionRect);
         return;
     }
+
 
     // MODO POLYLINE (Solo si no estamos en selección)
     if (mode === 'POLY') {
@@ -462,9 +448,7 @@ function setMode(m, btn = null) {
         }
     };
 
-    window.onmouseup = () => {
-    isDrawing = false; // Resetear siempre al soltar
-
+window.onmouseup = () => {
     if (selectionRect) {
         const box = selectionRect.getBoundingClientRect();
         selectedElements = []; 
@@ -485,14 +469,17 @@ function setMode(m, btn = null) {
         selectionRect = null;
     }
 
-    // TERMINAR DIBUJO
+    // Seguridad: Si estamos en modo dibujo y soltamos, terminamos el trazo
     if (isDrawing && currentPath && mode !== 'POLY') {
         makeMovable(currentPath, 'path');
         saveState();
         currentPath = null;
     }
 
+    // Reset final e innegociable de estados
     isDrawing = false;
+    // Limpiamos cualquier cuadro azul que haya sobrevivido por error de lógica
+    document.querySelectorAll('.selection-box').forEach(el => el.remove());
 };
 
 
