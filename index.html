@@ -75,6 +75,11 @@
 }
         .resize-handle { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background: var(--accent); cursor: nwse-resize; display: none; }
         .draggable-item.selected .resize-handle { display: block; }
+        /* FIX: Asegurar que items seleccionados siempre capturen clics */
+.draggable-item.selected {
+    pointer-events: auto !important;
+    z-index: 10; /* Pequeño boost para que queden encima si hay overlap */
+}
 
         .sketch-path { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; cursor: move; pointer-events: auto; }
         .sketch-path.selected { stroke: var(--accent); filter: drop-shadow(0 0 3px rgba(74, 144, 226, 0.5)); }
@@ -148,10 +153,10 @@
 }
 
 /* Cuando dibujamos, dejan pasar el mouse */
-.draw-mode .draggable-item {
+/* FIX: Solo desactivar interacción mientras estás dibujando activamente */
+.draw-mode.is-drawing .draggable-item {
     pointer-events: none;
 }
-
 
 /* LaTeX e imágenes encima */
 #latex-layer {
@@ -409,6 +414,7 @@ svg.onmousedown = (e) => {
 
     // MODO DIBUJO / RECT / CIRCLE
     isDrawing = true;
+    document.getElementById('board-container').classList.add('is-drawing');
     if (mode === 'DRAW') currentPath = createSVGElement('path', { d: `M ${x} ${y}` });
     else if (mode === 'RECT') currentPath = createSVGElement('rect', { x, y, width: 0, height: 0 });
     else if (mode === 'CIRCLE') currentPath = createSVGElement('circle', { cx: x, cy: y, r: 0 });
@@ -478,6 +484,7 @@ window.onmouseup = () => {
 
     // Reset final e innegociable de estados
     isDrawing = false;
+    document.getElementById('board-container').classList.remove('is-drawing');
     // Limpiamos cualquier cuadro azul que haya sobrevivido por error de lógica
     document.querySelectorAll('.selection-box').forEach(el => el.remove());
 };
@@ -742,6 +749,7 @@ function makeMovable(el, type) {
     deselectAll();
     el.classList.add('selected');
     selectedElements = [el];
+         document.getElementById('board-container').classList.add('has-selection');
 
     // 🔹 IMPORTANTE: hay selección activa
     document
