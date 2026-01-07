@@ -11,13 +11,8 @@
 
     <style>
         :root {
-            --bg-canvas: #FFFFFF;
-            --ui-white: #FFFFFF;
-            --ui-gray-light: #F2F2F2;
-            --ui-gray-med: #CCCCCC;
-            --ui-gray-dark: #888888;
-            --text-main: #222222;
-            --accent: #4A90E2;
+            --bg-canvas: #FFFFFF; --ui-white: #FFFFFF; --ui-gray-light: #F2F2F2;
+            --ui-gray-med: #CCCCCC; --ui-gray-dark: #888888; --text-main: #222222; --accent: #4A90E2;
         }
 
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; background: var(--ui-gray-light); }
@@ -40,13 +35,12 @@
 
         #board-container { width: 100vw; height: 100vh; position: relative; background: var(--bg-canvas); overflow: hidden; }
         
-        /* CORRECCIÓN 1: CAPAS DINÁMICAS */
-        #svg-canvas { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
-        #latex-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
-        
+        /* CAPAS RESTAURADAS SEGÚN TU FUENTE [cite: 64-67] */
+        #svg-canvas { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+        #latex-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+
         .draw-mode #svg-canvas, .select-mode #svg-canvas { pointer-events: auto; }
-        .draw-mode .draggable-item { pointer-events: none !important; }
-        .select-mode .draggable-item { z-index: 10 !important; pointer-events: auto !important; }
+        .select-mode.dragging-item #svg-canvas { pointer-events: none; }
 
         .draggable-item { position: absolute; cursor: move; padding: 10px; transform-origin: top left; pointer-events: auto; border: 1px dashed transparent; }
         .draggable-item.selected { border: 1px dashed var(--accent) !important; background: rgba(74, 144, 226, 0.05); }
@@ -128,7 +122,7 @@
 </div>
 
 <script>
-    // --- ESTADO GLOBAL (100% ORIGINAL) ---
+    /* VARIABLES DE ESTADO ORIGINALES [cite: 72-81] */
     let mode = 'DRAW', isDrawing = false, startX, startY, isDraggingItem = false;
     let currentPath = null, polyPoints = [], selectedElements = [], selectionRect = null;
     let undoStack = [], redoStack = [], editingItem = null, clipboard = [];
@@ -136,7 +130,7 @@
     const latexLayer = document.getElementById('latex-layer');
     const editorPanel = document.getElementById('editor-panel');
     const latexInput = document.getElementById('latex-input');
-    const gridStep = 20; let snapEnabled = false;
+    let snapEnabled = false; const gridStep = 20;
     let currentStrokeColor = '#222222'; let currentStrokeWidth = 3;
     let isPanning = false; let viewBox = { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight };
 
@@ -158,8 +152,7 @@
             btn.innerText = cat;
             btn.onclick = () => {
                 document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-                btn.classList.add('active');
-                renderSymbols(cat);
+                btn.classList.add('active'); renderSymbols(cat);
             };
             container.appendChild(btn);
         });
@@ -179,7 +172,7 @@
         });
     }
 
-    /* CORRECCIÓN 2: setMode mejorado */
+    /* MODO SEGURO [cite: 88-96] */
     function setMode(m, btn = null) {
         document.querySelectorAll('.selection-box').forEach(el => el.remove());
         isDrawing = false; mode = m;
@@ -195,7 +188,7 @@
         }
     }
 
-    // --- MOUSE Y DIBUJO ---
+    /* LÓGICA DE DIBUJO Y MOUSE [cite: 97-126] */
     svg.onmousedown = (e) => {
         if (isPanning) return;
         document.querySelectorAll('.selection-box').forEach(el => el.remove());
@@ -256,7 +249,6 @@
         }
     };
 
-    /* CORRECCIÓN 3: Reset de seguridad en MouseUp */
     window.onmouseup = () => {
         if (selectionRect) {
             const box = selectionRect.getBoundingClientRect();
@@ -276,7 +268,7 @@
         document.querySelectorAll('.selection-box').forEach(el => el.remove());
     };
 
-    // --- TECLADO (PANEOS, COPIAR/PEGAR, UNDO) 100% FUNCIONAL ---
+    /* TECLADO Y PANEO [cite: 127-158] */
     window.onkeydown = (e) => {
         if (document.activeElement.tagName === 'INPUT') return;
         if (e.code === 'Space') { isPanning = true; document.body.style.cursor = 'grab'; }
@@ -293,9 +285,9 @@
                     latexLayer.appendChild(newEl);
                     makeMovable(newEl, 'div');
                     makeManualResize(newEl, newEl.querySelector('.resize-handle'));
+                    newEl.ondblclick = (e) => { e.stopPropagation(); if (newEl.dataset.tex) { editingItem = newEl; latexInput.value = newEl.dataset.tex; editorPanel.style.display = 'flex'; latexInput.focus(); } };
                 } else {
-                    svg.appendChild(newEl);
-                    makeMovable(newEl, 'path');
+                    svg.appendChild(newEl); makeMovable(newEl, 'path');
                 }
                 newEl.classList.add('selected'); selectedElements.push(newEl);
             });
@@ -307,7 +299,7 @@
 
     window.onkeyup = (e) => { if (e.code === 'Space') { isPanning = false; document.body.style.cursor = 'auto'; } };
 
-    // --- FUNCIONES DE ELEMENTOS (LATEX, IMAGEN, REDIMENSIÓN) ---
+    /* FUNCIONES DE ELEMENTOS [cite: 159-203] */
     function addLatexItem(tex) {
         const wrapper = document.createElement('div');
         wrapper.className = 'draggable-item'; wrapper.dataset.tex = tex;
@@ -369,7 +361,6 @@
         window.addEventListener('mouseup', () => { dragging = false; isDraggingItem = false; saveState(); });
     }
 
-    /* CORRECCIÓN 4: Redimensionado Avanzado (Soporta Círculos y Rectángulos) */
     function makeManualResize(el, handle) {
         let sX, sY, sW, sH, sR;
         handle.onmousedown = (e) => {
@@ -392,17 +383,17 @@
         };
     }
 
-    // --- UTILIDADES FINALES ---
+    /* HISTORIAL Y EXPORTACIÓN [cite: 211-231] */
     function createSVGElement(tag, attrs) { const el = document.createElementNS("http://www.w3.org/2000/svg", tag); for (let k in attrs) el.setAttribute(k, attrs[k]); return el; }
     function toggleGrid() { snapEnabled = !snapEnabled; document.getElementById('grid-btn').classList.toggle('active'); document.getElementById('board-container').classList.toggle('grid-active'); }
     function snap(val) { return snapEnabled ? Math.round(val / gridStep) * gridStep : val; }
-    function confirmEdit() { if (!latexInput.value) return; if (editingItem) katex.render(latexInput.value, editingItem.querySelector('div')); else addLatexItem(latexInput.value); closeEditor(); saveState(); }
+    function confirmEdit() { if (!latexInput.value) return; if (editingItem) { editingItem.dataset.tex = latexInput.value; katex.render(latexInput.value, editingItem.querySelector('div')); } else { addLatexItem(latexInput.value); } closeEditor(); saveState(); }
     function closeEditor() { editorPanel.style.display = 'none'; }
     function openEditorForNew() { editingItem = null; latexInput.value = ''; editorPanel.style.display = 'flex'; latexInput.focus(); }
     function undo() { if (undoStack.length < 2) return; redoStack.push(undoStack.pop()); applyState(undoStack[undoStack.length - 1]); }
     function redo() { if (redoStack.length === 0) return; const state = redoStack.pop(); undoStack.push(state); applyState(state); }
     function saveState() { undoStack.push({svg: svg.innerHTML, latex: latexLayer.innerHTML}); if(undoStack.length > 30) undoStack.shift(); }
-    function applyState(state) { svg.innerHTML = state.svg; latexLayer.innerHTML = state.latex; document.querySelectorAll('.sketch-path').forEach(el => makeMovable(el, 'path')); document.querySelectorAll('.draggable-item').forEach(el => { makeMovable(el, 'div'); makeManualResize(el, el.querySelector('.resize-handle')); }); }
+    function applyState(state) { svg.innerHTML = state.svg; latexLayer.innerHTML = state.latex; document.querySelectorAll('.sketch-path').forEach(el => makeMovable(el, 'path')); document.querySelectorAll('.draggable-item').forEach(el => { makeMovable(el, 'div'); makeManualResize(el, el.querySelector('.resize-handle')); el.ondblclick = (e) => { e.stopPropagation(); if (el.dataset.tex) { editingItem = el; latexInput.value = el.dataset.tex; editorPanel.style.display = 'flex'; latexInput.focus(); } }; }); }
     function clearBoard() { if(confirm("¿Limpiar todo?")) { svg.innerHTML = ''; latexLayer.innerHTML = ''; saveState(); } }
     async function exportPNG() { deselectAll(); const canvas = await html2canvas(document.getElementById('board-container')); const link = document.createElement('a'); link.download = 'tablero.png'; link.href = canvas.toDataURL(); link.click(); }
     
