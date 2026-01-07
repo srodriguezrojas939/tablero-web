@@ -209,11 +209,6 @@
     pointer-events: none !important;
 }
 
-        /* FIX DEFINITIVO: permitir dibujar */
-        
-.draw-mode.is-drawing #latex-layer {
-    pointer-events: none;
-}
 
     </style>
 </head>
@@ -396,6 +391,7 @@ const gridStep = 20; // Tamaño de la cuadrícula
        ============================================================ */
 svg.onmousedown = (e) => {
     // --- ESCUDO DE SEGURIDAD ---
+    latexLayer.style.pointerEvents = 'none';
     // Si ya existe un cuadro de selección por error, lo eliminamos físicamente antes de seguir
     document.querySelectorAll('.selection-box').forEach(el => el.remove());
     isDrawing = false; 
@@ -513,7 +509,9 @@ window.onmouseup = () => {
     document.getElementById('board-container').classList.remove('is-drawing');
     // Limpiamos cualquier cuadro azul que haya sobrevivido por error de lógica
     document.querySelectorAll('.selection-box').forEach(el => el.remove());
-    
+
+    latexLayer.style.pointerEvents = 'auto';
+
 };
 
 
