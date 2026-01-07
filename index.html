@@ -39,44 +39,18 @@
         .editor-btns button { flex: 1; padding: 8px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; }
 
         #board-container { width: 100vw; height: 100vh; position: relative; background: var(--bg-canvas); overflow: hidden; }
-
-        /* ============================================================
-           CORRECCIÓN DE JERARQUÍA (Z-INDEX)
-           ============================================================ */
         
-        /* 1. ABAJO: Imágenes */
-        .draggable-item.image-item { z-index: 10; }
-
-        /* 2. MITAD: LaTeX */
-        .draggable-item.latex-item { z-index: 20; }
-
-        /* 3. ARRIBA: Capa de dibujo (Pintar sobre todo) */
-        #svg-canvas {
-            position: absolute;
-            inset: 0;
-            z-index: 30;
-            pointer-events: none; /* Por defecto deja pasar clics */
-            background: transparent !important;
-        }
-
-        /* En modo dibujo, el SVG captura el mouse para poder pintar */
-        .draw-mode #svg-canvas { pointer-events: auto; }
-        /* En modo dibujo, los objetos no estorban al lápiz */
+        /* CORRECCIÓN 1: CAPAS DINÁMICAS */
+        #svg-canvas { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+        #latex-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+        
+        .draw-mode #svg-canvas, .select-mode #svg-canvas { pointer-events: auto; }
         .draw-mode .draggable-item { pointer-events: none !important; }
-
-        /* MODO SELECCIÓN: Los objetos saltan al frente (Z-40) para poder moverse y redimensionarse */
-        .select-mode .draggable-item { 
-            z-index: 40 !important; 
-            pointer-events: auto !important; 
-        }
-        .select-mode #svg-canvas { pointer-events: auto; }
-
-        #latex-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; }
+        .select-mode .draggable-item { z-index: 10 !important; pointer-events: auto !important; }
 
         .draggable-item { position: absolute; cursor: move; padding: 10px; transform-origin: top left; pointer-events: auto; border: 1px dashed transparent; }
         .draggable-item.selected { border: 1px dashed var(--accent) !important; background: rgba(74, 144, 226, 0.05); }
         .draggable-item img { width: 100%; height: 100%; display: block; user-select: none; -webkit-user-drag: none; }
-        
         .resize-handle { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background: var(--accent); cursor: nwse-resize; display: none; z-index: 100; }
         .draggable-item.selected .resize-handle { display: block; }
 
@@ -84,20 +58,12 @@
         .sketch-path.selected { stroke: var(--accent); filter: drop-shadow(0 0 3px rgba(74, 144, 226, 0.5)); }
         .selection-box { fill: rgba(74, 144, 226, 0.1); stroke: var(--accent); stroke-width: 1; stroke-dasharray: 4; pointer-events: none; }
 
-        .toolbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%) !important; background: var(--ui-white); padding: 8px 15px; border-radius: 50px; display: flex; gap: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid var(--ui-gray-med); z-index: 1000; }
+        .toolbar { position: absolute; bottom: 20px; left: 50%; background: var(--ui-white); padding: 8px 15px; border-radius: 50px; display: flex; gap: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid var(--ui-gray-med); z-index: 1000; transform: none !important; }
         .tool-btn { border: 1px solid transparent; background: none; font-size: 13px; cursor: pointer; padding: 8px 12px; border-radius: 10px; color: var(--ui-gray-dark); font-weight: 600; }
         .tool-btn.active { background: var(--ui-gray-light); color: var(--text-main); border-color: var(--ui-gray-med); }
         .divider { width: 1px; background: var(--ui-gray-med); margin: 0 5px; }
 
-        #board-container.grid-active {
-            background-color: #ffffff !important;
-            background-image: 
-                radial-gradient(rgba(0, 0, 0, 0.2) 1px, transparent 1px),
-                linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-            background-size: 20px 20px, 20px 20px, 20px 20px;
-            background-position: -1px -1px;
-        }
+        #board-container.grid-active { background-color: #ffffff !important; background-image: radial-gradient(rgba(0, 0, 0, 0.2) 1px, transparent 1px), linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px); background-size: 20px 20px, 20px 20px, 20px 20px; background-position: -1px -1px; }
 
         .style-bar { position: absolute; top: 80px; left: 20px; background: var(--ui-white); padding: 12px; border-radius: 12px; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--ui-gray-med); box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 1000; }
         .color-picker { width: 35px; height: 35px; border: 2px solid var(--ui-gray-light); border-radius: 50%; cursor: pointer; padding: 0; overflow: hidden; }
@@ -162,19 +128,17 @@
 </div>
 
 <script>
+    // --- ESTADO GLOBAL (100% ORIGINAL) ---
     let mode = 'DRAW', isDrawing = false, startX, startY, isDraggingItem = false;
     let currentPath = null, polyPoints = [], selectedElements = [], selectionRect = null;
     let undoStack = [], redoStack = [], editingItem = null, clipboard = [];
-
     const svg = document.getElementById('svg-canvas');
     const latexLayer = document.getElementById('latex-layer');
     const editorPanel = document.getElementById('editor-panel');
     const latexInput = document.getElementById('latex-input');
     const gridStep = 20; let snapEnabled = false;
-
-    let currentStrokeColor = '#222222';
-    let currentStrokeWidth = 3;
-    let viewBox = { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight };
+    let currentStrokeColor = '#222222'; let currentStrokeWidth = 3;
+    let isPanning = false; let viewBox = { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight };
 
     document.getElementById('stroke-color').onchange = (e) => currentStrokeColor = e.target.value;
     document.getElementById('stroke-width').oninput = (e) => currentStrokeWidth = e.target.value;
@@ -215,38 +179,33 @@
         });
     }
 
-    /* CORRECCIÓN: setMode ahora gestiona las clases del contenedor para el CSS inteligente */
+    /* CORRECCIÓN 2: setMode mejorado */
     function setMode(m, btn = null) {
         document.querySelectorAll('.selection-box').forEach(el => el.remove());
-        isDrawing = false; 
-        mode = m;
-        
+        isDrawing = false; mode = m;
         const board = document.getElementById('board-container');
-        board.classList.remove('draw-mode', 'select-mode', 'has-selection');
-        
+        board.classList.remove('draw-mode', 'select-mode');
         document.querySelectorAll('.tool-btn.active').forEach(b => b.classList.remove('active'));
         if (btn) btn.classList.add('active');
-
-        const DRAW_MODES = ['DRAW', 'POLY', 'RECT', 'CIRCLE'];
-        if (DRAW_MODES.includes(m)) {
+        if (['DRAW', 'POLY', 'RECT', 'CIRCLE'].includes(m)) {
             board.classList.add('draw-mode');
             deselectAll();
         } else if (m === 'SELECT') {
             board.classList.add('select-mode');
         }
-        board.style.cursor = DRAW_MODES.includes(m) ? 'crosshair' : 'default';
     }
 
+    // --- MOUSE Y DIBUJO ---
     svg.onmousedown = (e) => {
+        if (isPanning) return;
         document.querySelectorAll('.selection-box').forEach(el => el.remove());
-        const x = snap(e.offsetX), y = snap(e.offsetY);
+        const x = snap(e.offsetX + viewBox.x), y = snap(e.offsetY + viewBox.y);
         startX = x; startY = y;
 
         if (mode === 'SELECT') {
             if (isDraggingItem) return;
-            deselectAll();
-            isDrawing = true; 
-            selectionRect = createSVGElement('rect', { class: 'selection-box', x: x, y: y, width: 0, height: 0 });
+            deselectAll(); isDrawing = true;
+            selectionRect = createSVGElement('rect', { class: 'selection-box', x, y, width: 0, height: 0 });
             svg.appendChild(selectionRect);
             return;
         }
@@ -274,8 +233,14 @@
     };
 
     svg.onmousemove = (e) => {
+        if (isPanning && e.buttons === 1) {
+            viewBox.x -= e.movementX; viewBox.y -= e.movementY;
+            svg.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+            latexLayer.style.transform = `translate(${-viewBox.x}px, ${-viewBox.y}px)`;
+            return;
+        }
         if (isDraggingItem || (!isDrawing && mode !== 'POLY')) return;
-        const x = snap(e.offsetX), y = snap(e.offsetY);
+        const x = snap(e.offsetX + viewBox.x), y = snap(e.offsetY + viewBox.y);
         
         if (selectionRect) {
             let w = x - startX, h = y - startY;
@@ -291,6 +256,7 @@
         }
     };
 
+    /* CORRECCIÓN 3: Reset de seguridad en MouseUp */
     window.onmouseup = () => {
         if (selectionRect) {
             const box = selectionRect.getBoundingClientRect();
@@ -301,7 +267,6 @@
                     el.classList.add('selected'); selectedElements.push(el);
                 }
             });
-            if (selectedElements.length > 0) document.getElementById('board-container').classList.add('has-selection');
             selectionRect.remove(); selectionRect = null;
         }
         if (isDrawing && currentPath && mode !== 'POLY') {
@@ -311,16 +276,45 @@
         document.querySelectorAll('.selection-box').forEach(el => el.remove());
     };
 
-    /* CORRECCIÓN: Clasificación de LaTeX e Imágenes para Z-Index */
+    // --- TECLADO (PANEOS, COPIAR/PEGAR, UNDO) 100% FUNCIONAL ---
+    window.onkeydown = (e) => {
+        if (document.activeElement.tagName === 'INPUT') return;
+        if (e.code === 'Space') { isPanning = true; document.body.style.cursor = 'grab'; }
+        if (e.key === 'Backspace' || e.key === 'Delete') { selectedElements.forEach(el => el.remove()); saveState(); }
+        if (e.ctrlKey && e.key === 'c') clipboard = selectedElements.map(el => el.cloneNode(true));
+        if (e.ctrlKey && e.key === 'v') {
+            if (clipboard.length === 0) return;
+            deselectAll();
+            clipboard.forEach(clone => {
+                const newEl = clone.cloneNode(true);
+                if (newEl.tagName.toLowerCase() === 'div') {
+                    newEl.style.left = (parseFloat(newEl.style.left) + 20) + "px";
+                    newEl.style.top = (parseFloat(newEl.style.top) + 20) + "px";
+                    latexLayer.appendChild(newEl);
+                    makeMovable(newEl, 'div');
+                    makeManualResize(newEl, newEl.querySelector('.resize-handle'));
+                } else {
+                    svg.appendChild(newEl);
+                    makeMovable(newEl, 'path');
+                }
+                newEl.classList.add('selected'); selectedElements.push(newEl);
+            });
+            saveState();
+        }
+        if (e.ctrlKey && e.key === 'z') undo();
+        if (e.ctrlKey && e.key === 'y') redo();
+    };
+
+    window.onkeyup = (e) => { if (e.code === 'Space') { isPanning = false; document.body.style.cursor = 'auto'; } };
+
+    // --- FUNCIONES DE ELEMENTOS (LATEX, IMAGEN, REDIMENSIÓN) ---
     function addLatexItem(tex) {
         const wrapper = document.createElement('div');
-        wrapper.className = 'draggable-item latex-item'; // Clase añadida
-        wrapper.style.left = '100px'; wrapper.style.top = '100px';
-        wrapper.dataset.tex = tex;
+        wrapper.className = 'draggable-item'; wrapper.dataset.tex = tex;
+        wrapper.style.left = (100 + viewBox.x) + 'px'; wrapper.style.top = (100 + viewBox.y) + 'px';
         wrapper.innerHTML = `<div></div><div class="resize-handle"></div>`;
         latexLayer.appendChild(wrapper);
         katex.render(tex, wrapper.querySelector('div'));
-        
         wrapper.ondblclick = (e) => { e.stopPropagation(); editingItem = wrapper; latexInput.value = wrapper.dataset.tex; editorPanel.style.display = 'flex'; latexInput.focus(); };
         makeMovable(wrapper, 'div');
         makeManualResize(wrapper, wrapper.querySelector('.resize-handle'));
@@ -329,9 +323,8 @@
 
     function addImageItem(src) {
         const wrapper = document.createElement('div');
-        wrapper.className = 'draggable-item image-item'; // Clase añadida
-        wrapper.style.left = '50px'; wrapper.style.top = '50px';
-        wrapper.style.width = '200px';
+        wrapper.className = 'draggable-item'; wrapper.style.width = '200px';
+        wrapper.style.left = (50 + viewBox.x) + 'px'; wrapper.style.top = (50 + viewBox.y) + 'px';
         wrapper.innerHTML = `<img src="${src}"><div class="resize-handle"></div>`;
         latexLayer.appendChild(wrapper);
         makeMovable(wrapper, 'div');
@@ -345,33 +338,24 @@
         event.target.value = '';
     }
 
-    function deselectAll() {
-        document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
-        selectedElements = [];
-        document.getElementById('board-container').classList.remove('has-selection');
-    }
+    function deselectAll() { document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected')); selectedElements = []; }
 
     function makeMovable(el, type) {
         let dragging = false, iX = 0, iY = 0;
-        const board = document.getElementById('board-container');
-
         el.onmousedown = (e) => {
             if (mode === 'ERASE') { el.remove(); saveState(); return; }
-            if (mode !== 'SELECT') return; // Bloquear movimiento si no es selección
-
-            if (!el.classList.contains('selected')) { deselectAll(); el.classList.add('selected'); selectedElements = [el]; board.classList.add('has-selection'); }
-            e.stopPropagation();
-            dragging = true; isDraggingItem = true;
+            if (mode !== 'SELECT') return;
+            if (!el.classList.contains('selected')) { deselectAll(); el.classList.add('selected'); selectedElements = [el]; }
+            e.stopPropagation(); dragging = true; isDraggingItem = true;
             iX = e.clientX; iY = e.clientY;
         };
-
         window.addEventListener('mousemove', (e) => {
             if (!dragging) return;
             const dx = snap(e.clientX - iX), dy = snap(e.clientY - iY);
             selectedElements.forEach(item => {
                 if (item.tagName.toLowerCase() === 'div') {
                     item.style.left = (parseFloat(item.style.left) + dx) + 'px';
-                    item.style.top  = (parseFloat(item.style.top)  + dy) + 'px';
+                    item.style.top = (parseFloat(item.style.top) + dy) + 'px';
                 } else {
                     const t = item.getAttribute('transform') || 'translate(0,0) scale(1)';
                     const m = t.match(/translate\(([^,)]+),\s*([^)]+)\)/);
@@ -382,32 +366,33 @@
             });
             iX = e.clientX; iY = e.clientY;
         });
-
         window.addEventListener('mouseup', () => { dragging = false; isDraggingItem = false; saveState(); });
     }
 
+    /* CORRECCIÓN 4: Redimensionado Avanzado (Soporta Círculos y Rectángulos) */
     function makeManualResize(el, handle) {
-        let startX, startY, startW, startH;
+        let sX, sY, sW, sH, sR;
         handle.onmousedown = (e) => {
-            e.stopPropagation();
-            startX = e.clientX; startY = e.clientY;
-            startW = el.offsetWidth; startH = el.offsetHeight;
+            e.stopPropagation(); sX = e.clientX; sY = e.clientY;
+            if (el.tagName.toLowerCase() === 'div') { sW = el.offsetWidth; sH = el.offsetHeight; }
+            else if (el.tagName === 'rect') { sW = parseFloat(el.getAttribute('width')); sH = parseFloat(el.getAttribute('height')); }
+            else if (el.tagName === 'circle') { sR = parseFloat(el.getAttribute('r')); }
 
             window.onmousemove = (ev) => {
-                const dx = snap(ev.clientX - startX), dy = snap(ev.clientY - startY);
-                if (el.classList.contains('latex-item')) {
-                    let scale = Math.min(Math.max(20, startW + dx) / startW, Math.max(20, startH + dy) / startH);
-                    el.querySelector('div').style.fontSize = `${16 * scale}px`;
-                } else {
-                    el.style.width = Math.max(20, startW + dx) + 'px';
-                    el.style.height = Math.max(20, startH + dy) + 'px';
-                }
+                const dx = snap(ev.clientX - sX), dy = snap(ev.clientY - sY);
+                if (el.tagName.toLowerCase() === 'div') {
+                    if (el.dataset.tex) {
+                        let scale = Math.min(Math.max(20, sW + dx) / sW, Math.max(20, sH + dy) / sH);
+                        el.querySelector('div').style.fontSize = `${16 * scale}px`;
+                    } else { el.style.width = Math.max(20, sW + dx) + 'px'; el.style.height = Math.max(20, sH + dy) + 'px'; }
+                } else if (el.tagName === 'rect') { el.setAttribute('width', Math.max(10, sW + dx)); el.setAttribute('height', Math.max(10, sH + dy)); }
+                else if (el.tagName === 'circle') { el.setAttribute('r', Math.max(5, sR + dx)); }
             };
             window.onmouseup = () => { window.onmousemove = null; window.onmouseup = null; saveState(); };
         };
     }
 
-    /* MANTENIENDO TODAS TUS FUNCIONES EXISTENTES */
+    // --- UTILIDADES FINALES ---
     function createSVGElement(tag, attrs) { const el = document.createElementNS("http://www.w3.org/2000/svg", tag); for (let k in attrs) el.setAttribute(k, attrs[k]); return el; }
     function toggleGrid() { snapEnabled = !snapEnabled; document.getElementById('grid-btn').classList.toggle('active'); document.getElementById('board-container').classList.toggle('grid-active'); }
     function snap(val) { return snapEnabled ? Math.round(val / gridStep) * gridStep : val; }
@@ -422,12 +407,12 @@
     async function exportPNG() { deselectAll(); const canvas = await html2canvas(document.getElementById('board-container')); const link = document.createElement('a'); link.download = 'tablero.png'; link.href = canvas.toDataURL(); link.click(); }
     
     function makePanelDraggable(el) {
-        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        let p1 = 0, p2 = 0, p3 = 0, p4 = 0;
         el.onmousedown = (e) => {
             if (['BUTTON', 'INPUT'].includes(e.target.tagName) || e.target.classList.contains('pill')) return;
-            e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY;
+            e.preventDefault(); p3 = e.clientX; p4 = e.clientY;
             document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
-            document.onmousemove = (ev) => { ev.preventDefault(); pos1 = pos3 - ev.clientX; pos2 = pos4 - ev.clientY; pos3 = ev.clientX; pos4 = ev.clientY; el.style.top = (el.offsetTop - pos2) + "px"; el.style.left = (el.offsetLeft - pos1) + "px"; el.style.bottom = "auto"; el.style.right = "auto"; };
+            document.onmousemove = (ev) => { ev.preventDefault(); p1 = p3 - ev.clientX; p2 = p4 - ev.clientY; p3 = ev.clientX; p4 = ev.clientY; el.style.top = (el.offsetTop - p2) + "px"; el.style.left = (el.offsetLeft - p1) + "px"; el.style.bottom = "auto"; el.style.right = "auto"; };
         }
     }
 
