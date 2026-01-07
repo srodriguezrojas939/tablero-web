@@ -445,28 +445,6 @@ svg.onmousedown = (e) => {
     }
 };
 
-    svg.onmousemove = (e) => {
-        if (isDraggingItem) return;
-        if (!isDrawing && mode !== 'POLY') return;
-        const x = snap(e.offsetX), y = snap(e.offsetY);
-
-        if (selectionRect) {
-            let w = x - startX, h = y - startY;
-            selectionRect.setAttribute('width', Math.abs(w)); selectionRect.setAttribute('height', Math.abs(h));
-            selectionRect.setAttribute('x', w < 0 ? x : startX); selectionRect.setAttribute('y', h < 0 ? y : startY);
-        } else if (currentPath) {
-            if (mode === 'DRAW') currentPath.setAttribute('d', currentPath.getAttribute('d') + ` L ${x} ${y}`);
-            else if (mode === 'RECT') {
-                currentPath.setAttribute('width', Math.abs(x - startX)); currentPath.setAttribute('height', Math.abs(y - startY));
-                currentPath.setAttribute('x', Math.min(x, startX)); currentPath.setAttribute('y', Math.min(y, startY));
-            } else if (mode === 'CIRCLE') {
-                currentPath.setAttribute('r', Math.sqrt((x-startX)**2 + (y-startY)**2));
-            } else if (mode === 'POLY') {
-                let tempPoints = [...polyPoints, `${x},${y}`].join(' ');
-                currentPath.setAttribute('points', tempPoints);
-            }
-        }
-    };
 
 window.onmouseup = () => {
     if (selectionRect) {
