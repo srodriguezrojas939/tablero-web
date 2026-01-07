@@ -207,6 +207,12 @@
     pointer-events: none;
 }
 
+        /* FIX FINAL: Desactivar layer LaTeX solo mientras presionas mouse para dibujar/seleccionar */
+.draw-mode.is-drawing #latex-layer,
+.select-mode.is-drawing #latex-layer {
+    pointer-events: none !important;
+}
+
     </style>
 </head>
 <body>
