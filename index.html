@@ -428,44 +428,69 @@ function setMode(m, btn = null) {
     /* ============================================================
        4. LÓGICA DE DIBUJO Y MOUSE
        ============================================================ */
-    svg.onmousedown = (e) => {
-        const x = snap(e.offsetX), y = snap(e.offsetY);
-        startX = x; startY = y;
+   svg.onmousedown = (e) => {
+    const x = snap(e.offsetX);
+    const y = snap(e.offsetY);
+    startX = x;
+    startY = y;
 
-      if (mode === 'SELECT' && !isDraggingItem) {
-            deselectAll(); 
-            isDrawing = true; 
-            selectionRect = createSVGElement('rect', {class: 'selection-box'}); 
-            svg.appendChild(selectionRect); 
-            return; 
-        }
-        
-        if (mode === 'POLY') {
-            if (polyPoints.length === 0) {
-                currentPath = createSVGElement('polyline', {class: 'sketch-path', stroke: 'var(--text-main)', fill: 'none', transform: 'translate(0,0) scale(1)'});
-                svg.appendChild(currentPath);
-            }
-            polyPoints.push(`${x},${y}`);
-            currentPath.setAttribute('points', polyPoints.join(' '));
-            return;
+    // MODO SELECCIÓN
+    if (mode === 'SELECT' && !isDraggingItem) {
+        // Limpiar selección previa
+        deselectAll();
+
+        // Eliminar cualquier rectángulo pendiente
+        if (selectionRect) {
+            selectionRect.remove();
+            selectionRect = null;
         }
 
         isDrawing = true;
-        if (mode === 'DRAW') currentPath = createSVGElement('path', {d: `M ${x} ${y}`});
-        else if (mode === 'RECT') currentPath = createSVGElement('rect', {x, y, width:0, height:0});
-        else if (mode === 'CIRCLE') currentPath = createSVGElement('circle', {cx:x, cy:y, r:0});
 
-       if (currentPath) {
-            Object.assign(currentPath.style, { 
-                stroke: currentStrokeColor, // Usa el color del selector
-                fill: 'none', 
-                strokeWidth: currentStrokeWidth // Usa el grosor del slider
+        // Crear rectángulo de selección
+        selectionRect = createSVGElement('rect', { class: 'selection-box' });
+        selectionRect.setAttribute('x', x);
+        selectionRect.setAttribute('y', y);
+        selectionRect.setAttribute('width', 0);
+        selectionRect.setAttribute('height', 0);
+
+        svg.appendChild(selectionRect);
+        return; // No hacemos nada más
+    }
+
+    // MODO POLYLINE
+    if (mode === 'POLY') {
+        if (polyPoints.length === 0) {
+            currentPath = createSVGElement('polyline', {
+                class: 'sketch-path',
+                stroke: 'var(--text-main)',
+                fill: 'none',
+                transform: 'translate(0,0) scale(1)'
             });
-            currentPath.setAttribute('class', 'sketch-path');
-            currentPath.setAttribute('transform', 'translate(0,0) scale(1)');
             svg.appendChild(currentPath);
         }
-    };
+        polyPoints.push(`${x},${y}`);
+        currentPath.setAttribute('points', polyPoints.join(' '));
+        return;
+    }
+
+    // MODO DIBUJO / RECT / CIRCLE
+    isDrawing = true;
+    if (mode === 'DRAW') currentPath = createSVGElement('path', { d: `M ${x} ${y}` });
+    else if (mode === 'RECT') currentPath = createSVGElement('rect', { x, y, width: 0, height: 0 });
+    else if (mode === 'CIRCLE') currentPath = createSVGElement('circle', { cx: x, cy: y, r: 0 });
+
+    if (currentPath) {
+        Object.assign(currentPath.style, {
+            stroke: currentStrokeColor,
+            fill: 'none',
+            strokeWidth: currentStrokeWidth
+        });
+        currentPath.setAttribute('class', 'sketch-path');
+        currentPath.setAttribute('transform', 'translate(0,0) scale(1)');
+        svg.appendChild(currentPath);
+    }
+};
 
     svg.onmousemove = (e) => {
         if (isDraggingItem) return;
@@ -492,9 +517,11 @@ function setMode(m, btn = null) {
 
     window.onmouseup = () => {
 
+    // TERMINAR SELECCIÓN
     if (selectionRect) {
         const box = selectionRect.getBoundingClientRect();
 
+        selectedElements = []; // Limpiar selección previa
         document.querySelectorAll('.sketch-path, .draggable-item').forEach(el => {
             const r = el.getBoundingClientRect();
             if (!(r.left > box.right || r.right < box.left || r.top > box.bottom || r.bottom < box.top)) {
@@ -504,15 +531,14 @@ function setMode(m, btn = null) {
         });
 
         if (selectedElements.length > 0) {
-            document
-                .getElementById('board-container')
-                .classList.add('has-selection');
+            document.getElementById('board-container').classList.add('has-selection');
         }
 
         selectionRect.remove();
         selectionRect = null;
     }
 
+    // TERMINAR DIBUJO
     if (isDrawing && currentPath && mode !== 'POLY') {
         makeMovable(currentPath, 'path');
         saveState();
@@ -521,6 +547,7 @@ function setMode(m, btn = null) {
 
     isDrawing = false;
 };
+
 
 
     svg.ondblclick = () => {
