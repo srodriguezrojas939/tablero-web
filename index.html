@@ -508,12 +508,20 @@ window.onmouseup = () => {
     });
 
     // Modificar el movimiento del mouse para el paneo
-  const handleDrawMouseMove = (e) => {
+ svg.onmousemove = (e) => {
+    if (isPanning && e.buttons === 1) {
+        const dx = e.movementX;
+        const dy = e.movementY;
+        viewBox.x -= dx;
+        viewBox.y -= dy;
+        svg.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+        latexLayer.style.transform = `translate(${-viewBox.x}px, ${-viewBox.y}px)`;
+        return;
+    }
+
     if (isDraggingItem) return;
     if (!isDrawing && mode !== 'POLY') return;
-
     const x = snap(e.offsetX), y = snap(e.offsetY);
-
     if (selectionRect) {
         let w = x - startX, h = y - startY;
         selectionRect.setAttribute('width', Math.abs(w));
@@ -533,20 +541,6 @@ window.onmouseup = () => {
             currentPath.setAttribute('points', [...polyPoints, `${x},${y}`].join(' '));
         }
     }
-};
-
-svg.onmousemove = (e) => {
-    if (isPanning && e.buttons === 1) {
-        const dx = e.movementX;
-        const dy = e.movementY;
-        viewBox.x -= dx;
-        viewBox.y -= dy;
-        svg.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
-        latexLayer.style.transform = `translate(${-viewBox.x}px, ${-viewBox.y}px)`;
-        return;
-    }
-
-    handleDrawMouseMove(e);
 };
 
 
