@@ -352,41 +352,29 @@ const gridStep = 20; // Tamaño de la cuadrícula
  * ❌ No maneja drag de items
  */
 
-    function setMode(m, btn = null) {
-    // 1. Limpieza de estados
+function setMode(m, btn = null) {
     document.querySelectorAll('.selection-box').forEach(el => el.remove());
-    if (currentPath && mode !== 'POLY') {
-        currentPath.remove();
-        currentPath = null;
-    }
-    selectionRect = null;
-    isDrawing = false; 
-    polyPoints.length = 0;
+    isDrawing = false;
     mode = m;
 
-    // 2. UI: Actualizar botones
     document.querySelectorAll('.tool-btn.active').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
 
     const board = document.getElementById('board-container');
-    const DRAW_MODES = ['DRAW', 'POLY', 'RECT', 'CIRCLE'];
-    const isDrawingMode = DRAW_MODES.includes(m);
+    const isDrawingMode = ['DRAW', 'POLY', 'RECT', 'CIRCLE'].includes(m);
 
-    // 3. GESTIÓN DE CAPAS E INTERACCIÓN
     if (isDrawingMode) {
         board.classList.add('draw-mode');
         board.classList.remove('select-mode');
-        // Bloqueamos la capa de LaTeX para que los clics atraviesen las imágenes y lleguen al SVG
+        // Esto hace que el clic atraviese la imagen y llegue al lápiz:
         latexLayer.style.pointerEvents = 'none'; 
         deselectAll();
     } else {
         board.classList.remove('draw-mode');
-        // Devolvemos la interacción a las imágenes para que puedas moverlas o editarlas
+        // Esto permite que vuelvas a mover la imagen:
         latexLayer.style.pointerEvents = 'auto'; 
         if (m === 'SELECT') board.classList.add('select-mode');
     }
-
-    board.style.cursor = isDrawingMode ? 'crosshair' : 'default';
 }
     
 
@@ -458,11 +446,11 @@ svg.onmousedown = (e) => {
 };
 
 
-window.onmouseup = () => {
+window.addEventListener('mouseup', () => {
+    // 1. Finalizar Recuadro de Selección
     if (selectionRect) {
         const box = selectionRect.getBoundingClientRect();
         selectedElements = []; 
-        
         document.querySelectorAll('.sketch-path, .draggable-item').forEach(el => {
             const r = el.getBoundingClientRect();
             if (!(r.left > box.right || r.right < box.left || r.top > box.bottom || r.bottom < box.top)) {
@@ -470,32 +458,26 @@ window.onmouseup = () => {
                 selectedElements.push(el);
             }
         });
-
-        if (selectedElements.length > 0) {
-            document.getElementById('board-container').classList.add('has-selection');
-        }
-
+        if (selectedElements.length > 0) document.getElementById('board-container').classList.add('has-selection');
         selectionRect.remove();
         selectionRect = null;
     }
 
-    // Seguridad: Si estamos en modo dibujo y soltamos, terminamos el trazo
+    // 2. Finalizar Dibujo (Lápiz, Rect, Círculo)
     if (isDrawing && currentPath && mode !== 'POLY') {
         makeMovable(currentPath, 'path');
         saveState();
-        currentPath = null;
     }
 
-    // Reset final e innegociable de estados
+    // 3. Reset de seguridad
     isDrawing = false;
+    currentPath = null;
     document.getElementById('board-container').classList.remove('is-drawing');
-    // Limpiamos cualquier cuadro azul que haya sobrevivido por error de lógica
-    document.querySelectorAll('.selection-box').forEach(el => el.remove());
-
-    latexLayer.style.pointerEvents = 'auto';
-
-};
-
+    // Si no estamos dibujando, devolvemos el control a la capa de imágenes
+    if (mode === 'SELECT') {
+        latexLayer.style.pointerEvents = 'auto';
+    }
+});
 
 
     svg.ondblclick = () => {
@@ -813,69 +795,77 @@ function makeMovable(el, type) {
         saveState();
     });
 }
-
-   function makeManualResize(el, handle) {
-    let startX, startY;
-    let startW, startH, startLeft, startTop, startR;
+/* ============================================================
+   FUNCIÓN DE REDIMENSIONADO CORREGIDA
+   ============================================================ */
+function makeManualResize(el, handle) {
+    let startX, startY, startW, startH, startR;
 
     handle.onmousedown = (e) => {
+        // Detenemos la propagación para que el tablero no crea que estamos dibujando algo nuevo
         e.stopPropagation();
+        e.preventDefault();
+
         startX = e.clientX;
         startY = e.clientY;
 
+        // Capturamos los valores iniciales según el tipo de elemento
         if (el.tagName.toLowerCase() === 'div') {
             startW = el.offsetWidth;
             startH = el.offsetHeight;
-            startLeft = parseFloat(el.style.left);
-            startTop = parseFloat(el.style.top);
-        } 
-        else if (el.tagName === 'rect') {
-            startW = parseFloat(el.getAttribute('width'));
-            startH = parseFloat(el.getAttribute('height'));
-            startLeft = parseFloat(el.getAttribute('x'));
-            startTop = parseFloat(el.getAttribute('y'));
-        } 
-        else if (el.tagName === 'circle') {
-            startR = parseFloat(el.getAttribute('r'));
+        } else if (el.tagName === 'rect') {
+            startW = parseFloat(el.getAttribute('width')) || 0;
+            startH = parseFloat(el.getAttribute('height')) || 0;
+        } else if (el.tagName === 'circle') {
+            startR = parseFloat(el.getAttribute('r')) || 0;
         }
 
-        window.onmousemove = (ev) => {
-            const dx = snap(ev.clientX - startX);
-            const dy = snap(ev.clientY - startY);
+        // Definimos el movimiento dentro del mousedown para que sea temporal
+        const onMouseMoveResize = (ev) => {
+            // Calculamos el desplazamiento (puedes usar snap() aquí si quieres que el tamaño ajuste a la rejilla)
+            const dx = ev.clientX - startX;
+            const dy = ev.clientY - startY;
 
             if (el.tagName.toLowerCase() === 'div') {
                 if (el.dataset.tex) {
-                    // Para LaTeX: escalamos el font-size
+                    // Lógica para LaTeX: escalado uniforme basado en font-size
                     let scaleW = Math.max(20, startW + dx) / startW;
                     let scaleH = Math.max(20, startH + dy) / startH;
-                    let scale = Math.min(scaleW, scaleH); // usar el menor para no deformar
+                    let scale = Math.min(scaleW, scaleH);
                     const texDiv = el.querySelector('div');
                     if (texDiv) {
-                        texDiv.style.fontSize = `${16 * scale}px`; // 16px es tamaño base
+                        texDiv.style.fontSize = `${16 * scale}px`;
                     }
                 } else {
-                    // Para imágenes u otros divs: cambiamos width/height
+                    // Lógica para Imágenes: cambio de dimensiones físicas
                     el.style.width = Math.max(20, startW + dx) + 'px';
                     el.style.height = Math.max(20, startH + dy) + 'px';
                 }
-            }
+            } 
             else if (el.tagName === 'rect') {
                 el.setAttribute('width', Math.max(10, startW + dx));
                 el.setAttribute('height', Math.max(10, startH + dy));
-            }
+            } 
             else if (el.tagName === 'circle') {
                 el.setAttribute('r', Math.max(5, startR + dx));
             }
         };
 
-        window.onmouseup = () => {
-            window.onmousemove = null;
-            window.onmouseup = null;
-            saveState();
+        // Definimos la limpieza al soltar el mouse
+        const onMouseUpResize = () => {
+            // REMOVEMOS los eventos temporales para que no afecten al resto del código
+            window.removeEventListener('mousemove', onMouseMoveResize);
+            window.removeEventListener('mouseup', onMouseUpResize);
+            
+            // Guardamos en el historial para el deshacer/rehacer
+            if (typeof saveState === "function") saveState();
         };
+
+        // Escuchamos el movimiento y el fin del clic en el objeto window (más seguro)
+        window.addEventListener('mousemove', onMouseMoveResize);
+        window.addEventListener('mouseup', onMouseUpResize);
     };
 }
-
       
     function toggleGrid() {
     snapEnabled = !snapEnabled;
