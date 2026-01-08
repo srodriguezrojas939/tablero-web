@@ -67,7 +67,7 @@
 </head>
 <body>
 
-<header><h1>TABLERO MATEMÁTICO AVANZADO</h1></header>
+<header><h1>TABLERO </h1></header>
 
 <div class="toolbar">
     <button class="btn active" id="btn-PENCIL" onclick="setMode('PENCIL')">LÁPIZ</button>
@@ -78,6 +78,7 @@
     <button class="btn" onclick="showLatexPanel()">Σ LATEX</button>
     <div class="divider"></div>
     <button class="btn" onclick="undo()">DESHACER</button>
+    <button class="btn" onclick="redo()">REHACER</button>
     <button class="btn" onclick="clearAll()" style="color:red">LIMPIAR</button>
 </div>
 
@@ -378,22 +379,75 @@
         r.readAsDataURL(f);
     }
 
-    function undo() {
-        if (history.length === 0) return;
-        const last = history.pop();
-        layers.draw.innerHTML = last.draw;
-        layers.latex.innerHTML = last.latex;
-        layers.img.innerHTML = last.img;
-        deselect();
-    }
+  function saveHistory() {
+    // Al realizar una acción nueva, el historial de "rehacer" debe limpiarse
+    redoHistory = []; 
+    history.push({ draw: layers.draw.innerHTML, latex: layers.latex.innerHTML, img: layers.img.innerHTML });
+}
 
-    function saveHistory() {
-        history.push({ draw: layers.draw.innerHTML, latex: layers.latex.innerHTML, img: layers.img.innerHTML });
-    }
+function undo() {
+    if (history.length === 0) return;
+    // Guardamos el estado actual en rehacer antes de volver atrás
+    redoHistory.push({ draw: layers.draw.innerHTML, latex: layers.latex.innerHTML, img: layers.img.innerHTML });
+    
+    const last = history.pop();
+    layers.draw.innerHTML = last.draw;
+    layers.latex.innerHTML = last.latex;
+    layers.img.innerHTML = last.img;
+    deselect();
+}
+
+function redo() {
+    if (redoHistory.length === 0) return;
+    // Guardamos el estado actual en el historial normal
+    history.push({ draw: layers.draw.innerHTML, latex: layers.latex.innerHTML, img: layers.img.innerHTML });
+    
+    const next = redoHistory.pop();
+    layers.draw.innerHTML = next.draw;
+    layers.latex.innerHTML = next.latex;
+    layers.img.innerHTML = next.img;
+    deselect();
+}
 
     function clearAll() { if(confirm("¿Borrar todo?")) { saveHistory(); layers.draw.innerHTML = ''; layers.latex.innerHTML = ''; layers.img.innerHTML = ''; deselect(); } }
 
     svg.ondblclick = () => { if(mode === 'POLY') currentEl = null; };
+
+
+    function copyElements() {
+    if (selectedElements.length === 0) return;
+    // Guardamos clones de los elementos seleccionados
+    clipboard = selectedElements.map(el => el.cloneNode(true));
+}
+
+function pasteElements() {
+    if (clipboard.length === 0) return;
+    saveHistory();
+    deselect();
+    
+    clipboard.forEach(clone => {
+        const newEl = clone.cloneNode(true);
+        // Movemos el pegado un poco para que no quede encima del original
+        moveElement(newEl, 25, 25); 
+        
+        // Insertar en la capa correspondiente
+        if (newEl.tagName === 'image') layers.img.appendChild(newEl);
+        else if (newEl.tagName === 'foreignObject') layers.latex.appendChild(newEl);
+        else layers.draw.appendChild(newEl);
+        
+        selectedElements.push(newEl);
+        newEl.classList.add('element-highlight');
+    });
+    updateSelectionUI();
+}
+
+function deleteSelected() {
+    if (selectedElements.length === 0) return;
+    saveHistory();
+    selectedElements.forEach(el => el.remove());
+    selectedElements = [];
+    updateSelectionUI();
+}
 </script>
 </body>
 </html>
