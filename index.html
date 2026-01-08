@@ -448,6 +448,34 @@ function deleteSelected() {
     selectedElements = [];
     updateSelectionUI();
 }
+
+        /* =========================================
+       SECCIÓN: TECLADO
+    ========================================= */
+
+    window.addEventListener('keydown', (e) => {
+    // Si el foco está en un input (escribiendo LaTeX), ignoramos los atajos
+    if (document.activeElement.tagName === 'INPUT') return;
+
+    // BORRAR: Backspace o Delete
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+        deleteSelected();
+    }
+
+    // COPIAR: Ctrl + C
+    if (e.ctrlKey && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        copyElements();
+    }
+
+    // PEGAR: Ctrl + V
+    if (e.ctrlKey && e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        pasteElements();
+    }
+});
+
+    
 </script>
 </body>
 </html>
