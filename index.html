@@ -9,104 +9,92 @@
     <style>
         :root {
             --bg: #FFFFFF;
-            --panel: #F8F9FA;
-            --border: #DEE2E6;
-            --dark: #212529;
-            --accent: #6C757D;
-            --select-box: rgba(0, 123, 255, 0.2);
+            --panel: #F4F4F4;
+            --border: #CCCCCC;
+            --dark: #333333;
+            --accent: #007BFF;
+            --selection: rgba(0, 123, 255, 0.15);
         }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            margin: 0; padding: 0;
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--dark);
-            height: 100vh; display: flex; flex-direction: column;
-            overflow: hidden;
+            margin: 0; padding: 0; font-family: 'Inter', sans-serif;
+            background: var(--bg); color: var(--dark);
+            height: 100vh; display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* =========================================
-           SECCIÓN: ENCABEZADO Y TOOLBAR
-        ========================================= */
-        header {
-            background: var(--bg);
-            padding: 8px; text-align: center;
-            border-bottom: 1px solid var(--border);
-        }
-        h1 { font-size: 14px; margin: 0; text-transform: uppercase; letter-spacing: 2px; }
+        /* TÍTULOS GIGANTES Y SECCIONES */
+        header { padding: 10px; border-bottom: 1px solid var(--border); text-align: center; background: white; }
+        h1 { font-size: 18px; margin: 0; letter-spacing: 3px; text-transform: uppercase; }
 
         .toolbar {
-            display: flex; justify-content: center; gap: 4px;
-            padding: 8px; background: var(--panel);
-            border-bottom: 1px solid var(--border);
-            flex-wrap: wrap;
+            display: flex; justify-content: center; gap: 8px; padding: 10px;
+            background: var(--panel); border-bottom: 1px solid var(--border); flex-wrap: wrap;
         }
 
         .btn {
-            background: var(--bg); border: 1px solid var(--border);
-            padding: 6px 12px; border-radius: 4px;
-            font-size: 12px; font-weight: 600; cursor: pointer;
-            transition: 0.2s; display: flex; align-items: center; gap: 4px;
+            background: white; border: 1px solid var(--border); padding: 8px 15px;
+            border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s;
         }
-        .btn:hover { background: #eee; }
-        .btn.active { background: var(--dark); color: white; border-color: var(--dark); }
-        .divider { width: 1px; background: var(--border); margin: 0 8px; }
+        .btn:hover { background: #E0E0E0; }
+        .btn.active { background: var(--dark); color: white; }
+        .divider { width: 1px; background: var(--border); margin: 0 10px; }
 
-        /* =========================================
-           SECCIÓN: ÁREA DE DIBUJO (SVG)
-        ========================================= */
-        #viewport {
-            flex-grow: 1; position: relative; touch-action: none; overflow: hidden;
-        }
-
-        svg { width: 100%; height: 100%; cursor: crosshair; }
+        /* ÁREA DE TRABAJO */
+        #viewport { flex-grow: 1; position: relative; touch-action: none; background: white; }
+        svg { width: 100%; height: 100%; display: block; }
+        
         .grid { fill: url(#gridPattern); }
         
-        /* Capas Geométricas */
-        .drawing-element { fill: none; stroke: var(--dark); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: stroke; }
-        .image-element { cursor: move; }
-        .latex-element { cursor: move; user-select: none; }
+        /* ELEMENTOS */
+        .drawing-element { fill: none; stroke: black; stroke-width: 2; stroke-linecap: round; pointer-events: all; }
+        .latex-element { cursor: move; display: flex; align-items: center; justify-content: center; overflow: visible; }
+        .latex-container { 
+            width: 100%; height: 100%; display: flex; align-items: center; 
+            justify-content: center; font-size: 20px; transition: font-size 0.1s;
+        }
+        
+        /* SELECTOR */
+        .selection-marquee { fill: var(--selection); stroke: var(--accent); stroke-dasharray: 4; pointer-events: none; }
+        .element-highlight { stroke: var(--accent) !important; stroke-width: 3 !important; }
+        .resize-handle { fill: white; stroke: var(--accent); stroke-width: 2; cursor: nwse-resize; }
 
-        /* UI de Selección */
-        .selection-rect { fill: none; stroke: #007BFF; stroke-width: 1; stroke-dasharray: 4; pointer-events: none; }
-        .resize-handle { fill: white; stroke: #007BFF; stroke-width: 2; cursor: nwse-resize; pointer-events: all; }
-
-        #latex-input {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: white; padding: 10px; border: 1px solid var(--border);
-            display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100;
+        #latex-panel {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; padding: 20px; border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: none; z-index: 1000;
         }
     </style>
 </head>
 <body>
 
-<header><h1>Matemáticas Lab</h1></header>
+<header><h1>TABLERO MATEMÁTICO AVANZADO</h1></header>
 
 <div class="toolbar">
-    <button class="btn active" id="btn-PENCIL" onclick="setMode('PENCIL')">Lápiz</button>
-    <button class="btn" id="btn-POLY" onclick="setMode('POLY')">Polilínea</button>
-    <button class="btn" id="btn-SELECT" onclick="setMode('SELECT')">Selector</button>
+    <button class="btn active" id="btn-PENCIL" onclick="setMode('PENCIL')">LÁPIZ</button>
+    <button class="btn" id="btn-POLY" onclick="setMode('POLY')">POLILÍNEA</button>
+    <button class="btn" id="btn-SELECT" onclick="setMode('SELECT')">SELECTOR</button>
     <div class="divider"></div>
-    <button class="btn" onclick="document.getElementById('file-img').click()">+ Imagen</button>
-    <button class="btn" onclick="openLatex()">Σ LaTeX</button>
+    <button class="btn" onclick="document.getElementById('img-up').click()">+ IMAGEN</button>
+    <button class="btn" onclick="showLatexPanel()">Σ LATEX</button>
     <div class="divider"></div>
-    <button class="btn" onclick="undo()">Deshacer</button>
-    <button class="btn" onclick="clearBoard()" style="color: #d9534f;">Limpiar</button>
-    <input type="file" id="file-img" hidden accept="image/*" onchange="uploadImage(event)">
+    <button class="btn" onclick="undo()">DESHACER</button>
+    <button class="btn" onclick="clearAll()" style="color:red">LIMPIAR</button>
 </div>
 
 <div id="viewport">
-    <div id="latex-input">
-        <input type="text" id="latex-val" placeholder="Código LaTeX..." style="padding:5px; border:1px solid #ccc">
-        <button class="btn" onclick="insertLatex()" style="display:inline">OK</button>
+    <div id="latex-panel">
+        <h3>Insertar LaTeX</h3>
+        <input type="text" id="latex-val" style="width:100%; padding:10px;" placeholder="\frac{a}{b^2}">
+        <div style="margin-top:10px; display:flex; gap:10px;">
+            <button class="btn" onclick="addLatex()">INSERTAR</button>
+            <button class="btn" onclick="hideLatexPanel()">CANCELAR</button>
+        </div>
     </div>
 
     <svg id="canvas">
         <defs>
             <pattern id="gridPattern" width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#f0f0f0" stroke-width="1"/>
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#EEEEEE" stroke-width="1"/>
             </pattern>
         </defs>
         <rect class="grid" width="100%" height="100%" />
@@ -118,16 +106,19 @@
     </svg>
 </div>
 
+<input type="file" id="img-up" hidden onchange="uploadImage(event)">
+
 <script>
-    /* ==========================================================================
-       LÓGICA CORE: VARIABLES Y ESTADO
-       ========================================================================== */
+    /* =========================================
+       SECCIÓN: ESTADO GLOBAL
+    ========================================= */
     let mode = 'PENCIL';
-    let isDrawing = false;
-    let selectedEl = null;
-    let isResizing = false;
-    let startCoords = { x: 0, y: 0 };
+    let isAction = false;
+    let startPos = { x: 0, y: 0 };
+    let currentEl = null;
+    let selectedElements = [];
     let history = [];
+    let isResizing = false;
 
     const svg = document.getElementById('canvas');
     const layers = {
@@ -137,273 +128,272 @@
         ui: document.getElementById('layer-ui')
     };
 
-    const snap = 20;
-
-    /* ==========================================================================
-       SISTEMA DE EVENTOS (MOUSE + TOUCH)
-       ========================================================================== */
-    svg.addEventListener('pointerdown', onPointerDown);
-    svg.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
+    /* =========================================
+       SECCIÓN: MOTOR DE EVENTOS (MOUSE / TOUCH)
+    ========================================= */
+    svg.addEventListener('pointerdown', onStart);
+    svg.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onEnd);
 
     function getPos(e) {
-        const rect = svg.getBoundingClientRect();
-        let x = e.clientX - rect.left;
-        let y = e.clientY - rect.top;
-        return { x, y };
+        const r = svg.getBoundingClientRect();
+        return { x: e.clientX - r.left, y: e.clientY - r.top };
     }
 
     function setMode(m) {
         mode = m;
         document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('btn-' + m).classList.add('active');
+        document.getElementById('btn-'+m).classList.add('active');
         deselect();
     }
 
-    /* ==========================================================================
-       ACCIONES DE PUNTERO
-       ========================================================================== */
-    function onPointerDown(e) {
+    /* =========================================
+       SECCIÓN: LÓGICA DE SELECCIÓN (EL SELECTOR)
+    ========================================= */
+    function onStart(e) {
         const pos = getPos(e);
-        startCoords = pos;
+        startPos = pos;
+        isAction = true;
 
         if (mode === 'SELECT') {
-            // Verificar si clicamos en un handle de redimensión
             if (e.target.classList.contains('resize-handle')) {
                 isResizing = true;
                 return;
             }
 
-            // Intentar seleccionar elemento (buscamos el más cercano al puntero)
             const hit = e.target.closest('.draggable');
-            if (hit) {
-                selectElement(hit);
-                isDrawing = true; // Usamos esto para el drag
-            } else {
+            if (hit && !e.shiftKey) {
+                if (!selectedElements.includes(hit)) {
+                    deselect();
+                    selectElement(hit);
+                }
+            } else if (!hit) {
                 deselect();
+                currentEl = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                currentEl.setAttribute("class", "selection-marquee");
+                layers.ui.appendChild(currentEl);
             }
             return;
         }
 
         if (mode === 'PENCIL') {
-            isDrawing = true;
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute("d", `M ${pos.x} ${pos.y}`);
-            path.setAttribute("class", "drawing-element draggable");
-            layers.draw.appendChild(path);
-            selectedEl = path;
+            saveHistory();
+            currentEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            currentEl.setAttribute("d", `M ${pos.x} ${pos.y}`);
+            currentEl.setAttribute("class", "drawing-element draggable");
+            layers.draw.appendChild(currentEl);
         }
 
         if (mode === 'POLY') {
-            if (!isDrawing) {
-                isDrawing = true;
-                const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-                poly.setAttribute("points", `${pos.x},${pos.y}`);
-                poly.setAttribute("class", "drawing-element draggable");
-                layers.draw.appendChild(poly);
-                selectedEl = poly;
+            if (!currentEl) {
+                saveHistory();
+                currentEl = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+                currentEl.setAttribute("points", `${pos.x},${pos.y}`);
+                currentEl.setAttribute("class", "drawing-element draggable");
+                layers.draw.appendChild(currentEl);
             } else {
-                let pts = selectedEl.getAttribute("points");
-                selectedEl.setAttribute("points", `${pts} ${pos.x},${pos.y}`);
+                let pts = currentEl.getAttribute("points");
+                currentEl.setAttribute("points", `${pts} ${pos.x},${pos.y}`);
             }
         }
     }
 
-    function onPointerMove(e) {
-        if (!isDrawing && !isResizing) return;
+    function onMove(e) {
+        if (!isAction) return;
         const pos = getPos(e);
+        const dx = pos.x - startPos.x;
+        const dy = pos.y - startPos.y;
 
-        if (isResizing && selectedEl) {
-            resizeElement(pos);
-            updateUI();
+        if (mode === 'SELECT') {
+            if (isResizing && selectedElements.length === 1) {
+                resizeElement(selectedElements[0], pos);
+            } else if (currentEl && currentEl.classList.contains('selection-marquee')) {
+                // Dibujar recuadro de selección
+                const x = Math.min(startPos.x, pos.x);
+                const y = Math.min(startPos.y, pos.y);
+                const w = Math.abs(dx);
+                const h = Math.abs(dy);
+                currentEl.setAttribute("x", x);
+                currentEl.setAttribute("y", y);
+                currentEl.setAttribute("width", w);
+                currentEl.setAttribute("height", h);
+                checkCollision(x, y, w, h);
+            } else if (selectedElements.length > 0) {
+                // Mover varios a la vez
+                selectedElements.forEach(el => moveElement(el, dx, dy));
+                startPos = pos;
+            }
+            updateSelectionUI();
             return;
         }
 
-        if (mode === 'SELECT' && selectedEl) {
-            const dx = pos.x - startCoords.x;
-            const dy = pos.y - startCoords.y;
-            moveElement(selectedEl, dx, dy);
-            startCoords = pos;
-            updateUI();
-        } else if (mode === 'PENCIL' && isDrawing) {
-            let d = selectedEl.getAttribute("d");
-            selectedEl.setAttribute("d", `${d} L ${pos.x} ${pos.y}`);
+        if (mode === 'PENCIL' && currentEl) {
+            let d = currentEl.getAttribute("d");
+            currentEl.setAttribute("d", `${d} L ${pos.x} ${pos.y}`);
         }
     }
 
-    function onPointerUp() {
-        if (mode === 'PENCIL') {
-            isDrawing = false;
-            saveHistory();
+    function onEnd() {
+        if (mode === 'SELECT') {
+            if (currentEl) currentEl.remove();
+            currentEl = null;
         }
+        if (mode === 'PENCIL') currentEl = null;
+        isAction = false;
         isResizing = false;
-        if (mode === 'SELECT') isDrawing = false;
     }
 
-    // Doble click para cerrar polilínea
-    svg.ondblclick = () => { if(mode === 'POLY') { isDrawing = false; saveHistory(); deselect(); } };
-
-    /* ==========================================================================
-       MANIPULACIÓN DE ELEMENTOS (MOVER / REDIMENSIONAR)
-       ========================================================================== */
+    /* =========================================
+       SECCIÓN: TRANSFORMACIONES (MOVER / ESCALAR)
+    ========================================= */
     function moveElement(el, dx, dy) {
         if (el.tagName === 'path' || el.tagName === 'polyline') {
-            // Mover elementos de dibujo usando transform
             const bbox = el.getBBox();
-            const currentT = el.getAttribute("transform") || "translate(0,0)";
-            const match = /translate\(([^,]+)[, ]+([^)]+)\)/.exec(currentT);
-            let tx = parseFloat(match[1]) + dx;
-            let ty = parseFloat(match[2]) + dy;
+            const transform = el.getAttribute("transform") || "translate(0,0)";
+            const parts = transform.split(/[() ,]+/);
+            const tx = (parseFloat(parts[1]) || 0) + dx;
+            const ty = (parseFloat(parts[2]) || 0) + dy;
             el.setAttribute("transform", `translate(${tx},${ty})`);
         } else {
-            // Mover imágenes y LaTeX (foreignObject)
             el.setAttribute("x", parseFloat(el.getAttribute("x")) + dx);
             el.setAttribute("y", parseFloat(el.getAttribute("y")) + dy);
         }
     }
 
-    function resizeElement(pos) {
-        const x = parseFloat(selectedEl.getAttribute("x"));
-        const y = parseFloat(selectedEl.getAttribute("y"));
-        const newW = Math.max(20, pos.x - x);
-        const newH = Math.max(20, pos.y - y);
+    function resizeElement(el, pos) {
+        const x = parseFloat(el.getAttribute("x"));
+        const y = parseFloat(el.getAttribute("y"));
+        const nw = Math.max(30, pos.x - x);
+        const nh = Math.max(30, pos.y - y);
+        
+        el.setAttribute("width", nw);
+        el.setAttribute("height", nh);
 
-        if (selectedEl.classList.contains('latex-element')) {
-            // LaTeX escala proporcionalmente
-            selectedEl.setAttribute("width", newW);
-            selectedEl.setAttribute("height", newW * 0.5); 
-            selectedEl.style.fontSize = (newW / 10) + "px";
-        } else if (selectedEl.tagName === 'image') {
-            selectedEl.setAttribute("width", newW);
-            selectedEl.setAttribute("height", newH);
+        // ESCALADO ESPECIAL PARA LATEX
+        if (el.classList.contains('latex-element')) {
+            const container = el.querySelector('.latex-container');
+            container.style.fontSize = (nw / 8) + "px";
         }
     }
 
-    /* ==========================================================================
-       INTERFAZ DE SELECCIÓN (SELECTOR PROFESIONAL)
-       ========================================================================== */
+    function checkCollision(x, y, w, h) {
+        const all = document.querySelectorAll('.draggable');
+        selectedElements = [];
+        all.forEach(el => {
+            const b = el.getBBox();
+            // Ajustar bbox si tiene transform translate
+            let tx = 0, ty = 0;
+            const t = el.getAttribute("transform");
+            if(t) {
+                const m = t.match(/translate\(([^, ]+)[, ]+([^)]+)\)/);
+                if(m) { tx = parseFloat(m[1]); ty = parseFloat(m[2]); }
+            }
+            
+            const ex = (parseFloat(el.getAttribute('x')) || b.x) + tx;
+            const ey = (parseFloat(el.getAttribute('y')) || b.y) + ty;
+
+            if (ex < x + w && ex + b.width > x && ey < y + h && ey + b.height > y) {
+                el.classList.add('element-highlight');
+                selectedElements.push(el);
+            } else {
+                el.classList.remove('element-highlight');
+            }
+        });
+    }
+
+    function updateSelectionUI() {
+        const oldHandles = layers.ui.querySelectorAll('.resize-handle, .selection-rect');
+        oldHandles.forEach(h => h.remove());
+
+        if (selectedElements.length === 1) {
+            const el = selectedElements[0];
+            const b = el.getBBox();
+            let tx = 0, ty = 0;
+            const t = el.getAttribute("transform");
+            if(t) {
+                const m = t.match(/translate\(([^, ]+)[, ]+([^)]+)\)/);
+                if(m) { tx = parseFloat(m[1]); ty = parseFloat(m[2]); }
+            }
+            const ex = (parseFloat(el.getAttribute('x')) || b.x) + tx;
+            const ey = (parseFloat(el.getAttribute('y')) || b.y) + ty;
+
+            // Handle de redimensión (solo para img y latex)
+            if (el.tagName === 'image' || el.tagName === 'foreignObject') {
+                const h = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                h.setAttribute("x", ex + b.width - 5);
+                h.setAttribute("y", ey + b.height - 5);
+                h.setAttribute("width", 12); h.setAttribute("height", 12);
+                h.setAttribute("class", "resize-handle");
+                layers.ui.appendChild(h);
+            }
+        }
+    }
+
     function selectElement(el) {
-        selectedEl = el;
-        updateUI();
+        selectedElements = [el];
+        el.classList.add('element-highlight');
+        updateSelectionUI();
     }
 
     function deselect() {
-        selectedEl = null;
-        layers.ui.innerHTML = '';
+        selectedElements.forEach(el => el.classList.remove('element-highlight'));
+        selectedElements = [];
+        updateSelectionUI();
     }
 
-    function updateUI() {
-        layers.ui.innerHTML = '';
-        if (!selectedEl) return;
+    /* =========================================
+       SECCIÓN: FUNCIONES DE APOYO
+    ========================================= */
+    function showLatexPanel() { document.getElementById('latex-panel').style.display = 'block'; }
+    function hideLatexPanel() { document.getElementById('latex-panel').style.display = 'none'; }
 
-        const b = selectedEl.getBBox();
-        // Obtener matriz de transformación para dibujos
-        const ctm = selectedEl.getScreenCTM();
-        const svgRect = svg.getBoundingClientRect();
-        
-        // Calculamos posición real considerando transformaciones
-        const x = (selectedEl.tagName === 'image' || selectedEl.tagName === 'foreignObject') 
-                  ? parseFloat(selectedEl.getAttribute('x')) 
-                  : b.x + (parseFloat(selectedEl.getAttribute("transform")?.split('(')[1]) || 0);
-        
-        const y = (selectedEl.tagName === 'image' || selectedEl.tagName === 'foreignObject') 
-                  ? parseFloat(selectedEl.getAttribute('y')) 
-                  : b.y + (parseFloat(selectedEl.getAttribute("transform")?.split(',')[1]) || 0);
-
-        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        rect.setAttribute("x", x - 5);
-        rect.setAttribute("y", y - 5);
-        rect.setAttribute("width", b.width + 10);
-        rect.setAttribute("height", b.height + 10);
-        rect.setAttribute("class", "selection-rect");
-        layers.ui.appendChild(rect);
-
-        // Solo permitir resize en Imagen y LaTeX
-        if (selectedEl.tagName === 'image' || selectedEl.tagName === 'foreignObject') {
-            const handle = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            handle.setAttribute("x", x + b.width);
-            handle.setAttribute("y", y + b.height);
-            handle.setAttribute("width", 12);
-            handle.setAttribute("height", 12);
-            handle.setAttribute("class", "resize-handle");
-            layers.ui.appendChild(handle);
-        }
-    }
-
-    /* ==========================================================================
-       LATEX E IMÁGENES
-       ========================================================================== */
-    function openLatex() { document.getElementById('latex-input').style.display = 'block'; }
-
-    function insertLatex() {
+    function addLatex() {
         const val = document.getElementById('latex-val').value;
         if (!val) return;
-        
+        saveHistory();
         const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-        fo.setAttribute("x", 100); fo.setAttribute("y", 100);
-        fo.setAttribute("width", 150); fo.setAttribute("height", 80);
+        fo.setAttribute("x", 150); fo.setAttribute("y", 150);
+        fo.setAttribute("width", 180); fo.setAttribute("height", 100);
         fo.setAttribute("class", "latex-element draggable");
         
-        const div = document.createElement("div");
-        div.style.fontSize = "20px";
-        div.innerHTML = `\\[${val}\\]`;
-        
-        fo.appendChild(div);
+        fo.innerHTML = `<div xmlns="http://www.w3.org/1999/xhtml" class="latex-container">\\[${val}\\]</div>`;
         layers.latex.appendChild(fo);
         MathJax.typeset();
-        
-        document.getElementById('latex-input').style.display = 'none';
-        saveHistory();
+        hideLatexPanel();
     }
 
     function uploadImage(e) {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
+        const f = e.target.files[0];
+        const r = new FileReader();
+        r.onload = (ev) => {
+            saveHistory();
             const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
             img.setAttribute("href", ev.target.result);
-            img.setAttribute("x", 50); img.setAttribute("y", 50);
+            img.setAttribute("x", 100); img.setAttribute("y", 100);
             img.setAttribute("width", 200); img.setAttribute("height", 150);
-            img.setAttribute("class", "image-element draggable");
+            img.setAttribute("class", "draggable");
             img.setAttribute("preserveAspectRatio", "none");
             layers.img.appendChild(img);
-            saveHistory();
         };
-        reader.readAsDataURL(e.target.files[0]);
-    }
-
-    /* ==========================================================================
-       HISTORIAL Y LIMPIEZA
-       ========================================================================== */
-    function saveHistory() {
-        const state = {
-            draw: layers.draw.innerHTML,
-            latex: layers.latex.innerHTML,
-            img: layers.img.innerHTML
-        };
-        history.push(state);
+        r.readAsDataURL(f);
     }
 
     function undo() {
-        if (history.length < 2) return;
-        history.pop();
-        const last = history[history.length - 1];
+        if (history.length === 0) return;
+        const last = history.pop();
         layers.draw.innerHTML = last.draw;
         layers.latex.innerHTML = last.latex;
         layers.img.innerHTML = last.img;
         deselect();
     }
 
-    function clearBoard() {
-        layers.draw.innerHTML = '';
-        layers.latex.innerHTML = '';
-        layers.img.innerHTML = '';
-        deselect();
-        saveHistory();
+    function saveHistory() {
+        history.push({ draw: layers.draw.innerHTML, latex: layers.latex.innerHTML, img: layers.img.innerHTML });
     }
 
-    // Inicializar historial
-    saveHistory();
-</script>
+    function clearAll() { if(confirm("¿Borrar todo?")) { saveHistory(); layers.draw.innerHTML = ''; layers.latex.innerHTML = ''; layers.img.innerHTML = ''; deselect(); } }
 
+    svg.ondblclick = () => { if(mode === 'POLY') currentEl = null; };
+</script>
 </body>
 </html>
