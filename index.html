@@ -119,6 +119,8 @@
     let currentEl = null;
     let selectedElements = [];
     let history = [];
+    let redoHistory = []; 
+let clipboard = [];
     let isResizing = false;
 
     const svg = document.getElementById('canvas');
@@ -128,6 +130,8 @@
         draw: document.getElementById('layer-drawings'),
         ui: document.getElementById('layer-ui')
     };
+
+    let editingEl = null; // Para saber si estamos creando uno nuevo o editando
 
     /* =========================================
        SECCIÓN: MOTOR DE EVENTOS (MOUSE / TOUCH)
@@ -345,23 +349,42 @@
     /* =========================================
        SECCIÓN: FUNCIONES DE APOYO
     ========================================= */
-    function showLatexPanel() { document.getElementById('latex-panel').style.display = 'block'; }
-    function hideLatexPanel() { document.getElementById('latex-panel').style.display = 'none'; }
+function showLatexPanel() { 
+    editingEl = null; // Resetear edición
+    document.getElementById('latex-val').value = ''; // Limpiar input
+    document.getElementById('latex-panel').style.display = 'block'; 
+}
+    function hideLatexPanel() { 
+    document.getElementById('latex-panel').style.display = 'none'; 
+    editingEl = null; // Resetear para que la próxima vez sea una nueva si se usa el botón Σ
+}
 
-    function addLatex() {
-        const val = document.getElementById('latex-val').value;
-        if (!val) return;
-        saveHistory();
+function addLatex() {
+    const val = document.getElementById('latex-val').value;
+    if (!val) return;
+    saveHistory();
+
+    if (editingEl) {
+        // MODO EDICIÓN: Actualizamos el elemento que ya existe
+        editingEl.setAttribute("data-raw", val);
+        const container = editingEl.querySelector('.latex-container');
+        container.innerHTML = `\\[${val}\\]`;
+    } else {
+        // MODO CREACIÓN: Creamos uno nuevo
         const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
         fo.setAttribute("x", 150); fo.setAttribute("y", 150);
         fo.setAttribute("width", 180); fo.setAttribute("height", 100);
         fo.setAttribute("class", "latex-element draggable");
+        fo.setAttribute("data-raw", val); 
         
         fo.innerHTML = `<div xmlns="http://www.w3.org/1999/xhtml" class="latex-container">\\[${val}\\]</div>`;
         layers.latex.appendChild(fo);
-        MathJax.typeset();
-        hideLatexPanel();
     }
+    
+    MathJax.typeset();
+    hideLatexPanel();
+    editingEl = null;
+}
 
     function uploadImage(e) {
         const f = e.target.files[0];
@@ -411,7 +434,25 @@ function redo() {
 
     function clearAll() { if(confirm("¿Borrar todo?")) { saveHistory(); layers.draw.innerHTML = ''; layers.latex.innerHTML = ''; layers.img.innerHTML = ''; deselect(); } }
 
-    svg.ondblclick = () => { if(mode === 'POLY') currentEl = null; };
+    svg.addEventListener('dblclick', (e) => {
+    // Buscamos si el doble clic fue en una fórmula de LaTeX
+    const targetLatex = e.target.closest('.latex-element');
+    
+    if (targetLatex) {
+        // 1. Marcamos ESTA fórmula como la que vamos a editar
+        editingEl = targetLatex; 
+        
+        // 2. Recuperamos su texto original guardado en 'data-raw'
+        const rawText = targetLatex.getAttribute("data-raw") || "";
+        
+        // 3. Abrimos el panel con ESE texto cargado
+        document.getElementById('latex-val').value = rawText;
+        document.getElementById('latex-panel').style.display = 'block';
+        document.getElementById('latex-val').focus();
+    } else if (mode === 'POLY') {
+        currentEl = null; // Cerrar polilínea si no es latex
+    }
+});
 
 
     function copyElements() {
