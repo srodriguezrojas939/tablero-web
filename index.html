@@ -195,92 +195,114 @@
     }
 
 
-/* --- AJUSTES DEL PANEL LATERAL --- */
+/* PANEL LATERAL FIJO (SOBRE EL TABLERO) */
 #symbols-side-panel {
-    width: 300px; /* Un poco más estrecho por defecto */
-    min-width: 250px;
-    background: #FFFFFF;
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 300px;
+    background: white;
     border-left: 1px solid var(--border);
-    display: none;
+    box-shadow: -5px 0 15px rgba(0,0,0,0.05);
+    display: none; /* Se controla con JS */
     flex-direction: column;
-    height: 100%;
+    z-index: 1000;
 }
 
-/* Categorías ahora son una lista vertical */
+/* Cabecera con botón X */
+.panel-header {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+}
+
+.close-panel-btn {
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: #999;
+    line-height: 1;
+}
+.close-panel-btn:hover { color: black; }
+
+/* Sección de categorías (Scroll Vertical) */
 .symbol-categories {
     display: flex;
-    flex-direction: column; /* Cambio a vertical */
-    overflow-y: auto;       /* Scroll vertical */
-    max-height: 180px;      /* Altura fija para las categorías */
+    flex-direction: column;
     padding: 10px;
-    gap: 4px;
-    border-bottom: 2px solid #f0f0f0;
-    background: #fafafa;
+    gap: 5px;
+    max-height: 250px; /* Limita el alto de las categorías */
+    overflow-y: auto;
+    background: #fcfcfc;
+    border-bottom: 1px solid #eee;
 }
 
 .cat-btn {
     text-align: left;
-    padding: 8px 15px;
-    width: 100%;
-    border: 1px solid transparent;
+    padding: 10px 15px;
+    border: none;
     background: transparent;
     border-radius: 8px;
-    font-size: 12px;
-    transition: 0.2s;
+    font-size: 13px;
+    cursor: pointer;
+    color: #555;
 }
 
 .cat-btn.active {
     background: var(--dark);
     color: white;
+    font-weight: 600;
 }
 
-/* Cuadrícula de Símbolos: Tarjetas más anchas que altas */
+/* Sección de símbolos (Scroll Vertical) */
 #symbols-grid {
     flex-grow: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column; /* Símbolos en lista vertical */
-    gap: 8px;
+    overflow-y: auto; /* Permite scroll en los símbolos */
     padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
+/* Tarjetas de símbolos (Horizontales) */
 .sym-card {
     display: flex;
-    flex-direction: row;    /* Icono al lado del texto */
     align-items: center;
-    justify-content: flex-start;
-    padding: 10px 15px;
-    min-height: 50px;       /* Más ancha que alta */
+    padding: 12px 15px;
     background: white;
-    border: 1px solid #eee;
-    border-radius: 10px;
+    border: 1px solid #efefef;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.2s;
     gap: 15px;
 }
 
 .sym-card:hover {
     border-color: var(--accent);
-    background: #f8fbff;
-    transform: translateX(4px); /* Pequeño efecto de desplazamiento */
+    background: #f0f7ff;
 }
 
-/* Tamaño del símbolo dentro de la tarjeta */
 .sym-card-icon {
-    font-size: 22px;
-    min-width: 40px;
+    font-size: 20px;
+    min-width: 35px;
     text-align: center;
-    color: var(--dark);
 }
 
 .sym-card span {
-    font-size: 11px;
-    color: #666;
-    text-transform: none;
-    margin-top: 0;
+    font-size: 12px;
+    color: #777;
     font-weight: 600;
 }
-
-
-
     
     
 </style>
@@ -339,22 +361,29 @@
             <button onclick="detachPanel()" class="mini-btn">⚓ Desfijar</button>
         </div>
         
-        <div class="symbol-categories">
-            <button onclick="renderCategory('Principales')" class="cat-btn active">Principales</button>
-            <button onclick="renderCategory('Letras Griegas')" class="cat-btn">Griegas</button>
-            <button onclick="renderCategory('Flechas')" class="cat-btn">Flechas</button>
-            <button onclick="renderCategory('Lógica')" class="cat-btn">Lógica</button>
-            <button onclick="renderCategory('formulas')" class="cat-btn">Fórmulas</button>
-            <button onclick="renderCategory('Desigualdades')" class="cat-btn">Desigualdades</button>
-            <button onclick="renderCategory('Cálculo')" class="cat-btn">Cálculo</button>
-            <button onclick="renderCategory('Conjuntos')" class="cat-btn">Conjuntos</button>
-            <button onclick="renderCategory('Matrices/Sist')" class="cat-btn">Matrices</button>
-            <button onclick="renderCategory('Paréntesis')" class="cat-btn">Paréntesis</button>
-            <button onclick="renderCategory('Otros')" class="cat-btn">Otros</button>
-        </div>
-
-        <div id="symbols-grid"></div>
+        <div id="symbols-side-panel">
+    <div class="panel-header">
+        <h3>Símbolos</h3>
+        <button onclick="toggleSymbolsPanel()" class="close-panel-btn">&times;</button>
     </div>
+    
+    <div class="symbol-categories">
+        <button onclick="renderCategory('Principales')" class="cat-btn active">Principales</button>
+        <button onclick="renderCategory('Letras Griegas')" class="cat-btn">Griegas</button>
+        <button onclick="renderCategory('Flechas')" class="cat-btn">Flechas</button>
+        <button onclick="renderCategory('Lógica')" class="cat-btn">Lógica</button>
+        <button onclick="renderCategory('formulas')" class="cat-btn">Fórmulas</button>
+        <button onclick="renderCategory('Desigualdades')" class="cat-btn">Desigualdades</button>
+        <button onclick="renderCategory('Cálculo')" class="cat-btn">Cálculo</button>
+        <button onclick="renderCategory('Conjuntos')" class="cat-btn">Conjuntos</button>
+        <button onclick="renderCategory('Matrices/Sist')" class="cat-btn">Matrices</button>
+        <button onclick="renderCategory('Paréntesis')" class="cat-btn">Paréntesis</button>
+        <button onclick="renderCategory('Otros')" class="cat-btn">Otros</button>
+    </div>
+
+    <div id="symbols-grid">
+        </div>
+</div>
 </div>
 
 <input type="file" id="img-up" hidden onchange="uploadImage(event)">
@@ -835,8 +864,10 @@ window.addEventListener('keydown', (e) => {
 
 function toggleSymbolsPanel() {
     const panel = document.getElementById('symbols-side-panel');
+    // Si no tiene estilo asignado o es 'none', lo ponemos en 'flex'
     const isVisible = panel.style.display === 'flex';
     panel.style.display = isVisible ? 'none' : 'flex';
+    
     if (!isVisible) renderCategory('Principales');
 }
 
@@ -844,14 +875,18 @@ function renderCategory(cat) {
     const grid = document.getElementById('symbols-grid');
     grid.innerHTML = '';
     
+    // Actualizar estado visual de los botones de categoría
     document.querySelectorAll('.cat-btn').forEach(b => {
-        b.classList.toggle('active', b.innerText === cat || (cat === 'Letras Griegas' && b.innerText === 'Griegas'));
+        b.classList.remove('active');
+        if(b.innerText === cat || (cat === 'Letras Griegas' && b.innerText === 'Griegas')) {
+            b.classList.add('active');
+        }
     });
 
+    // Cargar los símbolos de la categoría seleccionada
     menus[cat].forEach(sym => {
         const div = document.createElement('div');
         div.className = 'sym-card';
-        // Estructura: Icono (Izquierda) | Nombre (Derecha)
         div.innerHTML = `
             <div class="sym-card-icon">${sym.i}</div>
             <span>${sym.n}</span>
@@ -860,74 +895,22 @@ function renderCategory(cat) {
         grid.appendChild(div);
     });
 }
-    
+
 function insertSymbol(latex) {
-    // Guardamos historial antes de insertar
     saveHistory();
-    
     const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-    // Lo inserta cerca del centro, o donde prefieras
-    fo.setAttribute("x", 200); fo.setAttribute("y", 200);
-    fo.setAttribute("width", 150); fo.setAttribute("height", 80);
+    fo.setAttribute("x", 200); 
+    fo.setAttribute("y", 200);
+    fo.setAttribute("width", 150); 
+    fo.setAttribute("height", 80);
     fo.setAttribute("class", "latex-element draggable");
     fo.setAttribute("data-raw", latex); 
     
     fo.innerHTML = `<div xmlns="http://www.w3.org/1999/xhtml" class="latex-container">\\[${latex}\\]</div>`;
     layers.latex.appendChild(fo);
     
-    MathJax.typeset(); // Renderiza el nuevo símbolo
+    MathJax.typeset(); 
 }
-
-function detachPanel() {
-    const panel = document.getElementById('symbols-side-panel');
-    panel.classList.toggle('floating');
-    const btn = panel.querySelector('.mini-btn');
-    btn.innerText = panel.classList.contains('floating') ? '📌 Fijar' : '⚓ Desfijar';
-}
-
-// Lógica para redimensionar el panel
-const resizer = document.getElementById('panel-resizer');
-const sidePanel = document.getElementById('symbols-side-panel');
-
-resizer.addEventListener('mousedown', (e) => {
-    document.addEventListener('mousemove', resize);
-    document.addEventListener('mouseup', stopResize);
-});
-
-function resize(e) {
-    const newWidth = window.innerWidth - e.clientX;
-    if (newWidth > 200 && newWidth < 500) {
-        sidePanel.style.width = newWidth + 'px';
-    }
-}
-
-function stopResize() {
-    document.removeEventListener('mousemove', resize);
-}
-
-    // Lógica para mover el panel cuando está desfijado (Floating)
-const panelHeader = document.querySelector('.panel-header');
-let isDraggingPanel = false;
-let panelOffset = { x: 0, y: 0 };
-
-panelHeader.addEventListener('mousedown', (e) => {
-    if (!sidePanel.classList.contains('floating')) return;
-    isDraggingPanel = true;
-    panelOffset.x = e.clientX - sidePanel.offsetLeft;
-    panelOffset.y = e.clientY - sidePanel.offsetTop;
-});
-
-document.addEventListener('mousemove', (e) => {
-    if (!isDraggingPanel) return;
-    sidePanel.style.right = 'auto'; // Desactivamos el pegado a la derecha
-    sidePanel.style.left = (e.clientX - panelOffset.x) + 'px';
-    sidePanel.style.top = (e.clientY - panelOffset.y) + 'px';
-});
-
-document.addEventListener('mouseup', () => {
-    isDraggingPanel = false;
-});
-
     
 </script>
 </body>
