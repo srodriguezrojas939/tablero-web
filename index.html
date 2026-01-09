@@ -399,16 +399,101 @@ header {
 .toggle-switch.active .toggle-knob {
     transform: translateX(20px); /* Mueve el círculo a la derecha */
 }
+
+    /* Contenedor de herramientas del encabezado */
+    .header-tools {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Botones pequeños para el encabezado */
+    .btn-mini {
+        width: 32px;
+        height: 32px;
+        border: 1px solid var(--border);
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+
+    .btn-mini:hover {
+        background: var(--panel);
+        border-color: #bbb;
+    }
+
+    .btn-danger:hover {
+        background: #fff1f1;
+        color: #dc3545;
+        border-color: #dc3545;
+    }
+
+    /* Separador pequeño vertical */
+    .mini-divider {
+        width: 1px;
+        height: 20px;
+        background: var(--border);
+        margin: 0 4px;
+    }
+
+    /* Estilo para el SNAP en el encabezado */
+    .snap-mini {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--panel);
+        padding: 4px 8px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+    }
+
+    .snap-mini span {
+        font-size: 10px;
+        font-weight: bold;
+        color: #666;
+    }
+
+    .snap-mini .btn-mini {
+        width: 40px; /* Un poco más ancho para el texto "ON/OFF" */
+        height: 24px;
+        font-size: 10px;
+        font-weight: bold;
+    }
+
+    
     
 </style>
 </head>
 <body>
 
-<header>
-    <h1>Tablero</h1>
-    <span class="subtitle">√(Raiz) Cuadrada²</span>
-</header>
+<header style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px; height: 60px;">
+    <div style="display: flex; align-items: baseline; gap: 12px;">
+        <div id="title" style="margin: 0; font-family: 'Playfair Display', serif; font-size: 24px;">
+            Tablero
+        </div>
+        <span style="font-family: 'Playfair Display', serif; font-size: 18px; color: #555;">
+            √(Raiz) Cuadrada²
+        </span>
+    </div>
 
+    <div class="header-tools">
+        <button class="btn-mini" onclick="undo()" title="Deshacer">⟲</button>
+        <button class="btn-mini" onclick="redo()" title="Rehacer">⟳</button>
+        <div class="mini-divider"></div>
+        <button class="btn-mini btn-danger" onclick="clearCanvas()" title="Limpiar">⨯</button>
+        <div class="mini-divider"></div>
+        
+        <div class="snap-mini">
+            <span>SNAP</span>
+            <button id="snap-toggle" class="btn-mini" onclick="toggleSnap()">ON</button>
+        </div>
+    </div>
+</header>
     
 
 <div id="viewport" style="display: flex; flex-direction: row; position: relative; flex-grow: 1;">
@@ -429,18 +514,7 @@ header {
     <button class="btn" onclick="showLatexPanel()">Σ Latex</button>
     <button class="btn" id="btn-SYMBOLS" onclick="toggleSymbolsPanel()">Ω Simbolos </button>
     <div class="divider"></div>
-
-<div style="display: flex; align-items: center; gap: 8px; margin: 0 10px;">
-    <span style="font-size: 11px; font-weight: 800; color: #444; font-family: 'Open Sans';">SNAP</span>
-    <div id="btn-SNAP" class="toggle-switch" onclick="toggleSnap()">
-        <div class="toggle-knob"></div>
-    </div>
-</div>
-
-<div class="divider"></div>
-    <button class="btn" onclick="undo()">↶</button>
-    <button class="btn" onclick="redo()">↷</button>
-    <button class="btn" onclick="clearAll()" style="color:red">⨯</button>
+        
 </div>
 
 
