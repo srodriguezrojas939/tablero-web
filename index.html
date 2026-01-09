@@ -1374,69 +1374,79 @@ function showLatexPanel() {
 }
     
 
-    async function downloadBoard(format) {
-    // 1. Cerramos el menú desplegable al hacer clic
-    const menu = document.getElementById("download-menu");
-    if (menu) menu.classList.remove("show-menu");
+  // --- FUNCIONES DE DESCARGA ---
 
-    // 2. Seleccionamos el contenedor del tablero
-    const board = document.getElementById('board');
-    
-    // Mostramos un aviso en consola para saber que empezó
-    console.log("Iniciando exportación...");
-
-    try {
-        // 3. Generamos la captura con html2canvas
-        const canvas = await html2canvas(board, {
-            scale: 2,           // Mejor resolución
-            useCORS: true,      // Para imágenes externas
-            backgroundColor: "#ffffff",
-            logging: false      // Para no ensuciar la consola
-        });
-
-        // 4. Lógica de descarga según formato
-        if (format === 'png') {
-            const link = document.createElement('a');
-            link.download = `tablero-${Date.now()}.png`; // Nombre único
-            link.href = canvas.toDataURL("image/png");
-            link.click();
-        } 
-        else if (format === 'pdf') {
-            const { jsPDF } = window.jspdf;
-            const imgData = canvas.toDataURL('image/png');
-            
-            const pdf = new jsPDF({
-                orientation: canvas.width > canvas.height ? 'l' : 'p',
-                unit: 'px',
-                format: [canvas.width, canvas.height]
-            });
-
-            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-            pdf.save(`tablero-${Date.now()}.pdf`);
-        }
-        
-        console.log("Descarga exitosa");
-    } catch (err) {
-        console.error("Error en la descarga:", err);
-        alert("No se pudo generar el archivo. Asegúrate de estar conectado a internet para cargar las librerías.");
-    }
-}
-    // Función para abrir y cerrar el menú
+// 1. Abrir/Cerrar menú
 function toggleDownloadMenu() {
-    document.getElementById("download-menu").classList.toggle("show-menu");
+    const menu = document.getElementById("download-menu");
+    menu.classList.toggle("show-menu");
 }
 
-// Cerramos el menú si el usuario hace clic fuera de él
-window.onclick = function(event) {
+// 2. Cerrar menú si haces clic fuera
+window.addEventListener('click', function(event) {
     if (!event.target.matches('.btn-mini') && !event.target.closest('.dropdown')) {
         const dropdowns = document.getElementsByClassName("dropdown-content");
         for (let i = 0; i < dropdowns.length; i++) {
             dropdowns[i].classList.remove('show-menu');
         }
     }
+});
+
+// 3. Lógica principal de descarga
+async function downloadBoard(format) {
+    // Cerramos el menú inmediatamente
+    const menu = document.getElementById("download-menu");
+    if (menu) menu.classList.remove("show-menu");
+
+    const board = document.getElementById('board');
+    if (!board) {
+        alert("Error: No se encontró el contenedor del tablero (#board)");
+        return;
+    }
+
+    try {
+        console.log("Generando captura de pantalla...");
+        
+        // Capturamos el tablero
+        const canvas = await html2canvas(board, {
+            scale: 2, // Doble resolución para que no se vea pixelado
+            useCORS: true, // Importante para imágenes externas
+            backgroundColor: "#ffffff",
+            logging: false
+        });
+
+        if (format === 'png') {
+            // Descargar PNG
+            const link = document.createElement('a');
+            link.download = `mi-tablero-${Date.now()}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            console.log("PNG descargado.");
+        } 
+        else if (format === 'pdf') {
+            // Descargar PDF
+            const { jsPDF } = window.jspdf;
+            const imgData = canvas.toDataURL('image/png');
+            
+            // Calculamos si la hoja debe ser horizontal (l) o vertical (p)
+            const orientation = canvas.width > canvas.height ? 'l' : 'p';
+            
+            const pdf = new jsPDF({
+                orientation: orientation,
+                unit: 'px',
+                format: [canvas.width, canvas.height]
+            });
+
+            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+            pdf.save(`mi-tablero-${Date.now()}.pdf`);
+            console.log("PDF descargado.");
+        }
+    } catch (err) {
+        console.error("Error en la exportación:", err);
+        alert("Hubo un error al generar el archivo. Revisa que las librerías estén cargadas.");
+    }
 }
-
-
+    
 
     
 </script>
