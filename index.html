@@ -4,7 +4,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;1,400&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tablero v3</title>
+    <title>Tablero v4</title>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <style>
@@ -471,6 +471,10 @@ input:checked + .slider:before {
     </div>
 
     <div class="header-tools">
+
+          <button class="btn-mini btn-danger" onclick="clearEverything()" title="Eliminar Todo">x</button>
+    
+    <div class="mini-divider"></div>
         <button class="btn-mini" onclick="undo()" title="Deshacer">⟲</button>
         <button class="btn-mini" onclick="redo()" title="Rehacer">⟳</button>
         <div class="mini-divider"></div>
@@ -481,9 +485,7 @@ input:checked + .slider:before {
         
 <div class="mini-divider"></div>
     
-    <button class="btn-mini btn-danger" onclick="clearEverything()" title="Eliminar Todo">x</button>
-    
-    <div class="mini-divider"></div>
+
         
      <div class="snap-mini" style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 12px; font-weight: bold; font-family: sans-serif;">SNAP</span>
