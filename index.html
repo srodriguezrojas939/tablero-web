@@ -88,16 +88,46 @@ header {
     }
 
     /* --- BARRA DE HERRAMIENTAS Y BOTONES (Open Sans) --- */
+   /* Nueva Barra de Herramientas Vertical */
     .toolbar {
-        display: flex; 
-        justify-content: center; 
-        gap: 10px; 
-        padding: 12px;
+        display: flex;
+        flex-direction: column;    /* Hace que los botones se apilen verticalmente */
+        align-items: center;       /* Centra los iconos */
+        gap: 12px;                 /* Espacio entre botones */
+        padding: 15px 8px;
         background: white; 
-        border-bottom: 1px solid var(--border);
-        flex-wrap: wrap;
+        border-left: 1px solid var(--border); /* El borde ahora va a la izquierda */
+        width: 70px;               /* Ancho fijo para la barra */
+        height: 100%;              /* Ocupa todo el alto disponible */
+        overflow-y: auto;          /* Permite scroll si hay muchos botones */
+        z-index: 10;
     }
 
+    /* Ajuste para que los botones se vean bien verticalmente */
+    .toolbar .btn {
+        padding: 10px;
+        width: 45px;               /* Botones más cuadrados para el lateral */
+        height: 45px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* El divisor ahora es una línea horizontal */
+    .divider { 
+        height: 1px; 
+        width: 80%; 
+        background: var(--border); 
+        margin: 10px 0; 
+    }
+
+    /* Ajuste para el contenedor de SNAP */
+    .toolbar > div[style*="display: flex"] {
+        flex-direction: column !important;
+        gap: 5px !important;
+    }
+
+    
   /* Botones de la barra de herramientas */
 .btn {
     font-family: 'Open Sans', sans-serif;
@@ -346,33 +376,6 @@ header {
     <span class="subtitle">√(Raiz) Cuadrada²</span>
 </header>
 
-<div class="toolbar">
-    <button class="btn active" id="btn-PENCIL" onclick="setMode('PENCIL')">🖉</button>
-    <button class="btn" id="btn-POLY" onclick="setMode('POLY')">𖡬</button>
-    <button class="btn" id="btn-RECT" onclick="setMode('RECT')">□</button>
-    <button class="btn" id="btn-CIRCLE" onclick="setMode('CIRCLE')">◎</button>
-    <button class="btn" id="btn-TRI" onclick="setMode('TRI')">⊿</button>
-    <button class="btn" id="btn-COORD" onclick="setMode('COORD')">⌖</button>
-    <button class="btn" id="btn-SELECT" onclick="setMode('SELECT')">Selector ⬚ </button>
-    <div class="divider"></div>
-    <button class="btn" onclick="document.getElementById('img-up').click()"> 🗎 Imagen </button>
-    <button class="btn" onclick="showLatexPanel()">Σ Latex</button>
-    <button class="btn" id="btn-SYMBOLS" onclick="toggleSymbolsPanel()">Ω Simbolos </button>
-    <div class="divider"></div>
-
-<div style="display: flex; align-items: center; gap: 8px; margin: 0 10px;">
-    <span style="font-size: 11px; font-weight: 800; color: #444; font-family: 'Open Sans';">SNAP</span>
-    <div id="btn-SNAP" class="toggle-switch" onclick="toggleSnap()">
-        <div class="toggle-knob"></div>
-    </div>
-</div>
-
-<div class="divider"></div>
-    <button class="btn" onclick="undo()">↶</button>
-    <button class="btn" onclick="redo()">↷</button>
-    <button class="btn" onclick="clearAll()" style="color:red">⨯</button>
-</div>
-
     
 
 <div id="viewport" style="display: flex; flex-direction: row; position: relative; flex-grow: 1;">
@@ -422,7 +425,38 @@ header {
 
         <div id="symbols-grid">
             </div>
-    </div> </div>
+    </div>
+
+
+
+    <div class="toolbar">
+    <button class="btn active" id="btn-PENCIL" onclick="setMode('PENCIL')">🖉</button>
+    <button class="btn" id="btn-POLY" onclick="setMode('POLY')">𖡬</button>
+    <button class="btn" id="btn-RECT" onclick="setMode('RECT')">□</button>
+    <button class="btn" id="btn-CIRCLE" onclick="setMode('CIRCLE')">◎</button>
+    <button class="btn" id="btn-TRI" onclick="setMode('TRI')">⊿</button>
+    <button class="btn" id="btn-COORD" onclick="setMode('COORD')">⌖</button>
+    <button class="btn" id="btn-SELECT" onclick="setMode('SELECT')">Selector ⬚ </button>
+    <div class="divider"></div>
+    <button class="btn" onclick="document.getElementById('img-up').click()"> 🗎 Imagen </button>
+    <button class="btn" onclick="showLatexPanel()">Σ Latex</button>
+    <button class="btn" id="btn-SYMBOLS" onclick="toggleSymbolsPanel()">Ω Simbolos </button>
+    <div class="divider"></div>
+
+<div style="display: flex; align-items: center; gap: 8px; margin: 0 10px;">
+    <span style="font-size: 11px; font-weight: 800; color: #444; font-family: 'Open Sans';">SNAP</span>
+    <div id="btn-SNAP" class="toggle-switch" onclick="toggleSnap()">
+        <div class="toggle-knob"></div>
+    </div>
+</div>
+
+<div class="divider"></div>
+    <button class="btn" onclick="undo()">↶</button>
+    <button class="btn" onclick="redo()">↷</button>
+    <button class="btn" onclick="clearAll()" style="color:red">⨯</button>
+</div>
+
+</div>
     
     
 <input type="file" id="img-up" hidden onchange="uploadImage(event)">
