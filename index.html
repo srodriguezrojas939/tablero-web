@@ -1049,53 +1049,6 @@ function insertSymbol(latex) {
     group.insertAdjacentHTML('beforeend', html);
 }
 
-
-    // Drag básico para la toolbar
-const toolbar = document.querySelector('.toolbar');
-let isDragging = false;
-let currentX;
-let currentY;
-let initialX;
-let initialY;
-
-toolbar.addEventListener('mousedown', startDragging);
-document.addEventListener('mousemove', drag);
-document.addEventListener('mouseup', stopDragging);
-
-function startDragging(e) {
-  if (e.target.tagName === 'BUTTON') return; // no arrastrar si click en botón
-  
-  initialX = e.clientX - currentX;
-  initialY = e.clientY - currentY;
-  isDragging = true;
-  toolbar.style.cursor = 'grabbing';
-}
-
-function drag(e) {
-  if (isDragging) {
-    e.preventDefault();
-    currentX = e.clientX - initialX;
-    currentY = e.clientY - initialY;
-    
-    toolbar.style.left = currentX + 'px';
-    toolbar.style.top = currentY + 'px';
-    toolbar.style.position = 'absolute';
-    toolbar.style.right = 'auto'; // importante
-  }
-}
-
-function stopDragging() {
-  isDragging = false;
-  toolbar.style.cursor = 'move';
-}
-
-// Posición inicial
-toolbar.style.position = 'absolute';
-toolbar.style.right = '20px';
-toolbar.style.top = '20px';
-currentX = window.innerWidth - 100;
-currentY = 40;
-
 </script>
 </body>
 </html>
