@@ -7,7 +7,11 @@
     <title>Tablero v1</title>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+
+
 <style>
+    /* --- VARIABLES Y CONFIGURACIÓN BASE --- */
     :root {
         --bg: #FFFFFF;
         --panel: #F8F9FA;
@@ -15,131 +19,84 @@
         --dark: #000000;
         --accent: #007BFF;
         --pill-bg: #EAEAEA;
+        --text-main: #333333;
+        --text-muted: #666666;
         --selection: rgba(0, 123, 255, 0.15);
+        --header-h: 55px; /* Altura unificada del encabezado */
     }
+
+    * { box-sizing: border-box; }
 
     body {
         margin: 0; padding: 0; 
         font-family: 'Open Sans', sans-serif; 
         background: var(--bg); 
-        color: #333;
+        color: var(--text-main);
         height: 100vh; 
         display: flex; 
         flex-direction: column; 
         overflow: hidden;
     }
 
-  /* --- ENCABEZADO COMPACTO (Playfair Display) --- */
-header { 
-    height: 55px; /* Altura fija para ahorrar espacio */
-    padding: 0 25px; /* Eliminamos el padding vertical excesivo */
-    border-bottom: 1px solid var(--border); 
-    background: white; 
-    display: flex;
-    align-items: center; /* Centrado vertical perfecto */
-    justify-content: space-between; /* Título a la izquierda, botones a la derecha */
-}
-
-header .header-left {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-}
-
-header h1 { 
-    font-family: 'Playfair Display', serif; 
-    font-weight: 800; 
-    font-size: 22px; /* Reducido de 32px a 22px */
-    margin: 0; 
-    color: var(--dark);
-    letter-spacing: -0.5px;
-}
-
-.subtitle {
-    font-family: 'Playfair Display', serif;
-    font-weight: 400;
-    font-size: 14px; /* Reducido de 20px a 14px */
-    color: #666;
-    font-style: italic; /* Un toque elegante */
-}
-
-    /* --- SELECTOR DE PESTAÑAS (Estilo Pill de la imagen) --- */
-    .segmented-control {
+    /* --- ENCABEZADO Y LOGO (Playfair Display) --- */
+    .main-header {
         display: flex;
-        background: var(--pill-bg);
-        padding: 5px;
-        border-radius: 50px;
-        width: fit-content;
-        margin: 15px auto;
-        border: 1px solid #DBDBDB;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 25px;
+        height: var(--header-h);
+        background-color: #ffffff;
+        border-bottom: 1px solid var(--border);
+        z-index: 100;
     }
 
-    .tab-btn {
-        border: none;
-        background: transparent;
-        padding: 8px 30px;
-        border-radius: 50px;
+    .header-left {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        min-width: fit-content;
+    }
+
+    .logo-text {
+        font-family: 'Playfair Display', serif;
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--dark);
+        margin: 0;
+    }
+
+    .logo-sub {
+        font-family: 'Playfair Display', serif;
+        font-size: 14px;
+        font-style: italic;
+        color: var(--text-muted);
+    }
+
+    /* --- BARRA DE HERRAMIENTAS Y BOTONES --- */
+    .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn {
         font-family: 'Open Sans', sans-serif;
-        font-weight: 600;
-        font-size: 13px;
+        background: white; 
+        border: 1px solid var(--border); 
+        padding: 6px 14px;
+        border-radius: 99px; /* Estilo pastilla perfecto */
+        font-size: 11px; 
+        font-weight: 700; 
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        color: #666;
+        cursor: pointer; 
+        transition: all 0.2s ease;
+        color: #444;
+        white-space: nowrap;
     }
 
-    .tab-btn.active {
-        background: white;
-        color: black;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    /* --- BARRA DE HERRAMIENTAS Y BOTONES (Open Sans) --- */
-    .toolbar {
-        display: flex; 
-        justify-content: center; 
-        gap: 10px; 
-        padding: 12px;
-        background: white; 
-        border-bottom: 1px solid var(--border);
-        flex-wrap: wrap;
-    }
-
-  /* Botones de la barra de herramientas */
-.btn {
-    font-family: 'Open Sans', sans-serif;
-    background: white; 
-    border: 1px solid var(--border); 
-    padding: 8px 22px; /* Un poco más de aire a los lados */
-    border-radius: 99px; /* <--- ESTO los hace totalmente redondos */
-    font-size: 12px; 
-    font-weight: 600; 
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer; 
-    transition: 0.2s;
-    color: #444;
-}
-
-/* Pestañas del selector (Ya estaban en 50px, pero 99px asegura el efecto) */
-.segmented-control, .tab-btn {
-    border-radius: 99px; 
-}
-
-    /* --- LA PASTILLA GRIS (Segmented Control) --- */
-    .segmented-control {
-        display: flex;
-        background: var(--pill-bg); /* Fondo gris que abarca todo */
-        padding: 4px;
-        border-radius: 99px; /* Redondeado total */
-        width: fit-content;
-        margin: 10px auto 20px auto;
-        border: none; /* Sin bordes, solo el fondo gris */
-    }
-    
     .btn:hover { 
-        background: #F0F0F0; 
+        background: #F5F5F5; 
         border-color: #BBB;
     }
 
@@ -149,375 +106,190 @@ header h1 {
         border-color: var(--dark);
     }
 
-    .divider { width: 1px; background: var(--border); margin: 0 10px; }
+    .btn-danger { color: #ff4444; border-color: #ffcccc; }
+    .btn-danger:hover { background: #fff5f5; border-color: #ff4444; }
+
+    .divider { 
+        width: 1px; 
+        height: 24px; 
+        background: var(--border); 
+        margin: 0 10px; 
+    }
+
+    /* --- COMPONENTE: SNAP SWITCH --- */
+    .snap-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .snap-label {
+        font-size: 10px;
+        font-weight: 800;
+        color: var(--text-muted);
+    }
+
+    .toggle-switch {
+        width: 38px;
+        height: 20px;
+        background-color: var(--pill-bg);
+        border-radius: 99px;
+        position: relative;
+        cursor: pointer;
+        transition: 0.3s;
+        border: 1px solid #DBDBDB;
+    }
+
+    .toggle-switch.active { background-color: var(--dark); border-color: var(--dark); }
+
+    .toggle-knob {
+        width: 16px;
+        height: 16px;
+        background: white;
+        border-radius: 50%;
+        position: absolute;
+        top: 1px;
+        left: 2px;
+        transition: 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .toggle-switch.active .toggle-knob { transform: translateX(18px); }
 
     /* --- ÁREA DE TRABAJO --- */
-    #viewport { flex-grow: 1; position: relative; touch-action: none; background: white; }
-    svg { width: 100%; height: 100%; display: block; }
-    .grid { fill: url(#gridPattern); }
-    
-    /* --- ELEMENTOS DEL TABLERO --- */
-    .drawing-element { fill: none; stroke: black; stroke-width: 2; stroke-linecap: round; pointer-events: all; }
-    .latex-element { cursor: move; display: flex; align-items: center; justify-content: center; overflow: visible; }
-    .latex-container { 
-        width: 100%; height: 100%; display: flex; align-items: center; 
-        justify-content: center; font-size: 20px; transition: font-size 0.1s;
+    #viewport { 
+        flex-grow: 1; 
+        position: relative; 
+        touch-action: none; 
+        background: white; 
+        height: calc(100vh - var(--header-h));
     }
     
-    /* --- SELECTOR Y UI --- */
+    svg { width: 100%; height: 100%; display: block; }
+
+    /* --- ELEMENTOS DEL TABLERO --- */
+    .drawing-element { fill: none; stroke: black; stroke-width: 2; stroke-linecap: round; pointer-events: all; }
+    .latex-element { cursor: move; }
     .selection-marquee { fill: var(--selection); stroke: var(--accent); stroke-dasharray: 4; pointer-events: none; }
     .element-highlight { stroke: var(--accent) !important; stroke-width: 3 !important; }
     .resize-handle { fill: white; stroke: var(--accent); stroke-width: 2; cursor: nwse-resize; }
 
-    /* --- PANEL MODAL LATEX --- */
+    /* --- PANELES LATERALES Y MODALES --- */
+    #symbols-side-panel {
+        position: absolute;
+        right: 0; top: 0; bottom: 0;
+        width: 300px;
+        background: white;
+        border-left: 1px solid var(--border);
+        box-shadow: -5px 0 25px rgba(0,0,0,0.05);
+        display: none; 
+        flex-direction: column;
+        z-index: 1000;
+    }
+
+    .panel-header {
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .panel-header h3 { font-family: 'Playfair Display', serif; font-size: 18px; margin: 0; }
+
+    #symbols-grid {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 15px;
+        display: grid; /* Grid para los símbolos */
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .sym-card {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        background: white;
+        border: 1px solid #f0f0f0;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: 0.2s;
+        gap: 12px;
+    }
+
+    .sym-card:hover { border-color: var(--accent); background: #f8fbff; }
+    .sym-card-icon { font-size: 18px; min-width: 30px; text-align: center; }
+    .sym-card span { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+
+    /* --- MODAL LATEX --- */
     #latex-panel {
         position: absolute; 
         top: 50%; left: 50%; 
         transform: translate(-50%, -50%);
         background: white; 
-        padding: 25px; 
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        box-shadow: 0 15px 40px rgba(0,0,0,0.15); 
+        padding: 30px; 
+        border-radius: 16px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.2); 
         display: none; 
-        z-index: 1000;
-        min-width: 400px;
-    }
-
-    #latex-panel h3 {
-        margin-top: 0;
-        font-family: 'Playfair Display', serif;
-        font-size: 22px;
+        z-index: 2000;
+        min-width: 450px;
     }
 
     #latex-val {
-        font-family: 'Open Sans', sans-serif;
+        width: 100%;
+        padding: 12px;
+        font-family: 'Courier New', monospace;
         border: 1px solid var(--border);
-        border-radius: 6px;
+        border-radius: 8px;
+        margin: 15px 0;
         outline: none;
     }
-
-    #latex-val:focus {
-        border-color: var(--accent);
-    }
-
-
-/* PANEL LATERAL FIJO (SOBRE EL TABLERO) */
-#symbols-side-panel {
-    position: absolute;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    width: 300px;
-    background: white;
-    border-left: 1px solid var(--border);
-    box-shadow: -5px 0 15px rgba(0,0,0,0.05);
-    display: none; /* Se controla con JS */
-    flex-direction: column;
-    z-index: 1000;
-}
-
-
-/* Cabecera con botón X */
-.panel-header {
-    padding: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #eee;
-}
-
-.panel-header h3 {
-    margin: 0;
-    font-family: 'Playfair Display', serif;
-    font-size: 20px;
-}
-
-.close-panel-btn {
-    background: none;
-    border: none;
-    font-size: 28px;
-    cursor: pointer;
-    color: #999;
-    line-height: 1;
-}
-.close-panel-btn:hover { color: black; }
-
-/* Sección de categorías (Scroll Vertical) */
-.symbol-categories {
-    display: flex;
-    flex-direction: column;
-    padding: 10px;
-    gap: 5px;
-    max-height: 250px; /* Limita el alto de las categorías */
-    overflow-y: auto;
-    background: #fcfcfc;
-    border-bottom: 1px solid #eee;
-}
-
-.cat-btn {
-    text-align: left;
-    padding: 10px 15px;
-    border: none;
-    background: transparent;
-    border-radius: 8px;
-    font-size: 13px;
-    cursor: pointer;
-    color: #555;
-}
-
-.cat-btn.active {
-    background: var(--dark);
-    color: white;
-    font-weight: 600;
-}
-
-/* Sección de símbolos (Scroll Vertical) */
-#symbols-grid {
-    flex-grow: 1;
-    overflow-y: auto; /* Permite scroll en los símbolos */
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-/* Tarjetas de símbolos (Horizontales) */
-.sym-card {
-    display: flex;
-    align-items: center;
-    padding: 12px 15px;
-    background: white;
-    border: 1px solid #efefef;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: 0.2s;
-    gap: 15px;
-}
-
-.sym-card:hover {
-    border-color: var(--accent);
-    background: #f0f7ff;
-}
-
-.sym-card-icon {
-    font-size: 20px;
-    min-width: 35px;
-    text-align: center;
-}
-
-.sym-card span {
-    font-size: 12px;
-    color: #777;
-    font-weight: 600;
-}
-
-    .toggle-switch {
-    width: 42px;
-    height: 22px;
-    background-color: #EAEAEA; /* Gris claro de tu paleta */
-    border-radius: 99px;
-    position: relative;
-    cursor: pointer;
-    transition: 0.3s;
-    border: 1px solid #DBDBDB;
-}
-
-.toggle-knob {
-    width: 18px;
-    height: 18px;
-    background-color: white;
-    border-radius: 50%;
-    position: absolute;
-    top: 1px;
-    left: 2px;
-    transition: 0.3s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-/* Cuando el Snap está activo */
-.toggle-switch.active {
-    background-color: #000; /* Negro total como tu imagen */
-    border-color: #000;
-}
-
-.toggle-switch.active .toggle-knob {
-    transform: translateX(20px); /* Mueve el círculo a la derecha */
-}
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-    /* 1. El contenedor que alinea todo en una fila */
-.main-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    height: 50px; /* Altura compacta */
-    background-color: #ffffff;
-    border-bottom: 1px solid #e0e0e0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-/* 2. Título pequeño a la izquierda */
-.header-left {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-    min-width: fit-content;
-}
-
-.logo-text {
-    font-size: 16px;
-    font-weight: 800;
-    color: #000;
-}
-
-.logo-sub {
-    font-size: 11px;
-    font-weight: 400;
-    color: #888;
-}
-
-/* 3. Toolbar compacta */
-.toolbar {
-    display: flex;
-    align-items: center;
-    gap: 5px; /* Menos espacio entre botones */
-}
-
-/* 4. Botones tipo "pastilla" más delgados */
-.btn, .btn-tool, .btn-action, .btn-danger {
-    padding: 4px 12px;
-    font-size: 11px;
-    font-weight: 600;
-    border-radius: 20px;
-    border: 1px solid #ddd;
-    background: white;
-    cursor: pointer;
-    transition: 0.2s;
-    white-space: nowrap;
-}
-
-.btn.active {
-    background-color: #000;
-    color: #fff;
-    border-color: #000;
-}
-
-.btn-danger { color: #ff4444; border-color: #ffcccc; }
-.btn-danger:hover { background: #ff4444; color: white; }
-
-/* 5. Separador vertical */
-.divider {
-    width: 1px;
-    height: 20px;
-    background-color: #e0e0e0;
-    margin: 0 8px;
-}
-
-/* 6. Snap Switch integrado */
-.snap-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.snap-label {
-    font-size: 10px;
-    font-weight: 800;
-    color: #666;
-}
-
-.toggle-switch {
-    width: 36px;
-    height: 18px;
-    background-color: #eee;
-    border-radius: 10px;
-    position: relative;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.toggle-switch.active { background-color: #000; }
-
-.toggle-knob {
-    width: 14px;
-    height: 14px;
-    background: white;
-    border-radius: 50%;
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    transition: 0.3s;
-}
-
-.toggle-switch.active .toggle-knob { transform: translateX(18px); }
-
-
-
-
-
-
-
-
-
-
-
-
-    
-    
 </style>
 
-
+    
+    
     
 </head>
-<body>
-    
-<div class="header-left">
-        <h1>Tablero</h1>
-        <span class="subtitle">√(Raíz) Cuadrada²</span>
-    </div>
-
-<div class="toolbar">
-    <button class="btn active" id="btn-PENCIL" onclick="setMode('PENCIL')">🖉</button>
-    <button class="btn" id="btn-POLY" onclick="setMode('POLY')">𖡬</button>
-    <button class="btn" id="btn-RECT" onclick="setMode('RECT')">□</button>
-    <button class="btn" id="btn-CIRCLE" onclick="setMode('CIRCLE')">◎</button>
-    <button class="btn" id="btn-TRI" onclick="setMode('TRI')">⊿</button>
-    <button class="btn" id="btn-COORD" onclick="setMode('COORD')">⌖</button>
-    <button class="btn" id="btn-SELECT" onclick="setMode('SELECT')">Selector ⬚ </button>
-    <div class="divider"></div>
-    <button class="btn" onclick="document.getElementById('img-up').click()"> 🗎 Imagen </button>
-    <button class="btn" onclick="showLatexPanel()">Σ Latex</button>
-    <button class="btn" id="btn-SYMBOLS" onclick="toggleSymbolsPanel()">Ω Simbolos </button>
-    <div class="divider"></div>
-
-<div style="display: flex; align-items: center; gap: 8px; margin: 0 10px;">
-    <span style="font-size: 11px; font-weight: 800; color: #444; font-family: 'Open Sans';">SNAP</span>
-    <div id="btn-SNAP" class="toggle-switch" onclick="toggleSnap()">
-        <div class="toggle-knob"></div>
-    </div>
-</div>
-
-<div class="divider"></div>
-    <button class="btn" onclick="undo()">↶</button>
-    <button class="btn" onclick="redo()">↷</button>
-    <button class="btn" onclick="clearAll()" style="color:red">⨯</button>
-</div>
 
 
+    <body>
+    <header class="main-header">
+        <div class="header-left">
+            <h1 class="logo-text">Tablero</h1>
+            <span class="logo-sub">√(Raíz) Cuadrada²</span>
+        </div>
+
+        <div class="toolbar">
+            <button class="btn active" id="btn-PENCIL" onclick="setMode('PENCIL')">🖉</button>
+            <button class="btn" id="btn-POLY" onclick="setMode('POLY')">𖡬</button>
+            <button class="btn" id="btn-RECT" onclick="setMode('RECT')">□</button>
+            <button class="btn" id="btn-CIRCLE" onclick="setMode('CIRCLE')">◎</button>
+            <button class="btn" id="btn-TRI" onclick="setMode('TRI')">⊿</button>
+            <button class="btn" id="btn-COORD" onclick="setMode('COORD')">⌖</button>
+            <button class="btn" id="btn-SELECT" onclick="setMode('SELECT')">SELECTOR ⬚</button>
+
+            <div class="divider"></div>
+
+            <button class="btn" onclick="document.getElementById('img-up').click()">🗎 IMAGEN</button>
+            <button class="btn" onclick="showLatexPanel()">Σ LATEX</button>
+            <button class="btn" id="btn-SYMBOLS" onclick="toggleSymbolsPanel()">Ω SÍMBOLOS</button>
+
+            <div class="divider"></div>
+
+            <div class="snap-wrapper">
+                <span class="snap-label">SNAP</span>
+                <div id="btn-SNAP" class="toggle-switch" onclick="toggleSnap()">
+                    <div class="toggle-knob"></div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <button class="btn" onclick="undo()">↶</button>
+            <button class="btn" onclick="redo()">↷</button>
+            <button class="btn btn-danger" onclick="clearAll()">⨯</button>
+        </div>
     </header>
 
     
