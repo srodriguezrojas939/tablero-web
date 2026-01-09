@@ -29,32 +29,39 @@
         overflow: hidden;
     }
 
-    /* --- ENCABEZADO (Playfair Display) --- */
-    header { 
-        padding: 20px 30px; 
-        border-bottom: 1px solid var(--border); 
-        background: white; 
-        display: flex;
-        align-items: baseline;
-        gap: 15px;
-    }
+  /* --- ENCABEZADO COMPACTO (Playfair Display) --- */
+header { 
+    height: 55px; /* Altura fija para ahorrar espacio */
+    padding: 0 25px; /* Eliminamos el padding vertical excesivo */
+    border-bottom: 1px solid var(--border); 
+    background: white; 
+    display: flex;
+    align-items: center; /* Centrado vertical perfecto */
+    justify-content: space-between; /* Título a la izquierda, botones a la derecha */
+}
 
-    header h1 { 
-        font-family: 'Playfair Display', serif; 
-        font-weight: 800; 
-        font-size: 32px; 
-        margin: 0; 
-        color: var(--dark);
-        letter-spacing: -0.5px;
-    }
+header .header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
 
-    .subtitle {
-        font-family: 'Playfair Display', serif;
-        font-weight: 400;
-        font-size: 20px;
-        color: #666;
-        font-style: normal;
-    }
+header h1 { 
+    font-family: 'Playfair Display', serif; 
+    font-weight: 800; 
+    font-size: 22px; /* Reducido de 32px a 22px */
+    margin: 0; 
+    color: var(--dark);
+    letter-spacing: -0.5px;
+}
+
+.subtitle {
+    font-family: 'Playfair Display', serif;
+    font-weight: 400;
+    font-size: 14px; /* Reducido de 20px a 14px */
+    color: #666;
+    font-style: italic; /* Un toque elegante */
+}
 
     /* --- SELECTOR DE PESTAÑAS (Estilo Pill de la imagen) --- */
     .segmented-control {
@@ -478,10 +485,9 @@
 </head>
 <body>
     
-<header class="main-header">
-    <div class="header-left">
-        <span class="logo-text">Tablero</span>
-        <span class="logo-sub">√(Raíz) Cuadrada²</span>
+<div class="header-left">
+        <h1>Tablero</h1>
+        <span class="subtitle">√(Raíz) Cuadrada²</span>
     </div>
 
 <div class="toolbar">
