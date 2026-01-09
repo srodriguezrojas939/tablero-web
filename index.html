@@ -225,36 +225,55 @@ header {
     .resize-handle { fill: white; stroke: var(--accent); stroke-width: 2; cursor: nwse-resize; }
 
     /* --- PANEL MODAL LATEX --- */
-    #latex-panel {
-        position: absolute; 
-        top: 50%; left: 50%; 
-        transform: translate(-50%, -50%);
-        background: white; 
-        padding: 25px; 
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        box-shadow: 0 15px 40px rgba(0,0,0,0.15); 
-        display: none; 
-        z-index: 1000;
-        min-width: 400px;
-    }
+  /* PANEL LATEX REDISEÑADO */
+#latex-panel {
+    position: absolute;
+    bottom: 20px; /* Ubicación inferior  */
+    left: 50%;
+    transform: translateX(-50%); /* Centrado horizontal */
+    background: white; 
+    padding: 15px 20px; 
+    border-radius: 25px; /* Más redondeado [cite: 61] */
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+    display: none; 
+    z-index: 1000;
+    min-width: 300px; /* Un poco más pequeño [cite: 62] */
+    flex-direction: row; /* Para poner el visor al lado */
+    align-items: center;
+    gap: 15px;
+}
 
-    #latex-panel h3 {
-        margin-top: 0;
-        font-family: 'Playfair Display', serif;
-        font-size: 22px;
-    }
+/* El "manillar" para mover la ventana */
+#latex-drag-handle {
+    cursor: move;
+    color: #ccc;
+    font-size: 18px;
+    padding-right: 10px;
+    user-select: none;
+}
 
-    #latex-val {
-        font-family: 'Open Sans', sans-serif;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        outline: none;
-    }
+/* El visor de vista previa */
+#latex-preview {
+    min-width: 80px;
+    min-height: 50px;
+    background: #f9f9f9;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    border: 1px dashed #ddd;
+    font-size: 14px;
+}
 
-    #latex-val:focus {
-        border-color: var(--accent);
-    }
+#latex-val {
+    border: 1px solid var(--border);
+    border-radius: 12px; /* Redondeado [cite: 64] */
+    padding: 8px 12px;
+    outline: none;
+    font-size: 14px;
+}
 
 
 /* PANEL LATERAL FIJO (SOBRE EL TABLERO) */
@@ -524,14 +543,21 @@ input:checked + .slider:before {
     
     <div id="canvas-container" style="flex-grow: 1; position: relative; overflow: hidden; display: flex; flex-direction: column;">
         
-        <div id="latex-panel">
-            <h3>Insertar LaTeX</h3>
-            <input type="text" id="latex-val" style="width:100%; padding:10px;" placeholder="\frac{a}{b^2}">
-            <div style="margin-top:10px; display:flex; gap:10px;">
-                <button class="btn active" onclick="addLatex()">INSERTAR</button>
-                <button class="btn" onclick="hideLatexPanel()">CANCELAR</button>
-            </div>
+<div id="latex-panel" style="display: none;">
+    <div id="latex-drag-handle">⠿</div>
+    
+    <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
+        <input type="text" id="latex-val" placeholder="\frac{a}{b^2}" oninput="updateLivePreview()">
+        <div style="display: flex; gap: 8px;">
+            <button class="btn-mini" onclick="addLatex()" title="Insertar">✓</button>
+            <button class="btn-mini btn-danger" onclick="hideLatexPanel()" title="Cancelar">✕</button>
         </div>
+    </div>
+
+    <div id="latex-preview">
+        <div id="preview-content">Vista...</div>
+    </div>
+</div>
 
         <svg id="canvas">
             <defs>
@@ -1230,7 +1256,63 @@ function insertSymbol(latex) {
     group.insertAdjacentHTML('beforeend', html);
 }
 
+// --- LÓGICA DE VISTA PREVIA EN VIVO ---
+function updateLivePreview() {
+    const val = document.getElementById('latex-val').value;
+    const preview = document.getElementById('preview-content');
+    if (!val) {
+        preview.innerHTML = "Vista...";
+        return;
+    }
+    preview.innerHTML = `\\[${val}\\]`;
+    // Renderiza solo el visor 
+    MathJax.typesetPromise([preview]);
+}
 
+// --- LÓGICA PARA HACER EL PANEL MOVIBLE ---
+function makeDraggable(el, handle) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    handle.onmousedown = dragMouseDown;
+
+    function dragMouseDown(e) {
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        // Quitamos el transform de centrado para que no interfiera con el arrastre
+        el.style.transform = "none"; 
+        el.style.top = (el.offsetTop - pos2) + "px";
+        el.style.left = (el.offsetLeft - pos1) + "px";
+        el.style.bottom = "auto"; // Anulamos el bottom fijo al mover
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+}
+
+// Inicializamos el movimiento al cargar el panel
+const lp = document.getElementById('latex-panel');
+const lh = document.getElementById('latex-drag-handle');
+makeDraggable(lp, lh);
+
+// Modificamos tu función existente para resetear la vista previa al abrir [cite: 173]
+function showLatexPanel() {
+    editingEl = null;
+    document.getElementById('latex-val').value = '';
+    document.getElementById('preview-content').innerHTML = "Vista...";
+    document.getElementById('latex-panel').style.display = 'flex'; // Cambiado a flex para el visor
+}
     
     
 </script>
