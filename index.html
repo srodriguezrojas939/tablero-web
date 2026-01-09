@@ -7,6 +7,10 @@
     <title>Tablero v5</title>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    
 <style>
     :root {
         --bg: #FFFFFF;
@@ -501,7 +505,8 @@ input:checked + .slider:before {
          <button class="btn-mini" onclick="toggleFullScreen()" title="Pantalla Completa" style="margin-left: 4px;">
         🗗
     </button>
-        
+        <button class="btn-mini" onclick="downloadBoard('png')" title="Descargar PNG"> ⇩ PNG</button>
+    <button class="btn-mini" onclick="downloadBoard('pdf')" title="Descargar PDF">⇩ PDF</button>
 <div class="mini-divider"></div>
     
 
@@ -579,10 +584,10 @@ input:checked + .slider:before {
         
         <div class="symbol-categories">
             <button onclick="renderCategory('Principales')" class="cat-btn active">Principales</button>
+            <button onclick="renderCategory('formulas')" class="cat-btn">Fórmulas</button>
             <button onclick="renderCategory('Letras Griegas')" class="cat-btn">Griegas</button>
             <button onclick="renderCategory('Flechas')" class="cat-btn">Flechas</button>
             <button onclick="renderCategory('Lógica')" class="cat-btn">Lógica</button>
-            <button onclick="renderCategory('formulas')" class="cat-btn">Fórmulas</button>
             <button onclick="renderCategory('Desigualdades')" class="cat-btn">Desigualdades</button>
             <button onclick="renderCategory('Cálculo')" class="cat-btn">Cálculo</button>
             <button onclick="renderCategory('Conjuntos')" class="cat-btn">Conjuntos</button>
@@ -1130,6 +1135,12 @@ window.addEventListener('keydown', (e) => {
         {n: 'Raiz', s: '\\sqrt{x}', i: '√'},
         {n: 'Fracción', s: '\\frac{a}{b}', i: '÷'}
     ],
+
+
+    "formulas":  [
+        {n: 'Cuadrática', s: 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}', i: 'f(x)'}
+    ],
+        
     "Letras Griegas": [
        {n: 'Alpha', s: '\\alpha', i: 'α'},
             {n: 'Beta', s: '\\beta', i: 'β'},
@@ -1160,7 +1171,6 @@ window.addEventListener('keydown', (e) => {
     ],
     "Flechas": [{n: 'Derecha', s: '\\rightarrow', i: '→'}],
     "Lógica": [{n: 'Para todo', s: '\\forall', i: '∀'}],
-    "formulas": [{n: 'Cuadrática', s: 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}', i: 'f(x)'}],
     "Desigualdades": [{n: 'Menor igual', s: '\\leq', i: '≤'}],
     "Cálculo": [{n: 'Integral', s: '\\int', i: '∫'}],
     "Conjuntos": [{n: 'Pertenece', s: '\\in', i: '∈'}],
@@ -1314,6 +1324,45 @@ function showLatexPanel() {
     document.getElementById('latex-panel').style.display = 'flex'; // Cambiado a flex para el visor
 }
     
+
+    async function downloadBoard(format) {
+    // 1. Seleccionamos el contenedor que tiene todas las capas (id="board")
+    const board = document.getElementById('board');
+    
+    // 2. Usamos html2canvas para tomar una "foto" del tablero
+    // Usamos scale: 2 para que la imagen tenga buena calidad (HD)
+    const canvas = await html2canvas(board, {
+        scale: 2,
+        backgroundColor: "#FFFFFF", // Asegura fondo blanco
+        useCORS: true // Permite capturar imágenes externas si las hay
+    });
+
+    if (format === 'png') {
+        // --- DESCARGAR PNG ---
+        const link = document.createElement('a');
+        link.download = 'mi-tablero.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    } 
+    else if (format === 'pdf') {
+        // --- DESCARGAR PDF ---
+        const { jsPDF } = window.jspdf;
+        const imgData = canvas.toDataURL('image/png');
+        
+        // Creamos el PDF con el tamaño del canvas
+        const pdf = new jsPDF({
+            orientation: canvas.width > canvas.height ? 'l' : 'p',
+            unit: 'px',
+            format: [canvas.width, canvas.height]
+        });
+
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.save('mi-tablero.pdf');
+    }
+}
+
+
+
     
 </script>
 </body>
