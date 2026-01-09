@@ -53,7 +53,7 @@
         font-weight: 400;
         font-size: 20px;
         color: #666;
-        font-style: italic;
+        font-style: normal;
     }
 
     /* --- SELECTOR DE PESTAÑAS (Estilo Pill de la imagen) --- */
@@ -99,20 +99,26 @@
         flex-wrap: wrap;
     }
 
-    .btn {
-        font-family: 'Open Sans', sans-serif;
-        background: white; 
-        border: 1px solid var(--border); 
-        padding: 9px 18px;
-        border-radius: 6px; 
-        font-size: 12px; 
-        font-weight: 600; 
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        cursor: pointer; 
-        transition: 0.2s;
-        color: #444;
-    }
+  /* Botones de la barra de herramientas */
+.btn {
+    font-family: 'Open Sans', sans-serif;
+    background: white; 
+    border: 1px solid var(--border); 
+    padding: 8px 22px; /* Un poco más de aire a los lados */
+    border-radius: 99px; /* <--- ESTO los hace totalmente redondos */
+    font-size: 12px; 
+    font-weight: 600; 
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer; 
+    transition: 0.2s;
+    color: #444;
+}
+
+/* Pestañas del selector (Ya estaban en 50px, pero 99px asegura el efecto) */
+.segmented-control, .tab-btn {
+    border-radius: 99px; 
+}
 
     .btn:hover { 
         background: #F0F0F0; 
