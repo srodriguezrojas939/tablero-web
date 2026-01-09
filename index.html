@@ -195,113 +195,93 @@
     }
 
 
-    /* Configuración del Panel Lateral */
+/* --- AJUSTES DEL PANEL LATERAL --- */
 #symbols-side-panel {
-    width: 320px;
-    min-width: 220px;
-    max-width: 600px;
+    width: 300px; /* Un poco más estrecho por defecto */
+    min-width: 250px;
     background: #FFFFFF;
     border-left: 1px solid var(--border);
-    display: none; /* Se activa al dar clic al botón */
+    display: none;
     flex-direction: column;
-    position: relative;
-    z-index: 900;
+    height: 100%;
 }
 
-/* Para cuando lo "desfijas" */
-#symbols-side-panel.floating {
-    position: absolute;
-    right: 20px;
-    top: 20px;
-    height: 80%;
-    border-radius: 20px;
-    border: 1px solid var(--border);
-    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-}
-
-/* Tirador para cambiar el tamaño */
-#panel-resizer {
-    width: 6px;
-    cursor: ew-resize;
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    transition: background 0.2s;
-}
-#panel-resizer:hover { background: var(--accent); opacity: 0.3; }
-
-.panel-header {
-    padding: 15px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-/* Scroll de categorías tipo "pastillas" */
+/* Categorías ahora son una lista vertical */
 .symbol-categories {
     display: flex;
-    overflow-x: auto;
-    padding: 10px 15px;
-    gap: 8px;
-    border-bottom: 1px solid #f0f0f0;
-    scrollbar-width: none; /* Ocultar scroll en Firefox */
+    flex-direction: column; /* Cambio a vertical */
+    overflow-y: auto;       /* Scroll vertical */
+    max-height: 180px;      /* Altura fija para las categorías */
+    padding: 10px;
+    gap: 4px;
+    border-bottom: 2px solid #f0f0f0;
+    background: #fafafa;
 }
-.symbol-categories::-webkit-scrollbar { display: none; } /* Ocultar scroll en Chrome */
 
 .cat-btn {
-    border: 1px solid #eee;
-    background: #f8f8f8;
-    padding: 6px 15px;
-    border-radius: 99px;
-    font-size: 11px;
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-    font-family: 'Open Sans', sans-serif;
+    text-align: left;
+    padding: 8px 15px;
+    width: 100%;
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: 8px;
+    font-size: 12px;
+    transition: 0.2s;
 }
-.cat-btn.active { background: var(--dark); color: white; border-color: var(--dark); }
 
-/* Rejilla de símbolos */
+.cat-btn.active {
+    background: var(--dark);
+    color: white;
+}
+
+/* Cuadrícula de Símbolos: Tarjetas más anchas que altas */
 #symbols-grid {
     flex-grow: 1;
     overflow-y: auto;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-    gap: 12px;
-    padding: 20px;
-}
-
-.sym-card {
-    background: white;
-    border: 1px solid #f0f0f0;
-    border-radius: 12px;
-    padding: 15px 5px;
-    text-align: center;
-    cursor: pointer;
-    transition: 0.2s;
-    font-size: 20px;
-}
-.sym-card:hover { border-color: var(--accent); background: #f0f7ff; }
-.sym-card span { display: block; font-size: 9px; color: #aaa; text-transform: uppercase; margin-top: 5px; }
-
-.mini-btn {
-    background: #f0f0f0; border: none; padding: 5px 12px; 
-    border-radius: 99px; font-size: 10px; font-weight: bold; cursor: pointer;
-}
-
-    /* Para que las pastillas de categoría brillen al pasar el mouse */
-.cat-btn:hover {
-    background: #e0e0e0;
-}
-
-/* Símbolos un poco más grandes y elegantes */
-.sym-card {
-    font-family: "MathJax_Main", serif; /* Fuente matemática si está cargada */
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 80px;
+    flex-direction: column; /* Símbolos en lista vertical */
+    gap: 8px;
+    padding: 15px;
 }
+
+.sym-card {
+    display: flex;
+    flex-direction: row;    /* Icono al lado del texto */
+    align-items: center;
+    justify-content: flex-start;
+    padding: 10px 15px;
+    min-height: 50px;       /* Más ancha que alta */
+    background: white;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    gap: 15px;
+}
+
+.sym-card:hover {
+    border-color: var(--accent);
+    background: #f8fbff;
+    transform: translateX(4px); /* Pequeño efecto de desplazamiento */
+}
+
+/* Tamaño del símbolo dentro de la tarjeta */
+.sym-card-icon {
+    font-size: 22px;
+    min-width: 40px;
+    text-align: center;
+    color: var(--dark);
+}
+
+.sym-card span {
+    font-size: 11px;
+    color: #666;
+    text-transform: none;
+    margin-top: 0;
+    font-weight: 600;
+}
+
+
+
+    
     
 </style>
 </head>
@@ -840,7 +820,6 @@ function renderCategory(cat) {
     const grid = document.getElementById('symbols-grid');
     grid.innerHTML = '';
     
-    // Actualizar botones de categoría
     document.querySelectorAll('.cat-btn').forEach(b => {
         b.classList.toggle('active', b.innerText === cat || (cat === 'Letras Griegas' && b.innerText === 'Griegas'));
     });
@@ -848,12 +827,16 @@ function renderCategory(cat) {
     menus[cat].forEach(sym => {
         const div = document.createElement('div');
         div.className = 'sym-card';
-        div.innerHTML = `${sym.i} <span>${sym.n}</span>`;
+        // Estructura: Icono (Izquierda) | Nombre (Derecha)
+        div.innerHTML = `
+            <div class="sym-card-icon">${sym.i}</div>
+            <span>${sym.n}</span>
+        `;
         div.onclick = () => insertSymbol(sym.s);
         grid.appendChild(div);
     });
 }
-
+    
 function insertSymbol(latex) {
     // Guardamos historial antes de insertar
     saveHistory();
