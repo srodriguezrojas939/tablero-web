@@ -478,6 +478,47 @@ input:checked + .slider {
 input:checked + .slider:before {
   transform: translateX(18px);
 }
+
+
+    /* Estilos del menú desplegable */
+.dropdown-content {
+    display: none; /* Oculto por defecto */
+    position: absolute;
+    right: 0; /* Se alinea a la derecha del botón */
+    top: 40px;
+    background-color: white;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px rgba(0,0,0,0.1);
+    border: 1px solid var(--border);
+    border-radius: 15px; /* Redondeado como el panel latex */
+    z-index: 1100;
+    overflow: hidden;
+    padding: 5px 0;
+}
+
+.dropdown-content button {
+    width: 100%;
+    padding: 10px 15px;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: 'Open Sans', sans-serif;
+    transition: background 0.2s;
+}
+
+.dropdown-content button:hover {
+    background-color: #f8f9fa;
+    color: var(--accent);
+}
+
+/* Clase para mostrar el menú */
+.show-menu {
+    display: block !important;
+}
+
+    
     
 </style>
 </head>
@@ -505,11 +546,19 @@ input:checked + .slider:before {
          <button class="btn-mini" onclick="toggleFullScreen()" title="Pantalla Completa" style="margin-left: 4px;">
         🗗
     </button>
-        <button class="btn-mini" onclick="downloadBoard('png')" title="Descargar PNG"> ⇩ PNG</button>
-    <button class="btn-mini" onclick="downloadBoard('pdf')" title="Descargar PDF">⇩ PDF</button>
-<div class="mini-divider"></div>
-    
 
+         <div class="snap-mini" style="display: flex; align-items: center; gap: 8px;">
+
+        <div class="dropdown" style="position: relative; display: inline-block;">
+    <button class="btn-mini" onclick="toggleDownloadMenu()" title="Descargar">
+        ⎘ 
+    </button>
+    <div id="download-menu" class="dropdown-content">
+        <button onclick="downloadBoard('png')"> 🗐  Descargar PNG</button>
+        <button onclick="downloadBoard('pdf')"> 🗐 Descargar PDF</button>
+    </div>
+</div>
+        
         
      <div class="snap-mini" style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 12px; font-weight: bold; font-family: sans-serif;">SNAP</span>
@@ -1361,6 +1410,30 @@ function showLatexPanel() {
     }
 }
 
+    // Función para abrir y cerrar el menú
+function toggleDownloadMenu() {
+    document.getElementById("download-menu").classList.toggle("show-menu");
+}
+
+// Cerramos el menú si el usuario hace clic fuera de él
+window.onclick = function(event) {
+    if (!event.target.matches('.btn-mini') && !event.target.closest('.dropdown')) {
+        const dropdowns = document.getElementsByClassName("dropdown-content");
+        for (let i = 0; i < dropdowns.length; i++) {
+            dropdowns[i].classList.remove('show-menu');
+        }
+    }
+}
+
+// Modificamos la función existente para que cierre el menú al descargar
+async function downloadBoard(format) {
+    // Cerramos el menú primero
+    document.getElementById("download-menu").classList.remove("show-menu");
+    
+    // ... aquí sigue todo tu código anterior de downloadBoard ...
+    const board = document.getElementById('board');
+    // (Asegúrate de mantener el código de html2canvas que pusimos antes)
+}
 
 
     
