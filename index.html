@@ -518,7 +518,18 @@ input:checked + .slider:before {
     display: block !important;
 }
 
-    
+ /* Animación suave para el aviso */
+#status-msg.show {
+    display: block !important;
+    animation: fadeInOut 3s forwards;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(10px); }
+    15% { opacity: 1; transform: translateY(0); }
+    85% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(10px); }
+}   
     
 </style>
 </head>
@@ -1193,30 +1204,7 @@ window.addEventListener('keydown', (e) => {
     "Letras Griegas": [
        {n: 'Alpha', s: '\\alpha', i: 'α'},
             {n: 'Beta', s: '\\beta', i: 'β'},
-            {n: 'Gamma', s: '\\gamma', i: 'γ'},
-            {n: 'Delta', s: '\\delta', i: 'δ'},
-            {n: 'Epsilon', s: '\\epsilon', i: 'ε'},
-            {n: 'Zeta', s: '\\zeta', i: 'ζ'},
-            {n: 'Theta', s: '\\theta', i: 'θ'},
-            {n: 'Lambda', s: '\\lambda', i: 'λ'},
-            {n: 'Mu', s: '\\mu', i: 'μ'},
-            {n: 'Pi', s: '\\pi', i: 'π'},
-            {n: 'Rho', s: '\\rho', i: 'ρ'},
-            {n: 'Sigma', s: '\\sigma', i: 'σ'},
-            {n: 'Tau', s: '\\tau', i: 'τ'},
-            {n: 'Phi', s: '\\phi', i: 'φ'},
-            {n: 'Omega', s: '\\omega', i: 'ω'},
-            {n: 'Delta M.', s: '\\Delta', i: 'Δ'},
-            {n: 'Sigma M.', s: '\\Sigma', i: 'Σ'},
-            {n: 'Omega M.', s: '\\Omega', i: 'Ω'},
-            {n: 'Gamma', s: '\\Gamma ', i: 'Γ'},
-            {n: 'Theta', s: '\\Theta ', i: 'Θ'},
-            {n: 'Lambda', s: ' \\Lambda ', i: 'Λ'},
-            {n: 'Xi', s: '\\Xi ', i: 'Ξ'},
-            {n: 'Pi', s: '\\Pi ', i: 'Π'},
-            {n: 'Upsilon', s: '\\Upsilon ', i: 'Υ'},
-            {n: 'Phi', s: '\\Phi ', i: 'Φ'},
-            {n: 'Psi', s: '\\Psi ', i: 'Ψ'}
+          
     ],
     "Flechas": [{n: 'Derecha', s: '\\rightarrow', i: '→'}],
     "Lógica": [{n: 'Para todo', s: '\\forall', i: '∀'}],
@@ -1374,7 +1362,14 @@ function showLatexPanel() {
 }
     
 
-  // --- FUNCIONES DE DESCARGA ---
+// Función para mostrar mensajes dentro de la página (sin ventanas emergentes)
+function showMessage(text) {
+    const msg = document.getElementById("status-msg");
+    msg.innerText = text;
+    msg.classList.remove("show");
+    void msg.offsetWidth; // Truco para reiniciar la animación
+    msg.classList.add("show");
+}
 
 // 1. Abrir/Cerrar menú
 function toggleDownloadMenu() {
@@ -1392,43 +1387,40 @@ window.addEventListener('click', function(event) {
     }
 });
 
-// 3. Lógica principal de descarga
+// 3. Lógica principal de descarga corregida
 async function downloadBoard(format) {
-    // Cerramos el menú inmediatamente
+    // Cerramos el menú
     const menu = document.getElementById("download-menu");
     if (menu) menu.classList.remove("show-menu");
 
-    const board = document.getElementById('board');
+    // CAMBIO CLAVE: Usamos 'canvas-container' que sí existe en tu código
+    const board = document.getElementById('canvas-container'); 
+    
     if (!board) {
-        alert("Error: No se encontró el contenedor del tablero (#board)");
+        showMessage(" Error: No se encontró el área de dibujo.");
         return;
     }
 
+    showMessage(" Generando archivo...");
+
     try {
-        console.log("Generando captura de pantalla...");
-        
-        // Capturamos el tablero
         const canvas = await html2canvas(board, {
-            scale: 2, // Doble resolución para que no se vea pixelado
-            useCORS: true, // Importante para imágenes externas
+            scale: 2, 
+            useCORS: true, 
             backgroundColor: "#ffffff",
             logging: false
         });
 
         if (format === 'png') {
-            // Descargar PNG
             const link = document.createElement('a');
-            link.download = `mi-tablero-${Date.now()}.png`;
+            link.download = `tablero-${Date.now()}.png`;
             link.href = canvas.toDataURL("image/png");
             link.click();
-            console.log("PNG descargado.");
+            showMessage("PNG descargado con éxito");
         } 
         else if (format === 'pdf') {
-            // Descargar PDF
             const { jsPDF } = window.jspdf;
             const imgData = canvas.toDataURL('image/png');
-            
-            // Calculamos si la hoja debe ser horizontal (l) o vertical (p)
             const orientation = canvas.width > canvas.height ? 'l' : 'p';
             
             const pdf = new jsPDF({
@@ -1438,15 +1430,16 @@ async function downloadBoard(format) {
             });
 
             pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-            pdf.save(`mi-tablero-${Date.now()}.pdf`);
-            console.log("PDF descargado.");
+            pdf.save(`tablero-${Date.now()}.pdf`);
+            showMessage("PDF descargado con éxito");
         }
     } catch (err) {
-        console.error("Error en la exportación:", err);
-        alert("Hubo un error al generar el archivo. Revisa que las librerías estén cargadas.");
+        console.error("Error:", err);
+        showMessage(" Error al generar la descarga.");
     }
 }
-    
+
+    <div id="status-msg" style="position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 10px 20px; border-radius: 50px; font-size: 13px; display: none; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.2);"></div>
 
     
 </script>
