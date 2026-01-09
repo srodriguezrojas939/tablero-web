@@ -316,17 +316,21 @@
 </header>
 
 <div class="toolbar">
-    <button class="btn active" id="btn-PENCIL" onclick="setMode('PENCIL')">LÁPIZ</button>
-    <button class="btn" id="btn-POLY" onclick="setMode('POLY')">POLILÍNEA</button>
-    <button class="btn" id="btn-SELECT" onclick="setMode('SELECT')">SELECTOR</button>
+    <button class="btn active" id="btn-PENCIL" onclick="setMode('PENCIL')">🖉</button>
+    <button class="btn" id="btn-POLY" onclick="setMode('POLY')">𖡬</button>
+    <button class="btn" id="btn-RECT" onclick="setMode('RECT')">□</button>
+    <button class="btn" id="btn-CIRCLE" onclick="setMode('CIRCLE')">◎</button>
+    <button class="btn" id="btn-TRI" onclick="setMode('TRI')">⊿</button>
+    <button class="btn" id="btn-COORD" onclick="setMode('COORD')">⌖</button>
+    <button class="btn" id="btn-SELECT" onclick="setMode('SELECT')">Selector ⬚ </button>
     <div class="divider"></div>
-    <button class="btn" onclick="document.getElementById('img-up').click()">+ IMAGEN</button>
-    <button class="btn" onclick="showLatexPanel()">Σ LATEX</button>
-    <button class="btn" id="btn-SYMBOLS" onclick="toggleSymbolsPanel()">SÍMBOLOS</button>
+    <button class="btn" onclick="document.getElementById('img-up').click()"> 🗎 Imagen </button>
+    <button class="btn" onclick="showLatexPanel()">Σ Latex</button>
+    <button class="btn" id="btn-SYMBOLS" onclick="toggleSymbolsPanel()">Ω Simbolos </button>
     <div class="divider"></div>
-    <button class="btn" onclick="undo()">DESHACER</button>
-    <button class="btn" onclick="redo()">REHACER</button>
-    <button class="btn" onclick="clearAll()" style="color:red">LIMPIAR</button>
+    <button class="btn" onclick="undo()">↶</button>
+    <button class="btn" onclick="redo()">↷</button>
+    <button class="btn" onclick="clearAll()" style="color:red">⨯</button>
 </div>
 
     
@@ -475,6 +479,27 @@ let clipboard = [];
                 currentEl.setAttribute("points", `${pts} ${pos.x},${pos.y}`);
             }
         }
+
+        if (['RECT', 'CIRCLE', 'TRI', 'COORD'].includes(mode)) {
+        saveHistory();
+        if (mode === 'RECT') {
+            currentEl = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            currentEl.setAttribute("class", "drawing-element draggable");
+        } else if (mode === 'CIRCLE') {
+            currentEl = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            currentEl.setAttribute("class", "drawing-element draggable");
+        } else if (mode === 'TRI') {
+            currentEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            currentEl.setAttribute("class", "drawing-element draggable");
+        } else if (mode === 'COORD') {
+            currentEl = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            currentEl.setAttribute("class", "draggable coord-system");
+        }
+        
+        currentEl.setAttribute("x", pos.x);
+        currentEl.setAttribute("y", pos.y);
+        layers.draw.appendChild(currentEl);
+    }
     }
 
     function onMove(e) {
@@ -510,6 +535,29 @@ let clipboard = [];
             let d = currentEl.getAttribute("d");
             currentEl.setAttribute("d", `${d} L ${pos.x} ${pos.y}`);
         }
+
+    if (isAction && ['RECT', 'CIRCLE', 'TRI', 'COORD'].includes(mode) && currentEl) {
+        const w = Math.abs(pos.x - startPos.x);
+        const h = Math.abs(pos.y - startPos.y);
+        const x = Math.min(pos.x, startPos.x);
+        const y = Math.min(pos.y, startPos.y);
+
+        if (mode === 'RECT') {
+            currentEl.setAttribute("x", x); currentEl.setAttribute("y", y);
+            currentEl.setAttribute("width", w); currentEl.setAttribute("height", h);
+        } else if (mode === 'CIRCLE') {
+            const r = Math.sqrt(w*w + h*h);
+            currentEl.setAttribute("cx", startPos.x);
+            currentEl.setAttribute("cy", startPos.y);
+            currentEl.setAttribute("r", r);
+        } else if (mode === 'TRI') {
+            currentEl.setAttribute("d", `M ${startPos.x} ${pos.y} L ${pos.x} ${pos.y} L ${pos.x} ${startPos.y} Z`);
+        } else if (mode === 'COORD') {
+            currentEl.setAttribute("data-w", w); 
+            currentEl.setAttribute("data-h", h);
+            drawCartesian(currentEl, x, y, w, h);
+        }
+    }
     }
 
     function onEnd() {
@@ -905,6 +953,39 @@ function insertSymbol(latex) {
     layers.latex.appendChild(fo);
     
     MathJax.typeset(); 
+}
+
+    function drawCartesian(group, x, y, w, h) {
+    group.innerHTML = ''; // Limpiar para redibujar
+    const centerX = x + w/2;
+    const centerY = y + h/2;
+    const step = 30; // Distancia entre rayitas
+
+    // Fondo invisible para poder agarrarlo con el selector
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", x); rect.setAttribute("y", y);
+    rect.setAttribute("width", w); rect.setAttribute("height", h);
+    rect.setAttribute("fill", "transparent");
+    group.appendChild(rect);
+
+    const lineAttr = "stroke='black' stroke-width='1'";
+    let html = `<line x1='${x}' y1='${centerY}' x2='${x+w}' y2='${centerY}' ${lineAttr} />`; // Eje X
+    html += `<line x1='${centerX}' y1='${y}' x2='${centerX}' y2='${y+h}' ${lineAttr} />`; // Eje Y
+
+    // Rayitas (Ticks)
+    for(let i = step; i < w/2; i += step) {
+        html += `<line x1='${centerX+i}' y1='${centerY-5}' x2='${centerX+i}' y2='${centerY+5}' ${lineAttr} />`;
+        html += `<line x1='${centerX-i}' y1='${centerY-5}' x2='${centerX-i}' y2='${centerY+5}' ${lineAttr} />`;
+    }
+    for(let i = step; i < h/2; i += step) {
+        html += `<line x1='${centerX-5}' y1='${centerY+i}' x2='${centerX+5}' y2='${centerY+i}' ${lineAttr} />`;
+        html += `<line x1='${centerX-5}' y1='${centerY-i}' x2='${centerX+5}' y2='${centerY-i}' ${lineAttr} />`;
+    }
+    group.innerHTML += html;
+    
+    // Guardar dimensiones para redimensionar después
+    group.setAttribute("x", x); group.setAttribute("y", y);
+    group.setAttribute("width", w); group.setAttribute("height", h);
 }
     
 </script>
