@@ -955,6 +955,43 @@ function insertSymbol(latex) {
     MathJax.typeset(); 
 }
 
+    function drawCartesian(group, x, y, w, h) {
+    group.innerHTML = ''; 
+    group.setAttribute("class", "cartesian-element draggable");
+    // Guardamos las coordenadas en atributos de datos porque <g> no usa x,y,w,h
+    group.setAttribute("data-x", x);
+    group.setAttribute("data-y", y);
+    group.setAttribute("data-w", w);
+    group.setAttribute("data-h", h);
+
+    const centerX = x + w/2;
+    const centerY = y + h/2;
+    const step = 30; 
+
+    // Fondo para detectar clics
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", x); rect.setAttribute("y", y);
+    rect.setAttribute("width", w); rect.setAttribute("height", h);
+    rect.setAttribute("fill", "transparent");
+    rect.style.pointerEvents = "all";
+    group.appendChild(rect);
+
+    const lineAttr = "stroke='black' stroke-width='1' vector-effect='non-scaling-stroke'";
+    let html = `<line x1='${x}' y1='${centerY}' x2='${x+w}' y2='${centerY}' ${lineAttr} />`;
+    html += `<line x1='${centerX}' y1='${y}' x2='${centerX}' y2='${y+h}' ${lineAttr} />`;
+
+    // Ticks simplificados
+    for(let i = step; i < w/2; i += step) {
+        html += `<line x1='${centerX+i}' y1='${centerY-5}' x2='${centerX+i}' y2='${centerY+5}' ${lineAttr} />`;
+        html += `<line x1='${centerX-i}' y1='${centerY-5}' x2='${centerX-i}' y2='${centerY+5}' ${lineAttr} />`;
+    }
+    for(let i = step; i < h/2; i += step) {
+        html += `<line x1='${centerX-5}' y1='${centerY+i}' x2='${centerX+5}' y2='${centerY+i}' ${lineAttr} />`;
+        html += `<line x1='${centerX-5}' y1='${centerY-i}' x2='${centerX+5}' y2='${centerY-i}' ${lineAttr} />`;
+    }
+    group.insertAdjacentHTML('beforeend', html);
+}
+
 </script>
 </body>
 </html>
