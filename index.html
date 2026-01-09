@@ -329,6 +329,8 @@
     <button class="btn" onclick="clearAll()" style="color:red">LIMPIAR</button>
 </div>
 
+    
+
 <div id="viewport" style="display: flex; flex-direction: row; position: relative; flex-grow: 1;">
     
     <div id="canvas-container" style="flex-grow: 1; position: relative; overflow: hidden; display: flex; flex-direction: column;">
@@ -377,26 +379,8 @@
         <div id="symbols-grid">
             </div>
     </div> </div>
-        
-        <div class="symbol-categories">
-            <button onclick="renderCategory('Principales')" class="cat-btn active">Principales</button>
-            <button onclick="renderCategory('Letras Griegas')" class="cat-btn">Griegas</button>
-            <button onclick="renderCategory('Flechas')" class="cat-btn">Flechas</button>
-            <button onclick="renderCategory('Lógica')" class="cat-btn">Lógica</button>
-            <button onclick="renderCategory('formulas')" class="cat-btn">Fórmulas</button>
-            <button onclick="renderCategory('Desigualdades')" class="cat-btn">Desigualdades</button>
-            <button onclick="renderCategory('Cálculo')" class="cat-btn">Cálculo</button>
-            <button onclick="renderCategory('Conjuntos')" class="cat-btn">Conjuntos</button>
-            <button onclick="renderCategory('Matrices/Sist')" class="cat-btn">Matrices</button>
-            <button onclick="renderCategory('Paréntesis')" class="cat-btn">Paréntesis</button>
-            <button onclick="renderCategory('Otros')" class="cat-btn">Otros</button>
-        </div>
-
-        <div id="symbols-grid">
-            </div>
-    </div>
-</div>
-
+    
+    
 <input type="file" id="img-up" hidden onchange="uploadImage(event)">
 
 <script>
