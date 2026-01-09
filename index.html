@@ -474,8 +474,6 @@ input:checked + .slider:before {
         <button class="btn-mini" onclick="undo()" title="Deshacer">⟲</button>
         <button class="btn-mini" onclick="redo()" title="Rehacer">⟳</button>
         <div class="mini-divider"></div>
-        <button class="btn-mini btn-danger" onclick="clearCanvas()" title="Limpiar">⨯</button>
-        <div class="mini-divider"></div>
         
      <div class="snap-mini" style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 12px; font-weight: bold; font-family: sans-serif;">SNAP</span>
@@ -574,8 +572,13 @@ input:checked + .slider:before {
 const GRID_SIZE = 20; // El tamaño de cada cuadrito
 
 function toggleSnap() {
-    snapEnabled = !snapEnabled;
-    document.getElementById('btn-SNAP').classList.toggle('active');
+    // 1. Detectamos si el switch está marcado (ON) o no (OFF)
+    const isChecked = document.getElementById('snap-toggle-check').checked;
+    
+    // 2. Sincronizamos la variable que usa el tablero para el imán
+    snapEnabled = isChecked;
+    
+    console.log("Snap " + (snapEnabled ? "Activado" : "Desactivado"));
 }
     let mode = 'PENCIL';
     let isAction = false;
@@ -949,7 +952,7 @@ function redo() {
     deselect();
 }
 
-    function clearAll() { if(confirm("¿Borrar todo?")) { saveHistory(); layers.draw.innerHTML = ''; layers.latex.innerHTML = ''; layers.img.innerHTML = ''; deselect(); } }
+   
 
     svg.addEventListener('dblclick', (e) => {
     // Buscamos si el doble clic fue en una fórmula de LaTeX
@@ -1188,18 +1191,7 @@ function insertSymbol(latex) {
 }
 
 
-            function toggleSnap() {
-    const isChecked = document.getElementById('snap-toggle-check').checked;
     
-    if (isChecked) {
-        console.log("Snap Activado");
-        // Tu lógica para activar el snap aquí
-    } else {
-        console.log("Snap Desactivado");
-        // Tu lógica para desactivar el snap aquí
-    }
-}
-
     
 </script>
 </body>
