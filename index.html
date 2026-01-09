@@ -193,6 +193,116 @@
     #latex-val:focus {
         border-color: var(--accent);
     }
+
+
+    /* Configuración del Panel Lateral */
+#symbols-side-panel {
+    width: 320px;
+    min-width: 220px;
+    max-width: 600px;
+    background: #FFFFFF;
+    border-left: 1px solid var(--border);
+    display: none; /* Se activa al dar clic al botón */
+    flex-direction: column;
+    position: relative;
+    z-index: 900;
+}
+
+/* Para cuando lo "desfijas" */
+#symbols-side-panel.floating {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    height: 80%;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+}
+
+/* Tirador para cambiar el tamaño */
+#panel-resizer {
+    width: 6px;
+    cursor: ew-resize;
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    transition: background 0.2s;
+}
+#panel-resizer:hover { background: var(--accent); opacity: 0.3; }
+
+.panel-header {
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Scroll de categorías tipo "pastillas" */
+.symbol-categories {
+    display: flex;
+    overflow-x: auto;
+    padding: 10px 15px;
+    gap: 8px;
+    border-bottom: 1px solid #f0f0f0;
+    scrollbar-width: none; /* Ocultar scroll en Firefox */
+}
+.symbol-categories::-webkit-scrollbar { display: none; } /* Ocultar scroll en Chrome */
+
+.cat-btn {
+    border: 1px solid #eee;
+    background: #f8f8f8;
+    padding: 6px 15px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    font-family: 'Open Sans', sans-serif;
+}
+.cat-btn.active { background: var(--dark); color: white; border-color: var(--dark); }
+
+/* Rejilla de símbolos */
+#symbols-grid {
+    flex-grow: 1;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 12px;
+    padding: 20px;
+}
+
+.sym-card {
+    background: white;
+    border: 1px solid #f0f0f0;
+    border-radius: 12px;
+    padding: 15px 5px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 20px;
+}
+.sym-card:hover { border-color: var(--accent); background: #f0f7ff; }
+.sym-card span { display: block; font-size: 9px; color: #aaa; text-transform: uppercase; margin-top: 5px; }
+
+.mini-btn {
+    background: #f0f0f0; border: none; padding: 5px 12px; 
+    border-radius: 99px; font-size: 10px; font-weight: bold; cursor: pointer;
+}
+
+    /* Para que las pastillas de categoría brillen al pasar el mouse */
+.cat-btn:hover {
+    background: #e0e0e0;
+}
+
+/* Símbolos un poco más grandes y elegantes */
+.sym-card {
+    font-family: "MathJax_Main", serif; /* Fuente matemática si está cargada */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+}
+    
 </style>
 </head>
 <body>
@@ -209,35 +319,62 @@
     <div class="divider"></div>
     <button class="btn" onclick="document.getElementById('img-up').click()">+ IMAGEN</button>
     <button class="btn" onclick="showLatexPanel()">Σ LATEX</button>
+    <button class="btn" id="btn-SYMBOLS" onclick="toggleSymbolsPanel()">SÍMBOLOS</button>
     <div class="divider"></div>
     <button class="btn" onclick="undo()">DESHACER</button>
     <button class="btn" onclick="redo()">REHACER</button>
     <button class="btn" onclick="clearAll()" style="color:red">LIMPIAR</button>
 </div>
 
-<div id="viewport">
-    <div id="latex-panel">
-        <h3>Insertar LaTeX</h3>
-        <input type="text" id="latex-val" style="width:100%; padding:10px;" placeholder="\frac{a}{b^2}">
-        <div style="margin-top:10px; display:flex; gap:10px;">
-            <button class="btn" onclick="addLatex()">INSERTAR</button>
-            <button class="btn" onclick="hideLatexPanel()">CANCELAR</button>
+<div id="viewport" style="display: flex; flex-direction: row; position: relative;">
+    
+    <div id="canvas-container" style="flex-grow: 1; position: relative; overflow: hidden; display: flex; flex-direction: column;">
+        
+        <div id="latex-panel">
+            <h3>Insertar LaTeX</h3>
+            <input type="text" id="latex-val" style="width:100%; padding:10px;" placeholder="\frac{a}{b^2}">
+            <div style="margin-top:10px; display:flex; gap:10px;">
+                <button class="btn active" onclick="addLatex()">INSERTAR</button>
+                <button class="btn" onclick="hideLatexPanel()">CANCELAR</button>
+            </div>
         </div>
+
+        <svg id="canvas">
+            <defs>
+                <pattern id="gridPattern" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#EEEEEE" stroke-width="1"/>
+                </pattern>
+            </defs>
+            <rect class="grid" width="100%" height="100%" />
+            <g id="layer-images"></g>
+            <g id="layer-latex"></g>
+            <g id="layer-drawings"></g>
+            <g id="layer-ui"></g>
+        </svg>
     </div>
 
-    <svg id="canvas">
-        <defs>
-            <pattern id="gridPattern" width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#EEEEEE" stroke-width="1"/>
-            </pattern>
-        </defs>
-        <rect class="grid" width="100%" height="100%" />
+    <div id="symbols-side-panel">
+        <div id="panel-resizer"></div> <div class="panel-header">
+            <h3>Símbolos</h3>
+            <button onclick="detachPanel()" class="mini-btn">⚓ Desfijar</button>
+        </div>
         
-        <g id="layer-images"></g>
-        <g id="layer-latex"></g>
-        <g id="layer-drawings"></g>
-        <g id="layer-ui"></g>
-    </svg>
+        <div class="symbol-categories">
+            <button onclick="renderCategory('Principales')" class="cat-btn active">Principales</button>
+            <button onclick="renderCategory('Letras Griegas')" class="cat-btn">Griegas</button>
+            <button onclick="renderCategory('Flechas')" class="cat-btn">Flechas</button>
+            <button onclick="renderCategory('Lógica')" class="cat-btn">Lógica</button>
+            <button onclick="renderCategory('formulas')" class="cat-btn">Fórmulas</button>
+            <button onclick="renderCategory('Desigualdades')" class="cat-btn">Desigualdades</button>
+            <button onclick="renderCategory('Cálculo')" class="cat-btn">Cálculo</button>
+            <button onclick="renderCategory('Conjuntos')" class="cat-btn">Conjuntos</button>
+            <button onclick="renderCategory('Matrices/Sist')" class="cat-btn">Matrices</button>
+            <button onclick="renderCategory('Paréntesis')" class="cat-btn">Paréntesis</button>
+            <button onclick="renderCategory('Otros')" class="cat-btn">Otros</button>
+        </div>
+
+        <div id="symbols-grid"></div>
+    </div>
 </div>
 
 <input type="file" id="img-up" hidden onchange="uploadImage(event)">
@@ -670,6 +807,119 @@ window.addEventListener('keydown', (e) => {
     // Aquí podrías mostrar u ocultar contenido según la pestaña
     console.log("Cambiando a: " + tabName);
 }
+
+    const menus = {
+    "Principales": [
+        {n: 'Suma', s: '+', i: '+'},
+        {n: 'Raiz', s: '\\sqrt{x}', i: '√'},
+        {n: 'Fracción', s: '\\frac{a}{b}', i: '÷'}
+    ],
+    "Letras Griegas": [
+        {n: 'Alpha', s: '\\alpha', i: 'α'},
+        {n: 'Beta', s: '\\beta', i: 'β'}
+    ],
+    "Flechas": [{n: 'Derecha', s: '\\rightarrow', i: '→'}],
+    "Lógica": [{n: 'Para todo', s: '\\forall', i: '∀'}],
+    "formulas": [{n: 'Cuadrática', s: 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}', i: 'f(x)'}],
+    "Desigualdades": [{n: 'Menor igual', s: '\\leq', i: '≤'}],
+    "Cálculo": [{n: 'Integral', s: '\\int', i: '∫'}],
+    "Conjuntos": [{n: 'Pertenece', s: '\\in', i: '∈'}],
+    "Matrices/Sist": [{n: 'Matriz 2x2', s: '\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}', i: '[M]'}],
+    "Paréntesis": [{n: 'Llaves', s: '\\{x\\}', i: '{x}'}],
+    "Otros": [{n: 'Infinito', s: '\\infty', i: '∞'}]
+};
+
+function toggleSymbolsPanel() {
+    const panel = document.getElementById('symbols-side-panel');
+    const isVisible = panel.style.display === 'flex';
+    panel.style.display = isVisible ? 'none' : 'flex';
+    if (!isVisible) renderCategory('Principales');
+}
+
+function renderCategory(cat) {
+    const grid = document.getElementById('symbols-grid');
+    grid.innerHTML = '';
+    
+    // Actualizar botones de categoría
+    document.querySelectorAll('.cat-btn').forEach(b => {
+        b.classList.toggle('active', b.innerText === cat || (cat === 'Letras Griegas' && b.innerText === 'Griegas'));
+    });
+
+    menus[cat].forEach(sym => {
+        const div = document.createElement('div');
+        div.className = 'sym-card';
+        div.innerHTML = `${sym.i} <span>${sym.n}</span>`;
+        div.onclick = () => insertSymbol(sym.s);
+        grid.appendChild(div);
+    });
+}
+
+function insertSymbol(latex) {
+    // Guardamos historial antes de insertar
+    saveHistory();
+    
+    const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+    // Lo inserta cerca del centro, o donde prefieras
+    fo.setAttribute("x", 200); fo.setAttribute("y", 200);
+    fo.setAttribute("width", 150); fo.setAttribute("height", 80);
+    fo.setAttribute("class", "latex-element draggable");
+    fo.setAttribute("data-raw", latex); 
+    
+    fo.innerHTML = `<div xmlns="http://www.w3.org/1999/xhtml" class="latex-container">\\[${latex}\\]</div>`;
+    layers.latex.appendChild(fo);
+    
+    MathJax.typeset(); // Renderiza el nuevo símbolo
+}
+
+function detachPanel() {
+    const panel = document.getElementById('symbols-side-panel');
+    panel.classList.toggle('floating');
+    const btn = panel.querySelector('.mini-btn');
+    btn.innerText = panel.classList.contains('floating') ? '📌 Fijar' : '⚓ Desfijar';
+}
+
+// Lógica para redimensionar el panel
+const resizer = document.getElementById('panel-resizer');
+const sidePanel = document.getElementById('symbols-side-panel');
+
+resizer.addEventListener('mousedown', (e) => {
+    document.addEventListener('mousemove', resize);
+    document.addEventListener('mouseup', stopResize);
+});
+
+function resize(e) {
+    const newWidth = window.innerWidth - e.clientX;
+    if (newWidth > 200 && newWidth < 500) {
+        sidePanel.style.width = newWidth + 'px';
+    }
+}
+
+function stopResize() {
+    document.removeEventListener('mousemove', resize);
+}
+
+    // Lógica para mover el panel cuando está desfijado (Floating)
+const panelHeader = document.querySelector('.panel-header');
+let isDraggingPanel = false;
+let panelOffset = { x: 0, y: 0 };
+
+panelHeader.addEventListener('mousedown', (e) => {
+    if (!sidePanel.classList.contains('floating')) return;
+    isDraggingPanel = true;
+    panelOffset.x = e.clientX - sidePanel.offsetLeft;
+    panelOffset.y = e.clientY - sidePanel.offsetTop;
+});
+
+document.addEventListener('mousemove', (e) => {
+    if (!isDraggingPanel) return;
+    sidePanel.style.right = 'auto'; // Desactivamos el pegado a la derecha
+    sidePanel.style.left = (e.clientX - panelOffset.x) + 'px';
+    sidePanel.style.top = (e.clientY - panelOffset.y) + 'px';
+});
+
+document.addEventListener('mouseup', () => {
+    isDraggingPanel = false;
+});
 
     
 </script>
