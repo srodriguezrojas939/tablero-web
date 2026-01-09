@@ -87,66 +87,86 @@ header {
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
-    /* --- BARRA DE HERRAMIENTAS Y BOTONES (Open Sans) --- */
-    .toolbar {
-        display: flex; 
-        justify-content: center; 
-        gap: 10px; 
-        padding: 12px;
-        background: white; 
-        border-bottom: 1px solid var(--border);
-        flex-wrap: wrap;
-    }
+    /* BARRA LATERAL FLOTANTE */
+.toolbar {
+    position: absolute;
+    left: 20px;
+    top: 20px;
+    display: flex;
+    flex-direction: column; /* Vertical */
+    gap: 4px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    z-index: 2000;
+    width: 60px; /* Ancho fijo para que se vea uniforme */
+    cursor: grab;
+}
 
-  /* Botones de la barra de herramientas */
+/* BOTONES MINIMALISTAS (SIN EMOJIS) */
 .btn {
     font-family: 'Open Sans', sans-serif;
-    background: white; 
-    border: 1px solid var(--border); 
-    padding: 8px 22px; /* Un poco más de aire a los lados */
-    border-radius: 99px; /* <--- ESTO los hace totalmente redondos */
-    font-size: 12px; 
-    font-weight: 600; 
-    text-transform: uppercase;
+    background: transparent;
+    border: none;
+    width: 100%;
+    height: 42px;
+    border-radius: 10px;
+    font-size: 9px; /* Texto pequeño y elegante */
+    font-weight: 700;
     letter-spacing: 0.5px;
-    cursor: pointer; 
-    transition: 0.2s;
     color: #444;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
 }
 
-/* Pestañas del selector (Ya estaban en 50px, pero 99px asegura el efecto) */
-.segmented-control, .tab-btn {
-    border-radius: 99px; 
+.btn:hover {
+    background: rgba(0,0,0,0.04);
+    color: #000;
 }
 
-    /* --- LA PASTILLA GRIS (Segmented Control) --- */
-    .segmented-control {
-        display: flex;
-        background: var(--pill-bg); /* Fondo gris que abarca todo */
-        padding: 4px;
-        border-radius: 99px; /* Redondeado total */
-        width: fit-content;
-        margin: 10px auto 20px auto;
-        border: none; /* Sin bordes, solo el fondo gris */
-    }
-    
-    .btn:hover { 
-        background: #F0F0F0; 
-        border-color: #BBB;
-    }
+.btn.active {
+    background: #000;
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
 
-    .btn.active { 
-        background: var(--dark); 
-        color: white; 
-        border-color: var(--dark);
-    }
+/* DIVISOR HORIZONTAL */
+.divider {
+    height: 1px;
+    width: 80%;
+    background: #eee;
+    margin: 6px auto;
+}
 
-    .divider { width: 1px; background: var(--border); margin: 0 10px; }
+/* AJUSTE DEL SNAP PARA VERTICAL */
+.snap-sidebar-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin: 5px 0;
+}
 
-    /* --- ÁREA DE TRABAJO --- */
-    #viewport { flex-grow: 1; position: relative; touch-action: none; background: white; }
-    svg { width: 100%; height: 100%; display: block; }
-    .grid { fill: url(#gridPattern); }
+.snap-label {
+    font-size: 8px;
+    font-weight: 800;
+    color: #999;
+}
+
+/* ASEGURAR QUE EL VIEWPORT OCUPE TODO */
+#viewport {
+    position: relative;
+    flex-grow: 1;
+    overflow: hidden;
+    background: #fff;
+}
     
     /* --- ELEMENTOS DEL TABLERO --- */
     .drawing-element { fill: none; stroke: black; stroke-width: 2; stroke-linecap: round; pointer-events: all; }
@@ -346,39 +366,44 @@ header {
     <span class="subtitle">√(Raiz) Cuadrada²</span>
 </header>
 
-<div class="toolbar">
-    <button class="btn active" id="btn-PENCIL" onclick="setMode('PENCIL')">🖉</button>
-    <button class="btn" id="btn-POLY" onclick="setMode('POLY')">𖡬</button>
-    <button class="btn" id="btn-RECT" onclick="setMode('RECT')">□</button>
-    <button class="btn" id="btn-CIRCLE" onclick="setMode('CIRCLE')">◎</button>
-    <button class="btn" id="btn-TRI" onclick="setMode('TRI')">⊿</button>
-    <button class="btn" id="btn-COORD" onclick="setMode('COORD')">⌖</button>
-    <button class="btn" id="btn-SELECT" onclick="setMode('SELECT')">Selector ⬚ </button>
-    <div class="divider"></div>
-    <button class="btn" onclick="document.getElementById('img-up').click()"> 🗎 Imagen </button>
-    <button class="btn" onclick="showLatexPanel()">Σ Latex</button>
-    <button class="btn" id="btn-SYMBOLS" onclick="toggleSymbolsPanel()">Ω Simbolos </button>
-    <div class="divider"></div>
+<div id="viewport">
+    <div class="toolbar" id="draggable-toolbar">
+        <button class="btn active" id="btn-PENCIL" onclick="setMode('PENCIL')">TRAZO</button>
+        <button class="btn" id="btn-POLY" onclick="setMode('POLY')">LINEA</button>
+        <button class="btn" id="btn-RECT" onclick="setMode('RECT')">RECT</button>
+        <button class="btn" id="btn-CIRCLE" onclick="setMode('CIRCLE')">CIRC</button>
+        <button class="btn" id="btn-TRI" onclick="setMode('TRI')">TRI</button>
+        <button class="btn" id="btn-COORD" onclick="setMode('COORD')">PLANO</button>
+        <button class="btn" id="btn-SELECT" onclick="setMode('SELECT')">SEL</button>
 
-<div style="display: flex; align-items: center; gap: 8px; margin: 0 10px;">
-    <span style="font-size: 11px; font-weight: 800; color: #444; font-family: 'Open Sans';">SNAP</span>
-    <div id="btn-SNAP" class="toggle-switch" onclick="toggleSnap()">
-        <div class="toggle-knob"></div>
+        <div class="divider"></div>
+
+        <button class="btn" onclick="document.getElementById('img-up').click()">IMG</button>
+        <button class="btn" onclick="showLatexPanel()">LATEX</button>
+        <button class="btn" id="btn-SYMBOLS" onclick="toggleSymbolsPanel()">SYM</button>
+
+        <div class="divider"></div>
+
+        <div class="snap-sidebar-item">
+            <span class="snap-label">SNAP</span>
+            <div id="btn-SNAP" class="toggle-switch" onclick="toggleSnap()">
+                <div class="toggle-knob"></div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <button class="btn" onclick="undo()">REV</button>
+        <button class="btn" onclick="redo()">FWD</button>
+        <button class="btn" onclick="clearAll()" style="color: #ff4d4d; font-weight: 800;">BORRAR</button>
+    </div>
+
+    <div id="canvas-container">
+        <svg id="canvas">
+            </svg>
     </div>
 </div>
-
-<div class="divider"></div>
-    <button class="btn" onclick="undo()">↶</button>
-    <button class="btn" onclick="redo()">↷</button>
-    <button class="btn" onclick="clearAll()" style="color:red">⨯</button>
-</div>
-
-    
-
-<div id="viewport" style="display: flex; flex-direction: row; position: relative; flex-grow: 1;">
-    
-    <div id="canvas-container" style="flex-grow: 1; position: relative; overflow: hidden; display: flex; flex-direction: column;">
-        
+            
         <div id="latex-panel">
             <h3>Insertar LaTeX</h3>
             <input type="text" id="latex-val" style="width:100%; padding:10px;" placeholder="\frac{a}{b^2}">
@@ -1048,6 +1073,38 @@ function insertSymbol(latex) {
     }
     group.insertAdjacentHTML('beforeend', html);
 }
+
+    const toolbar = document.getElementById('draggable-toolbar');
+let isDragging = false;
+let startX, startY, initialLeft, initialTop;
+
+toolbar.addEventListener('mousedown', (e) => {
+    // Si haces clic en un botón, no arrastramos la barra
+    if (e.target.closest('.btn') || e.target.closest('.toggle-switch')) return;
+    
+    isDragging = true;
+    toolbar.style.cursor = 'grabbing';
+    
+    startX = e.clientX;
+    startY = e.clientY;
+    initialLeft = toolbar.offsetLeft;
+    initialTop = toolbar.offsetTop;
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    
+    toolbar.style.left = (initialLeft + dx) + 'px';
+    toolbar.style.top = (initialTop + dy) + 'px';
+});
+
+window.addEventListener('mouseup', () => {
+    isDragging = false;
+    toolbar.style.cursor = 'grab';
+});
 
 </script>
 </body>
