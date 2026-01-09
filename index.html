@@ -474,6 +474,13 @@ input:checked + .slider:before {
         <button class="btn-mini" onclick="undo()" title="Deshacer">⟲</button>
         <button class="btn-mini" onclick="redo()" title="Rehacer">⟳</button>
         <div class="mini-divider"></div>
+
+        <button class="btn-mini" onclick="redo()" title="Rehacer">⟳</button> <button class="btn-mini" onclick="toggleFullScreen()" title="Pantalla Completa" style="margin-left: 4px;">
+        🗗
+    </button>
+
+         <div class="mini-divider"></div>
+
         
      <div class="snap-mini" style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 12px; font-weight: bold; font-family: sans-serif;">SNAP</span>
@@ -952,7 +959,20 @@ function redo() {
     deselect();
 }
 
-   
+   function toggleFullScreen() {
+    // Verificamos si ya estamos en pantalla completa
+    if (!document.fullscreenElement) {
+        // Si no estamos, solicitamos entrar
+        document.documentElement.requestFullscreen().catch(err => {
+            console.error(`Error al intentar activar pantalla completa: ${err.message}`);
+        });
+    } else {
+        // Si ya estamos, salimos de ella
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+}
 
     svg.addEventListener('dblclick', (e) => {
     // Buscamos si el doble clic fue en una fórmula de LaTeX
