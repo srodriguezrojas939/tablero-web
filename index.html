@@ -8,333 +8,309 @@
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <style>
-    :root {
-        --bg: #FFFFFF;
-        --panel: #F8F9FA;
-        --border: #E5E5E5;
-        --dark: #000000;
-        --accent: #007BFF;
-        --pill-bg: #EAEAEA;
-        --selection: rgba(0, 123, 255, 0.15);
-    }
+:root {
+    --bg: #0f0f11;              /* Fondo muy oscuro casi negro */
+    --panel: #16181d;           /* Paneles y toolbar */
+    --panel-hover: #1e2128;
+    --border: #2a2e36;
+    --text: #e0e0e5;
+    --text-secondary: #a0a4b0;
+    --text-muted: #6b7280;
+    --accent: #6b7280;          /* Gris medio (reemplaza azul) */
+    --accent-dark: #4b5563;     /* Gris más oscuro para hover */
+    --card: #1a1d23;
+    --scrollbar: #3a3f4a;
+    --scrollbar-hover: #4b5563;
+    --white: #ffffff;
+    --shadow: rgba(0,0,0,0.5);
+}
 
-    body {
-        margin: 0; padding: 0; 
-        font-family: 'Open Sans', sans-serif; 
-        background: var(--bg); 
-        color: #333;
-        height: 100vh; 
-        display: flex; 
-        flex-direction: column; 
-        overflow: hidden;
-    }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-  /* --- ENCABEZADO --- */
-header { 
-    padding: 8px 20px;   /* Reducido: antes 20px 30px. Ahora es mucho más delgado arriba y abajo */
-    border-bottom: 1px solid var(--border); 
-    background: white; 
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
     display: flex;
-    align-items: baseline; /* Se mantiene como pediste: alineado a la base del texto */
-    gap: 8px;            /* Reducido: antes 15px. El título y subtítulo estarán más juntos */
+    flex-direction: column;
 }
-    header h1 { 
-        font-family: 'Playfair Display', serif; 
-        font-weight: 800; 
-        font-size: 22px; 
-        margin: 0; 
-        color: var(--dark);
-        letter-spacing: -0.5px;
-    }
 
-    .subtitle {
-        font-family: 'Playfair Display', serif;
-        font-weight: 400;
-        font-size: 12px;
-        color: #666;
-        font-style: normal;
-    }
+/* ── ENCABEZADO ── */
+header {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-shrink: 0;
+}
 
-    /* --- SELECTOR DE PESTAÑAS (Estilo Pill de la imagen) --- */
-    .segmented-control {
-        display: flex;
-        background: var(--pill-bg);
-        padding: 5px;
-        border-radius: 50px;
-        width: fit-content;
-        margin: 15px auto;
-        border: 1px solid #DBDBDB;
-    }
+header h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    color: white;
+}
 
-    .tab-btn {
-        border: none;
-        background: transparent;
-        padding: 8px 30px;
-        border-radius: 50px;
-        font-family: 'Open Sans', sans-serif;
-        font-weight: 600;
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        color: #666;
-    }
+.subtitle {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
 
-    .tab-btn.active {
-        background: white;
-        color: black;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
+/* ── BARRA DE HERRAMIENTAS LATERAL (vertical + scroll) ── */
+.toolbar {
+    position: absolute;
+    left: 16px;
+    top: 80px;                    /* Debajo del header - ajusta según necesites */
+    bottom: 24px;
+    width: 68px;
+    background: var(--panel);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0;
+    gap: 12px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 1000;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar) transparent;
+}
 
-    /* --- BARRA DE HERRAMIENTAS Y BOTONES (Open Sans) --- */
-    .toolbar {
-        display: flex; 
-        justify-content: center; 
-        gap: 10px; 
-        padding: 12px;
-        background: white; 
-        border-bottom: 1px solid var(--border);
-        flex-wrap: wrap;
-    }
+/* Scrollbar moderno */
+.toolbar::-webkit-scrollbar {
+    width: 5px;
+}
+.toolbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.toolbar::-webkit-scrollbar-thumb {
+    background: var(--scrollbar);
+    border-radius: 10px;
+}
+.toolbar::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-hover);
+}
 
-  /* Botones de la barra de herramientas */
+/* Botones de herramientas */
 .btn {
-    font-family: 'Open Sans', sans-serif;
-    background: white; 
-    border: 1px solid var(--border); 
-    padding: 8px 22px; /* Un poco más de aire a los lados */
-    border-radius: 99px; /* <--- ESTO los hace totalmente redondos */
-    font-size: 12px; 
-    font-weight: 600; 
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer; 
-    transition: 0.2s;
-    color: #444;
+    width: 52px;
+    height: 52px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    color: var(--text);
+    font-size: 0.82rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    user-select: none;
 }
 
-/* Pestañas del selector (Ya estaban en 50px, pero 99px asegura el efecto) */
-.segmented-control, .tab-btn {
-    border-radius: 99px; 
+.btn:hover {
+    background: var(--panel-hover);
+    border-color: var(--text-muted);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
 }
 
-    /* --- LA PASTILLA GRIS (Segmented Control) --- */
-    .segmented-control {
-        display: flex;
-        background: var(--pill-bg); /* Fondo gris que abarca todo */
-        padding: 4px;
-        border-radius: 99px; /* Redondeado total */
-        width: fit-content;
-        margin: 10px auto 20px auto;
-        border: none; /* Sin bordes, solo el fondo gris */
-    }
-    
-    .btn:hover { 
-        background: #F0F0F0; 
-        border-color: #BBB;
-    }
+.btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    box-shadow: 0 2px 10px rgba(59,130,246,0.35);
+}
 
-    .btn.active { 
-        background: var(--dark); 
-        color: white; 
-        border-color: var(--dark);
-    }
+.btn:active {
+    transform: scale(0.96);
+}
 
-    .divider { width: 1px; background: var(--border); margin: 0 10px; }
+/* Divisores verticales dentro de la toolbar */
+.divider {
+    width: 36px;
+    height: 1px;
+    background: var(--border);
+    margin: 8px 0;
+}
 
-    /* --- ÁREA DE TRABAJO --- */
-    #viewport { flex-grow: 1; position: relative; touch-action: none; background: white; }
-    svg { width: 100%; height: 100%; display: block; }
-    .grid { fill: url(#gridPattern); }
-    
-    /* --- ELEMENTOS DEL TABLERO --- */
-    .drawing-element { fill: none; stroke: black; stroke-width: 2; stroke-linecap: round; pointer-events: all; }
-    .latex-element { cursor: move; display: flex; align-items: center; justify-content: center; overflow: visible; }
-    .latex-container { 
-        width: 100%; height: 100%; display: flex; align-items: center; 
-        justify-content: center; font-size: 20px; transition: font-size 0.1s;
-    }
-    
-    /* --- SELECTOR Y UI --- */
-    .selection-marquee { fill: var(--selection); stroke: var(--accent); stroke-dasharray: 4; pointer-events: none; }
-    .element-highlight { stroke: var(--accent) !important; stroke-width: 3 !important; }
-    .resize-handle { fill: white; stroke: var(--accent); stroke-width: 2; cursor: nwse-resize; }
+/* ── ÁREA PRINCIPAL ── */
+#viewport {
+    flex: 1;
+    position: relative;
+    background: var(--bg);
+    touch-action: none;
+}
 
-    /* --- PANEL MODAL LATEX --- */
-    #latex-panel {
-        position: absolute; 
-        top: 50%; left: 50%; 
-        transform: translate(-50%, -50%);
-        background: white; 
-        padding: 25px; 
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        box-shadow: 0 15px 40px rgba(0,0,0,0.15); 
-        display: none; 
-        z-index: 1000;
-        min-width: 400px;
-    }
+svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
 
-    #latex-panel h3 {
-        margin-top: 0;
-        font-family: 'Playfair Display', serif;
-        font-size: 22px;
-    }
+/* ── PANEL INSERTAR LATEX - Moderno y limpio ── */
+#latex-panel {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(8px);
+    display: none;
+    place-items: center;
+    z-index: 2000;
+}
 
-    #latex-val {
-        font-family: 'Open Sans', sans-serif;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        outline: none;
-    }
+.latex-modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 580px;
+    padding: 28px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    color: var(--text);
+}
 
-    #latex-val:focus {
-        border-color: var(--accent);
-    }
+.latex-modal h3 {
+    margin: 0 0 20px 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: white;
+}
 
+#latex-val {
+    width: 100%;
+    min-height: 120px;
+    padding: 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 1.05rem;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+}
 
-/* PANEL LATERAL FIJO (SOBRE EL TABLERO) */
+#latex-val:focus {
+    border-color: var(--accent);
+}
+
+.latex-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    justify-content: flex-end;
+}
+
+.latex-btn {
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.latex-btn.cancel {
+    background: transparent;
+    color: var(--text-secondary);
+}
+
+.latex-btn.cancel:hover {
+    background: rgba(255,255,255,0.07);
+}
+
+.latex-btn.insert {
+    background: var(--accent);
+    color: white;
+}
+
+.latex-btn.insert:hover {
+    background: var(--accent-dark);
+    transform: translateY(-1px);
+}
+
+/* ── Otros elementos que ya tenías (actualizados al tema oscuro) ── */
+.selection-marquee {
+    fill: rgba(59,130,246,0.12);
+    stroke: var(--accent);
+    stroke-dasharray: 6;
+    pointer-events: none;
+}
+
+.element-highlight {
+    stroke: var(--accent) !important;
+    stroke-width: 3 !important;
+}
+
+.resize-handle {
+    fill: white;
+    stroke: var(--accent);
+    stroke-width: 2;
+}
+
+/* Panel lateral de símbolos (adaptado al tema oscuro) */
 #symbols-side-panel {
     position: absolute;
     right: 0;
     top: 0;
     bottom: 0;
-    width: 300px;
-    background: white;
+    width: 320px;
+    background: var(--panel);
     border-left: 1px solid var(--border);
-    box-shadow: -5px 0 15px rgba(0,0,0,0.05);
-    display: none; /* Se controla con JS */
+    box-shadow: -6px 0 24px rgba(0,0,0,0.4);
+    display: none;
     flex-direction: column;
     z-index: 1000;
+    color: var(--text);
 }
 
+/* ... puedes seguir adaptando .sym-card, .cat-btn, etc. con los nuevos colores ... */
 
-/* Cabecera con botón X */
-.panel-header {
-    padding: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #eee;
-}
-
-.panel-header h3 {
-    margin: 0;
-    font-family: 'Playfair Display', serif;
-    font-size: 20px;
-}
-
-.close-panel-btn {
-    background: none;
-    border: none;
-    font-size: 28px;
-    cursor: pointer;
-    color: #999;
-    line-height: 1;
-}
-.close-panel-btn:hover { color: black; }
-
-/* Sección de categorías (Scroll Vertical) */
-.symbol-categories {
-    display: flex;
-    flex-direction: column;
-    padding: 10px;
-    gap: 5px;
-    max-height: 250px; /* Limita el alto de las categorías */
-    overflow-y: auto;
-    background: #fcfcfc;
-    border-bottom: 1px solid #eee;
-}
-
-.cat-btn {
-    text-align: left;
-    padding: 10px 15px;
-    border: none;
-    background: transparent;
-    border-radius: 8px;
-    font-size: 13px;
-    cursor: pointer;
-    color: #555;
-}
-
-.cat-btn.active {
-    background: var(--dark);
-    color: white;
-    font-weight: 600;
-}
-
-/* Sección de símbolos (Scroll Vertical) */
-#symbols-grid {
-    flex-grow: 1;
-    overflow-y: auto; /* Permite scroll en los símbolos */
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-/* Tarjetas de símbolos (Horizontales) */
-.sym-card {
-    display: flex;
-    align-items: center;
-    padding: 12px 15px;
-    background: white;
-    border: 1px solid #efefef;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: 0.2s;
-    gap: 15px;
-}
-
-.sym-card:hover {
-    border-color: var(--accent);
-    background: #f0f7ff;
-}
-
-.sym-card-icon {
-    font-size: 20px;
-    min-width: 35px;
-    text-align: center;
-}
-
-.sym-card span {
-    font-size: 12px;
-    color: #777;
-    font-weight: 600;
-}
-
-    .toggle-switch {
-    width: 42px;
-    height: 22px;
-    background-color: #EAEAEA; /* Gris claro de tu paleta */
-    border-radius: 99px;
+.toggle-switch {
+    width: 46px;
+    height: 24px;
+    background: #2a2e36;
+    border-radius: 24px;
     position: relative;
     cursor: pointer;
-    transition: 0.3s;
-    border: 1px solid #DBDBDB;
+    transition: background 0.25s;
+    border: 1px solid var(--border);
 }
 
 .toggle-knob {
     width: 18px;
     height: 18px;
-    background-color: white;
+    background: white;
     border-radius: 50%;
     position: absolute;
-    top: 1px;
+    top: 2px;
     left: 2px;
-    transition: 0.3s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.25s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
 }
 
-/* Cuando el Snap está activo */
 .toggle-switch.active {
-    background-color: #000; /* Negro total como tu imagen */
-    border-color: #000;
+    background: var(--accent);
+    border-color: var(--accent);
 }
 
 .toggle-switch.active .toggle-knob {
-    transform: translateX(20px); /* Mueve el círculo a la derecha */
+    transform: translateX(22px);
 }
     
 </style>
