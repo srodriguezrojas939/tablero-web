@@ -1375,41 +1375,52 @@ function showLatexPanel() {
     
 
     async function downloadBoard(format) {
-    // 1. Seleccionamos el contenedor que tiene todas las capas (id="board")
+    // 1. Cerramos el menú desplegable al hacer clic
+    const menu = document.getElementById("download-menu");
+    if (menu) menu.classList.remove("show-menu");
+
+    // 2. Seleccionamos el contenedor del tablero
     const board = document.getElementById('board');
     
-    // 2. Usamos html2canvas para tomar una "foto" del tablero
-    // Usamos scale: 2 para que la imagen tenga buena calidad (HD)
-    const canvas = await html2canvas(board, {
-        scale: 2,
-        backgroundColor: "#FFFFFF", // Asegura fondo blanco
-        useCORS: true // Permite capturar imágenes externas si las hay
-    });
+    // Mostramos un aviso en consola para saber que empezó
+    console.log("Iniciando exportación...");
 
-    if (format === 'png') {
-        // --- DESCARGAR PNG ---
-        const link = document.createElement('a');
-        link.download = 'mi-tablero.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-    } 
-    else if (format === 'pdf') {
-        // --- DESCARGAR PDF ---
-        const { jsPDF } = window.jspdf;
-        const imgData = canvas.toDataURL('image/png');
-        
-        // Creamos el PDF con el tamaño del canvas
-        const pdf = new jsPDF({
-            orientation: canvas.width > canvas.height ? 'l' : 'p',
-            unit: 'px',
-            format: [canvas.width, canvas.height]
+    try {
+        // 3. Generamos la captura con html2canvas
+        const canvas = await html2canvas(board, {
+            scale: 2,           // Mejor resolución
+            useCORS: true,      // Para imágenes externas
+            backgroundColor: "#ffffff",
+            logging: false      // Para no ensuciar la consola
         });
 
-        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-        pdf.save('mi-tablero.pdf');
+        // 4. Lógica de descarga según formato
+        if (format === 'png') {
+            const link = document.createElement('a');
+            link.download = `tablero-${Date.now()}.png`; // Nombre único
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        } 
+        else if (format === 'pdf') {
+            const { jsPDF } = window.jspdf;
+            const imgData = canvas.toDataURL('image/png');
+            
+            const pdf = new jsPDF({
+                orientation: canvas.width > canvas.height ? 'l' : 'p',
+                unit: 'px',
+                format: [canvas.width, canvas.height]
+            });
+
+            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+            pdf.save(`tablero-${Date.now()}.pdf`);
+        }
+        
+        console.log("Descarga exitosa");
+    } catch (err) {
+        console.error("Error en la descarga:", err);
+        alert("No se pudo generar el archivo. Asegúrate de estar conectado a internet para cargar las librerías.");
     }
 }
-
     // Función para abrir y cerrar el menú
 function toggleDownloadMenu() {
     document.getElementById("download-menu").classList.toggle("show-menu");
@@ -1425,15 +1436,6 @@ window.onclick = function(event) {
     }
 }
 
-// Modificamos la función existente para que cierre el menú al descargar
-async function downloadBoard(format) {
-    // Cerramos el menú primero
-    document.getElementById("download-menu").classList.remove("show-menu");
-    
-    // ... aquí sigue todo tu código anterior de downloadBoard ...
-    const board = document.getElementById('board');
-    // (Asegúrate de mantener el código de html2canvas que pusimos antes)
-}
 
 
     
