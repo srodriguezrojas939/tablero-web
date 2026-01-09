@@ -574,7 +574,7 @@ let clipboard = [];
        SECCIÓN: TRANSFORMACIONES (MOVER / ESCALAR)
     ========================================= */
     function moveElement(el, dx, dy) {
-        if (el.tagName === 'path' || el.tagName === 'polyline') {
+        if (el.tagName === 'path' || el.tagName === 'polyline'|| el.tagName === 'g') {
             const bbox = el.getBBox();
             const transform = el.getAttribute("transform") || "translate(0,0)";
             const parts = transform.split(/[() ,]+/);
