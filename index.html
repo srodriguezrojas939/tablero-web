@@ -955,39 +955,6 @@ function insertSymbol(latex) {
     MathJax.typeset(); 
 }
 
-    function drawCartesian(group, x, y, w, h) {
-    group.innerHTML = ''; // Limpiar para redibujar
-    const centerX = x + w/2;
-    const centerY = y + h/2;
-    const step = 30; // Distancia entre rayitas
-
-    // Fondo invisible para poder agarrarlo con el selector
-    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    rect.setAttribute("x", x); rect.setAttribute("y", y);
-    rect.setAttribute("width", w); rect.setAttribute("height", h);
-    rect.setAttribute("fill", "transparent");
-    group.appendChild(rect);
-
-    const lineAttr = "stroke='black' stroke-width='1'";
-    let html = `<line x1='${x}' y1='${centerY}' x2='${x+w}' y2='${centerY}' ${lineAttr} />`; // Eje X
-    html += `<line x1='${centerX}' y1='${y}' x2='${centerX}' y2='${y+h}' ${lineAttr} />`; // Eje Y
-
-    // Rayitas (Ticks)
-    for(let i = step; i < w/2; i += step) {
-        html += `<line x1='${centerX+i}' y1='${centerY-5}' x2='${centerX+i}' y2='${centerY+5}' ${lineAttr} />`;
-        html += `<line x1='${centerX-i}' y1='${centerY-5}' x2='${centerX-i}' y2='${centerY+5}' ${lineAttr} />`;
-    }
-    for(let i = step; i < h/2; i += step) {
-        html += `<line x1='${centerX-5}' y1='${centerY+i}' x2='${centerX+5}' y2='${centerY+i}' ${lineAttr} />`;
-        html += `<line x1='${centerX-5}' y1='${centerY-i}' x2='${centerX+5}' y2='${centerY-i}' ${lineAttr} />`;
-    }
-    group.innerHTML += html;
-    
-    // Guardar dimensiones para redimensionar después
-    group.setAttribute("x", x); group.setAttribute("y", y);
-    group.setAttribute("width", w); group.setAttribute("height", h);
-}
-    
 </script>
 </body>
 </html>
