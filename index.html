@@ -89,22 +89,36 @@ header {
 
     /* --- BARRA DE HERRAMIENTAS Y BOTONES (Open Sans) --- */
    /* Nueva Barra de Herramientas Vertical */
-    .toolbar {
+   .toolbar {
         display: flex;
-        flex-direction: column;    /* Hace que los botones se apilen verticalmente */
-        align-items: center;       /* Centra los iconos */
-        gap: 12px;                 /* Espacio entre botones */
+        flex-direction: column;    [cite_start]/* Mantiene los botones en columna [cite: 17] */
+        align-items: center;       
+        gap: 12px;                 
         padding: 15px 8px;
         background: white; 
-        border-left: 1px solid var(--border); /* El borde ahora va a la izquierda */
-        width: 70px;               /* Ancho fijo para la barra */
-        height: 100%;              /* Ocupa todo el alto disponible */
-        overflow-y: auto;          /* Permite scroll si hay muchos botones */
+        border-right: 1px solid var(--border); 
+        width: 75px;               /* Un poco más ancha para que se vea bien el scroll */
+        
+        /* --- ESTO ACTIVA EL SCROLL --- */
+        height: 100%;              [cite_start]/* Ocupa el alto del contenedor principal [cite: 4] */
+        max-height: calc(100vh - 60px); /* Ajusta restando el alto aproximado de tu header */
+        overflow-y: auto;          /* Activa el scroll vertical si el contenido supera el alto */
+        overflow-x: hidden;        /* Evita scroll horizontal innecesario */
         z-index: 10;
+    }
+
+    /* Opcional: Hacer el scrollbar más delgado y elegante */
+    .toolbar::-webkit-scrollbar {
+        width: 4px;
+    }
+    .toolbar::-webkit-scrollbar-thumb {
+        background: #ccc;
+        border-radius: 10px;
     }
 
     /* Ajuste para que los botones se vean bien verticalmente */
     .toolbar .btn {
+        flex-shrink: 0;
         padding: 10px;
         width: 45px;               /* Botones más cuadrados para el lateral */
         height: 45px;
@@ -113,20 +127,35 @@ header {
         align-items: center;
     }
 
-    /* El divisor ahora es una línea horizontal */
+   /* El divisor corregido: no se encoge y mantiene su forma */
     .divider { 
         height: 1px; 
-        width: 80%; 
+        width: 30px; /* Un ancho más estético para la barra lateral */
         background: var(--border); 
         margin: 10px 0; 
+        flex-shrink: 0; /* EVITA QUE LA LÍNEA DESAPAREZCA AL HACER SCROLL */
     }
 
-    /* Ajuste para el contenedor de SNAP */
-    .toolbar > div[style*="display: flex"] {
+    /* Contenedor de SNAP y otros divs internos corregidos */
+    .toolbar > div[style*="display: flex"], 
+    .toolbar > div {
+        display: flex;
         flex-direction: column !important;
+        align-items: center;
         gap: 5px !important;
+        flex-shrink: 0; /* EVITA QUE LOS CONTROLES SE APLASTEN */
+        width: 100%;
     }
 
+    /* Ajuste adicional para el texto dentro del SNAP si lo tienes */
+    .toolbar span {
+        font-size: 10px;
+        text-transform: uppercase;
+        font-weight: bold;
+        color: #888;
+        margin-bottom: 2px;
+        flex-shrink: 0;
+    }
     
   /* Botones de la barra de herramientas */
 .btn {
@@ -379,6 +408,39 @@ header {
     
 
 <div id="viewport" style="display: flex; flex-direction: row; position: relative; flex-grow: 1;">
+
+
+    
+
+    <div class="toolbar">
+    <button class="btn active" id="btn-PENCIL" onclick="setMode('PENCIL')">🖉</button>
+    <button class="btn" id="btn-POLY" onclick="setMode('POLY')">𖡬</button>
+    <button class="btn" id="btn-RECT" onclick="setMode('RECT')">□</button>
+    <button class="btn" id="btn-CIRCLE" onclick="setMode('CIRCLE')">◎</button>
+    <button class="btn" id="btn-TRI" onclick="setMode('TRI')">⊿</button>
+    <button class="btn" id="btn-COORD" onclick="setMode('COORD')">⌖</button>
+    <button class="btn" id="btn-SELECT" onclick="setMode('SELECT')">Selector ⬚ </button>
+    <div class="divider"></div>
+    <button class="btn" onclick="document.getElementById('img-up').click()"> 🗎 Imagen </button>
+    <button class="btn" onclick="showLatexPanel()">Σ Latex</button>
+    <button class="btn" id="btn-SYMBOLS" onclick="toggleSymbolsPanel()">Ω Simbolos </button>
+    <div class="divider"></div>
+
+<div style="display: flex; align-items: center; gap: 8px; margin: 0 10px;">
+    <span style="font-size: 11px; font-weight: 800; color: #444; font-family: 'Open Sans';">SNAP</span>
+    <div id="btn-SNAP" class="toggle-switch" onclick="toggleSnap()">
+        <div class="toggle-knob"></div>
+    </div>
+</div>
+
+<div class="divider"></div>
+    <button class="btn" onclick="undo()">↶</button>
+    <button class="btn" onclick="redo()">↷</button>
+    <button class="btn" onclick="clearAll()" style="color:red">⨯</button>
+</div>
+
+
+    
     
     <div id="canvas-container" style="flex-grow: 1; position: relative; overflow: hidden; display: flex; flex-direction: column;">
         
@@ -427,34 +489,6 @@ header {
             </div>
     </div>
 
-
-
-    <div class="toolbar">
-    <button class="btn active" id="btn-PENCIL" onclick="setMode('PENCIL')">🖉</button>
-    <button class="btn" id="btn-POLY" onclick="setMode('POLY')">𖡬</button>
-    <button class="btn" id="btn-RECT" onclick="setMode('RECT')">□</button>
-    <button class="btn" id="btn-CIRCLE" onclick="setMode('CIRCLE')">◎</button>
-    <button class="btn" id="btn-TRI" onclick="setMode('TRI')">⊿</button>
-    <button class="btn" id="btn-COORD" onclick="setMode('COORD')">⌖</button>
-    <button class="btn" id="btn-SELECT" onclick="setMode('SELECT')">Selector ⬚ </button>
-    <div class="divider"></div>
-    <button class="btn" onclick="document.getElementById('img-up').click()"> 🗎 Imagen </button>
-    <button class="btn" onclick="showLatexPanel()">Σ Latex</button>
-    <button class="btn" id="btn-SYMBOLS" onclick="toggleSymbolsPanel()">Ω Simbolos </button>
-    <div class="divider"></div>
-
-<div style="display: flex; align-items: center; gap: 8px; margin: 0 10px;">
-    <span style="font-size: 11px; font-weight: 800; color: #444; font-family: 'Open Sans';">SNAP</span>
-    <div id="btn-SNAP" class="toggle-switch" onclick="toggleSnap()">
-        <div class="toggle-knob"></div>
-    </div>
-</div>
-
-<div class="divider"></div>
-    <button class="btn" onclick="undo()">↶</button>
-    <button class="btn" onclick="redo()">↷</button>
-    <button class="btn" onclick="clearAll()" style="color:red">⨯</button>
-</div>
 
 </div>
     
