@@ -9,20 +9,17 @@
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <style>
 :root {
-    --bg: #0f0f11;              /* Fondo muy oscuro casi negro */
-    --panel: #16181d;           /* Paneles y toolbar */
-    --panel-hover: #1e2128;
-    --border: #2a2e36;
-    --text: #e0e0e5;
-    --text-secondary: #a0a4b0;
-    --text-muted: #6b7280;
-    --accent: #6b7280;          /* Gris medio (reemplaza azul) */
-    --accent-dark: #4b5563;     /* Gris más oscuro para hover */
-    --card: #1a1d23;
-    --scrollbar: #3a3f4a;
-    --scrollbar-hover: #4b5563;
-    --white: #ffffff;
-    --shadow: rgba(0,0,0,0.5);
+    --bg: #ffffff;
+    --board: #ffffff;
+    --grid: #e5e5e5;           /* gris claro para la grilla */
+    --border: #e0e0e0;
+    --text: #222222;
+    --text-secondary: #555555;
+    --muted: #888888;
+    --panel: #ffffff;
+    --panel-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --toolbar-bg: #ffffff;
+    --toolbar-border: #d8d8d8;
 }
 
 * {
@@ -32,7 +29,7 @@
 }
 
 body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--bg);
     color: var(--text);
     height: 100vh;
@@ -45,7 +42,7 @@ body {
 header {
     padding: 12px 20px;
     border-bottom: 1px solid var(--border);
-    background: var(--panel);
+    background: white;
     display: flex;
     align-items: baseline;
     gap: 10px;
@@ -53,64 +50,60 @@ header {
 }
 
 header h1 {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    letter-spacing: -0.4px;
-    color: white;
+    color: #111;
 }
 
 .subtitle {
-    font-size: 0.78rem;
-    color: var(--text-secondary);
-    font-weight: 400;
+    font-size: 0.85rem;
+    color: #666;
 }
 
-/* ── BARRA DE HERRAMIENTAS LATERAL (vertical + scroll) ── */
+/* ── BARRA DE HERRAMIENTAS LATERAL BLANCA ── */
 .toolbar {
     position: absolute;
     left: 16px;
-    top: 80px;                    /* Debajo del header - ajusta según necesites */
-    bottom: 24px;
-    width: 68px;
-    background: var(--panel);
+    top: 80px;
+    width: 70px;
+    max-height: calc(100vh - 110px);
+    background: var(--toolbar-bg);
+    border: 1px solid var(--toolbar-border);
     border-radius: 16px;
-    border: 1px solid var(--border);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    box-shadow: var(--panel-shadow);
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 16px 0;
     gap: 12px;
     overflow-y: auto;
-    overflow-x: hidden;
     z-index: 1000;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar) transparent;
+    user-select: none;
+    cursor: default;
 }
 
-/* Scrollbar moderno */
 .toolbar::-webkit-scrollbar {
     width: 5px;
 }
 .toolbar::-webkit-scrollbar-track {
-    background: transparent;
+    background: #f5f5f5;
 }
 .toolbar::-webkit-scrollbar-thumb {
-    background: var(--scrollbar);
+    background: #ccc;
     border-radius: 10px;
 }
 .toolbar::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-hover);
+    background: #aaa;
 }
 
-/* Botones de herramientas */
+/* Botones de la barra - estilo limpio y moderno */
 .btn {
-    width: 52px;
-    height: 52px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    color: var(--text);
+    width: 54px;
+    height: 54px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    color: #333;
     font-size: 0.82rem;
     font-weight: 600;
     display: flex;
@@ -118,40 +111,35 @@ header h1 {
     justify-content: center;
     cursor: pointer;
     transition: all 0.18s ease;
-    user-select: none;
 }
 
 .btn:hover {
-    background: var(--panel-hover);
-    border-color: var(--text-muted);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    background: #f8f8f8;
+    border-color: #bbb;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
+    background: #222;
     color: white;
-    box-shadow: 0 2px 10px rgba(59,130,246,0.35);
+    border-color: #222;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
 }
 
-.btn:active {
-    transform: scale(0.96);
-}
-
-/* Divisores verticales dentro de la toolbar */
+/* Divisor */
 .divider {
-    width: 36px;
+    width: 38px;
     height: 1px;
-    background: var(--border);
-    margin: 8px 0;
+    background: #e5e5e5;
+    margin: 10px 0;
 }
 
-/* ── ÁREA PRINCIPAL ── */
+/* ── ÁREA DE TRABAJO - BLANCO CON GRILLA GRIS ── */
 #viewport {
     flex: 1;
     position: relative;
-    background: var(--bg);
+    background: var(--board);
+    overflow: hidden;
     touch-action: none;
 }
 
@@ -161,156 +149,174 @@ svg {
     display: block;
 }
 
-/* ── PANEL INSERTAR LATEX - Moderno y limpio ── */
+/* Patrón de grilla gris claro */
+#gridPattern defs pattern {
+    /* Ajusta estos valores según el tamaño de grilla que prefieras */
+}
+.grid {
+    fill: url(#gridPattern);
+    pointer-events: none;
+}
+
+/* ── PANEL LATEX - BLANCO, PEQUEÑO, MOVIBLE, ABAJO ── */
 #latex-panel {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.65);
-    backdrop-filter: blur(8px);
-    display: none;
-    place-items: center;
-    z-index: 2000;
-}
-
-.latex-modal {
-    background: var(--panel);
-    border: 1px solid var(--border);
+    position: absolute;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
+    width: 480px;
+    max-width: 92%;
+    background: white;
+    border: 1px solid #ddd;
     border-radius: 16px;
-    width: 90%;
-    max-width: 580px;
-    padding: 28px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    color: var(--text);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+    padding: 24px;
+    z-index: 1500;
+    cursor: move;           /* Indica que se puede arrastrar */
+    user-select: none;
+    display: none;
 }
 
-.latex-modal h3 {
-    margin: 0 0 20px 0;
-    font-size: 1.4rem;
+#latex-panel h3 {
+    margin: 0 0 18px 0;
+    font-size: 1.35rem;
     font-weight: 600;
-    color: white;
+    color: #111;
 }
 
 #latex-val {
     width: 100%;
-    min-height: 120px;
+    min-height: 110px;
     padding: 14px;
-    background: var(--card);
-    border: 1px solid var(--border);
+    border: 1px solid #ddd;
     border-radius: 10px;
-    color: var(--text);
     font-family: 'Consolas', 'Monaco', monospace;
     font-size: 1.05rem;
     resize: vertical;
     outline: none;
-    transition: border-color 0.2s;
 }
 
 #latex-val:focus {
-    border-color: var(--accent);
+    border-color: #999;
 }
 
 .latex-buttons {
     display: flex;
-    gap: 12px;
-    margin-top: 24px;
     justify-content: flex-end;
+    gap: 12px;
+    margin-top: 20px;
 }
 
 .latex-btn {
-    padding: 10px 24px;
+    padding: 10px 22px;
     border-radius: 10px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
     border: none;
+    transition: all 0.2s;
 }
 
 .latex-btn.cancel {
-    background: transparent;
-    color: var(--text-secondary);
+    background: #f0f0f0;
+    color: #444;
 }
 
 .latex-btn.cancel:hover {
-    background: rgba(255,255,255,0.07);
+    background: #e0e0e0;
 }
 
 .latex-btn.insert {
-    background: var(--accent);
+    background: #222;
     color: white;
 }
 
 .latex-btn.insert:hover {
-    background: var(--accent-dark);
-    transform: translateY(-1px);
+    background: #111;
 }
 
-/* ── Otros elementos que ya tenías (actualizados al tema oscuro) ── */
-.selection-marquee {
-    fill: rgba(59,130,246,0.12);
-    stroke: var(--accent);
-    stroke-dasharray: 6;
-    pointer-events: none;
-}
-
-.element-highlight {
-    stroke: var(--accent) !important;
-    stroke-width: 3 !important;
-}
-
-.resize-handle {
-    fill: white;
-    stroke: var(--accent);
-    stroke-width: 2;
-}
-
-/* Panel lateral de símbolos (adaptado al tema oscuro) */
+/* ── PANEL DE SÍMBOLOS (EXACTAMENTE IGUAL AL ORIGINAL) ── */
 #symbols-side-panel {
     position: absolute;
     right: 0;
     top: 0;
     bottom: 0;
-    width: 320px;
-    background: var(--panel);
+    width: 300px;
+    background: white;
     border-left: 1px solid var(--border);
-    box-shadow: -6px 0 24px rgba(0,0,0,0.4);
+    box-shadow: -5px 0 15px rgba(0,0,0,0.05);
     display: none;
     flex-direction: column;
     z-index: 1000;
-    color: var(--text);
 }
 
-/* ... puedes seguir adaptando .sym-card, .cat-btn, etc. con los nuevos colores ... */
+.panel-header {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+}
 
+.panel-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.close-panel-btn {
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: #999;
+}
+
+.close-panel-btn:hover { color: black; }
+
+.symbol-categories {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    gap: 5px;
+    max-height: 250px;
+    overflow-y: auto;
+    background: #fcfcfc;
+    border-bottom: 1px solid #eee;
+}
+
+/* ... el resto de .cat-btn, #symbols-grid, .sym-card, etc. queda exactamente igual que tu código original ... */
+
+/* Toggle Snap (también sin cambios importantes) */
 .toggle-switch {
-    width: 46px;
-    height: 24px;
-    background: #2a2e36;
-    border-radius: 24px;
+    width: 42px;
+    height: 22px;
+    background-color: #EAEAEA;
+    border-radius: 99px;
     position: relative;
     cursor: pointer;
-    transition: background 0.25s;
-    border: 1px solid var(--border);
+    transition: 0.3s;
+    border: 1px solid #DBDBDB;
 }
 
 .toggle-knob {
     width: 18px;
     height: 18px;
-    background: white;
+    background-color: white;
     border-radius: 50%;
     position: absolute;
-    top: 2px;
+    top: 1px;
     left: 2px;
-    transition: transform 0.25s;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    transition: 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .toggle-switch.active {
-    background: var(--accent);
-    border-color: var(--accent);
+    background-color: #000;
+    border-color: #000;
 }
 
 .toggle-switch.active .toggle-knob {
-    transform: translateX(22px);
+    transform: translateX(20px);
 }
     
 </style>
