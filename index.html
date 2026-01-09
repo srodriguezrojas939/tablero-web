@@ -337,15 +337,156 @@
 .toggle-switch.active .toggle-knob {
     transform: translateX(20px); /* Mueve el círculo a la derecha */
 }
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+    /* 1. El contenedor que alinea todo en una fila */
+.main-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 50px; /* Altura compacta */
+    background-color: #ffffff;
+    border-bottom: 1px solid #e0e0e0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* 2. Título pequeño a la izquierda */
+.header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: fit-content;
+}
+
+.logo-text {
+    font-size: 16px;
+    font-weight: 800;
+    color: #000;
+}
+
+.logo-sub {
+    font-size: 11px;
+    font-weight: 400;
+    color: #888;
+}
+
+/* 3. Toolbar compacta */
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Menos espacio entre botones */
+}
+
+/* 4. Botones tipo "pastilla" más delgados */
+.btn, .btn-tool, .btn-action, .btn-danger {
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 20px;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    transition: 0.2s;
+    white-space: nowrap;
+}
+
+.btn.active {
+    background-color: #000;
+    color: #fff;
+    border-color: #000;
+}
+
+.btn-danger { color: #ff4444; border-color: #ffcccc; }
+.btn-danger:hover { background: #ff4444; color: white; }
+
+/* 5. Separador vertical */
+.divider {
+    width: 1px;
+    height: 20px;
+    background-color: #e0e0e0;
+    margin: 0 8px;
+}
+
+/* 6. Snap Switch integrado */
+.snap-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.snap-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: #666;
+}
+
+.toggle-switch {
+    width: 36px;
+    height: 18px;
+    background-color: #eee;
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.toggle-switch.active { background-color: #000; }
+
+.toggle-knob {
+    width: 14px;
+    height: 14px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: 0.3s;
+}
+
+.toggle-switch.active .toggle-knob { transform: translateX(18px); }
+
+
+
+
+
+
+
+
+
+
+
+
+    
     
 </style>
 </head>
 <body>
 
-<header>
-    <h1>Tablero</h1>
-    <span class="subtitle">√(Raiz) Cuadrada²</span>
-</header>
+
+
+
+     /* =========================================
+       BARRA DE HERRAMIENTAS SHAJAJAJA
+    ========================================= */
+    
+<header class="main-header">
+    <div class="header-left">
+        <span class="logo-text">Tablero</span>
+        <span class="logo-sub">√(Raíz) Cuadrada²</span>
+    </div>
 
 <div class="toolbar">
     <button class="btn active" id="btn-PENCIL" onclick="setMode('PENCIL')">🖉</button>
@@ -373,6 +514,9 @@
     <button class="btn" onclick="redo()">↷</button>
     <button class="btn" onclick="clearAll()" style="color:red">⨯</button>
 </div>
+
+
+    </header>
 
     
 
