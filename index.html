@@ -180,7 +180,10 @@
 </head>
 <body>
 
-<header><h1>TABLERO </h1></header>
+<header>
+    <h1>Tablero</h1>
+    <span class="subtitle">√(Raiz) Cuadrada²</span>
+</header>
 
 <div class="toolbar">
     <button class="btn active" id="btn-PENCIL" onclick="setMode('PENCIL')">LÁPIZ</button>
@@ -639,6 +642,17 @@ window.addEventListener('keydown', (e) => {
         pasteElements();
     }
 });
+
+    function switchTab(tabName) {
+    // Quitar 'active' de todos los botones de la pestaña
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    
+    // Poner 'active' al que tocamos
+    event.target.classList.add('active');
+    
+    // Aquí podrías mostrar u ocultar contenido según la pestaña
+    console.log("Cambiando a: " + tabName);
+}
 
     
 </script>
