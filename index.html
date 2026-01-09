@@ -89,44 +89,48 @@ header {
 
     /* --- BARRA DE HERRAMIENTAS Y BOTONES (Open Sans) --- */
    /* Nueva Barra de Herramientas Vertical */
-   .toolbar {
+    
+ .toolbar {
         display: flex;
-        flex-direction: column;    [cite_start]/* Mantiene los botones en columna [cite: 17] */
-        align-items: center;       
-        gap: 12px;                 
-        padding: 15px 8px;
+        flex-direction: column;
+        align-items: center;       /* Centra los elementos horizontalmente */
+        gap: 10px;                 /* Espacio entre botones */
+        padding: 15px 0;           /* Padding arriba y abajo, 0 a los lados */
         background: white; 
         border-right: 1px solid var(--border); 
-        width: 75px;               /* Un poco más ancha para que se vea bien el scroll */
+        width: 85px;               /* Un poco más de ancho para comodidad */
+        flex-shrink: 0;            /* Evita que la barra se encoja */
         
-        /* --- ESTO ACTIVA EL SCROLL --- */
-        height: 100%;              [cite_start]/* Ocupa el alto del contenedor principal [cite: 4] */
-        max-height: calc(100vh - 60px); /* Ajusta restando el alto aproximado de tu header */
-        overflow-y: auto;          /* Activa el scroll vertical si el contenido supera el alto */
-        overflow-x: hidden;        /* Evita scroll horizontal innecesario */
+        /* Control de Scroll */
+        height: calc(100vh - 60px); /* Altura total menos el header */
+        overflow-y: auto;           /* Activa scroll si el contenido rebalsa */
+        overflow-x: hidden;
         z-index: 10;
     }
 
-    /* Opcional: Hacer el scrollbar más delgado y elegante */
-    .toolbar::-webkit-scrollbar {
-        width: 4px;
-    }
-    .toolbar::-webkit-scrollbar-thumb {
-        background: #ccc;
-        border-radius: 10px;
-    }
-
-    /* Ajuste para que los botones se vean bien verticalmente */
+    /* Estilo específico para los botones DENTRO de la toolbar */
     .toolbar .btn {
-        flex-shrink: 0;
-        padding: 10px;
-        width: 45px;               /* Botones más cuadrados para el lateral */
-        height: 45px;
+        flex-shrink: 0;            /* Evita que los botones se aplasten */
+        width: 60px;               /* Ancho fijo para asegurar el centro */
+        height: 60px;              /* Los hacemos cuadrados/circulares */
+        padding: 0;                /* Quitamos el padding que los empujaba */
         display: flex;
+        flex-direction: column;    /* Icono arriba, texto abajo */
         justify-content: center;
         align-items: center;
+        font-size: 9px;            /* Texto más pequeño para que quepa */
+        border-radius: 12px;       /* O 99px si los prefieres redondos */
+        line-height: 1.2;
     }
 
+    /* Si el botón tiene mucho texto (como 'SELECTOR'), esto ayuda */
+    .toolbar .btn span {
+        display: block;
+        width: 100%;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
    /* El divisor corregido: no se encoge y mantiene su forma */
     .divider { 
         height: 1px; 
@@ -137,14 +141,14 @@ header {
     }
 
     /* Contenedor de SNAP y otros divs internos corregidos */
-    .toolbar > div[style*="display: flex"], 
-    .toolbar > div {
-        display: flex;
+    .toolbar > div[style*="display: flex"] {
+        display: flex !important;
         flex-direction: column !important;
-        align-items: center;
+        align-items: center !important;
         gap: 5px !important;
-        flex-shrink: 0; /* EVITA QUE LOS CONTROLES SE APLASTEN */
+        margin: 10px 0 !important; /* Margen arriba/abajo, no a los lados */
         width: 100%;
+        flex-shrink: 0;
     }
 
     /* Ajuste adicional para el texto dentro del SNAP si lo tienes */
@@ -419,7 +423,7 @@ header {
     <button class="btn" id="btn-CIRCLE" onclick="setMode('CIRCLE')">◎</button>
     <button class="btn" id="btn-TRI" onclick="setMode('TRI')">⊿</button>
     <button class="btn" id="btn-COORD" onclick="setMode('COORD')">⌖</button>
-    <button class="btn" id="btn-SELECT" onclick="setMode('SELECT')">Selector ⬚ </button>
+    <button class="btn" id="btn-SELECT" onclick="setMode('SELECT')"> ⬚ Selector </button>
     <div class="divider"></div>
     <button class="btn" onclick="document.getElementById('img-up').click()"> 🗎 Imagen </button>
     <button class="btn" onclick="showLatexPanel()">Σ Latex</button>
