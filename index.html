@@ -475,12 +475,15 @@ input:checked + .slider:before {
         <button class="btn-mini" onclick="redo()" title="Rehacer">⟳</button>
         <div class="mini-divider"></div>
 
-        <button class="btn-mini" onclick="redo()" title="Rehacer">⟳</button> <button class="btn-mini" onclick="toggleFullScreen()" title="Pantalla Completa" style="margin-left: 4px;">
+         <button class="btn-mini" onclick="toggleFullScreen()" title="Pantalla Completa" style="margin-left: 4px;">
         🗗
     </button>
-
-         <div class="mini-divider"></div>
-
+        
+<div class="mini-divider"></div>
+    
+    <button class="btn-mini btn-danger" onclick="clearEverything()" title="Eliminar Todo">x</button>
+    
+    <div class="mini-divider"></div>
         
      <div class="snap-mini" style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 12px; font-weight: bold; font-family: sans-serif;">SNAP</span>
@@ -774,6 +777,21 @@ let clipboard = [];
         isAction = false;
         isResizing = false;
     }
+
+            function clearEverything() {
+    // Guardamos en el historial por si quieres deshacer el borrado
+    saveHistory(); 
+    
+    // Limpiamos el contenido de todas las capas de dibujo 
+    layers.draw.innerHTML = ''; 
+    layers.latex.innerHTML = ''; 
+    layers.img.innerHTML = '';
+    
+    // Quitamos cualquier selección activa
+    deselect();
+    
+    console.log("Tablero vaciado por completo.");
+}
 
     /* =========================================
        SECCIÓN: TRANSFORMACIONES (MOVER / ESCALAR)
