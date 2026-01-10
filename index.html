@@ -11,6 +11,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/d3@7"></script>
+<script src="https://unpkg.com/function-plot/dist/function-plot.js"></script>
     
 <style>
     :root {
@@ -637,6 +639,82 @@ input:checked + .slider:before {
 .eraser-active {
     cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewbox="0 0 20 20"><rect x="0" y="0" width="18" height="18" fill="white" stroke="black" stroke-width="1"/></svg>') 10 10, auto !important;
 }
+
+    /* --- ESTILO DEL PANEL DE ENTRADA (Igual al de LaTeX) --- */
+#graph-panel {
+    display: none; 
+    position: absolute; 
+    bottom: 20px; 
+    left: 50%; 
+    transform: translateX(-50%); 
+    background: white; 
+    padding: 15px 20px; 
+    border-radius: 25px; 
+    border: 1px solid #E5E5E5; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+    z-index: 1000;
+    font-family: 'Open Sans', sans-serif;
+}
+
+/* Botones de funciones (sen, cos, sqrt...) */
+.btn-math {
+    background: #f8f9fa;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 6px;
+    font-weight: 600;
+    color: #333;
+    transition: all 0.2s;
+}
+.btn-math:hover {
+    background: #eeeeee;
+    border-color: #ddd;
+}
+
+/* --- ESTILO DE LA GRÁFICA EN EL TABLERO --- */
+.graph-widget-container {
+    background: white;
+    border: 1px solid #E5E5E5;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+/* NÚMEROS DELGADOS Y EJES GRISES (Como pediste) */
+.graph-widget-container text {
+    font-family: 'Open Sans', sans-serif !important;
+    font-weight: 300 !important; /* Grosor delgado */
+    font-size: 10px !important;
+    fill: #888 !important; /* Gris suave */
+}
+
+.graph-widget-container .axis path,
+.graph-widget-container .axis line {
+    stroke: #eee !important; /* Ejes muy sutiles */
+}
+
+/* PUNTERO: Crucial para rayar encima */
+/* Si no estamos en modo SELECT, la gráfica ignora el mouse para que el lápiz pinte */
+body:not(.mode-SELECT) foreignObject {
+    pointer-events: none !important;
+}
+
+/* Si estamos en modo SELECT, permitimos mover y redimensionar */
+body.mode-SELECT foreignObject {
+    pointer-events: all !important;
+    cursor: move;
+}
+
+/* Permite que el contenedor de la gráfica se pueda estirar desde la esquina */
+.graph-wrapper {
+    outline: none;
+    resize: both;
+    overflow: visible;
+}
+
     
     
 </style>
@@ -740,6 +818,11 @@ input:checked + .slider:before {
         <i data-lucide="library"></i> <span>Símbolos</span>
     </button>
 
+        <button class="btn" id="btn-GRAPH" onclick="setMode('GRAPH')" title="Graficar">
+    <i data-lucide="box"></i>
+    <span>Graficas</span>
+</button>
+
     <div class="divider"></div>
 </div>
 
@@ -766,6 +849,37 @@ input:checked + .slider:before {
     </div>
 </div>
 
+
+        <div id="graph-panel" style="display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; padding: 15px 20px; border-radius: 25px; border: 1px solid #E5E5E5; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 1000; flex-direction: row; align-items: center; gap: 15px;">
+    <div style="cursor: move; color: #ccc; font-size: 18px; padding-right: 10px;">⠿</div>
+    
+    <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
+        <input type="text" id="graph-exp" placeholder="x^2 + sin(x)" 
+               style="border: 1px solid #E5E5E5; border-radius: 12px; padding: 8px 12px; outline: none; font-size: 14px; width: 200px;">
+        
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; width: 100%;">
+            <style> .btn-math { background: #f8f9fa; border: 1px solid #eee; border-radius: 6px; font-size: 10px; cursor: pointer; padding: 4px; font-weight: 600; } .btn-math:hover { background: #eee; } </style>
+            <button class="btn-math" onclick="addGraphSymbol('sen(')">sen</button>
+            <button class="btn-math" onclick="addGraphSymbol('cos(')">cos</button>
+            <button class="btn-math" onclick="addGraphSymbol('tan(')">tan</button>
+            <button class="btn-math" onclick="addGraphSymbol('sqrt(')">sqrt</button>
+            <button class="btn-math" onclick="addGraphSymbol('^')">^</button>
+            <button class="btn-math" onclick="addGraphSymbol('ln(')">ln</button>
+            <button class="btn-math" onclick="addGraphSymbol('exp(')">exp</button>
+            <button class="btn-math" onclick="addGraphSymbol('abs(')">abs</button>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 5px;">
+            <button class="btn-mini" onclick="insertGraphOnBoard()" title="Insertar">✓</button>
+            <button class="btn-mini btn-danger" onclick="hideGraphPanel()" title="Cancelar">✕</button>
+        </div>
+    </div>
+
+    <div id="graph-live-preview" style="min-width: 120px; height: 120px; background: #f9f9f9; border-radius: 15px; border: 1px dashed #ddd; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+    </div>
+</div>
+
+        
         <svg id="canvas">
     <defs>
         <marker id="arrowhead" 
@@ -1745,6 +1859,91 @@ function drawSphere(x, y, r) {
             A ${w/2} ${rh} 0 1 0 ${x+w} ${y+rh}`;
 }
 
+    // 1. Mostrar/Ocultar el panel
+function showGraphPanel() {
+    document.getElementById('graph-panel').style.display = 'flex';
+    document.getElementById('graph-exp').focus();
+}
+function hideGraphPanel() {
+    document.getElementById('graph-panel').style.display = 'none';
+}
+
+// 2. Insertar símbolos en el input
+function addGraphSymbol(sym) {
+    const input = document.getElementById('graph-exp');
+    input.value += sym;
+    input.focus();
+    updateGraphLivePreview();
+}
+
+// 3. Traductor de funciones (sen -> sin, ^ -> **)
+function cleanFormula(f) {
+    return f.toLowerCase()
+        .replace(/sen/g, "sin")
+        .replace(/\^/g, "**")
+        .replace(/ln/g, "log");
+}
+
+// 4. Previsualización en tiempo real
+document.getElementById('graph-exp').addEventListener('input', updateGraphLivePreview);
+
+function updateGraphLivePreview() {
+    const exp = document.getElementById('graph-exp').value;
+    if(!exp) return;
+    try {
+        functionPlot({
+            target: '#graph-live-preview',
+            width: 120, height: 120,
+            disableZoom: true,
+            data: [{ fn: cleanFormula(exp), color: 'black' }]
+        });
+    } catch(e) {}
+}
+
+// 5. Insertar en el tablero
+function insertGraphOnBoard() {
+    const exp = document.getElementById('graph-exp').value;
+    if(!exp) return;
+
+    const id = 'g' + Date.now();
+    const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+    fo.setAttribute("x", 100); fo.setAttribute("y", 100);
+    fo.setAttribute("width", "350"); fo.setAttribute("height", "350");
+    fo.classList.add('drawing-element', 'draggable'); // Para que se pueda mover con tu selector
+
+    const div = document.createElement("div");
+    div.id = id;
+    div.style.width = "100%"; div.style.height = "100%";
+    div.style.background = "white"; div.style.border = "1px solid #E5E5E5";
+    
+    fo.appendChild(div);
+    layers.draw.appendChild(fo);
+
+    functionPlot({
+        target: `#${id}`,
+        width: 350, height: 350,
+        grid: true,
+        data: [{ fn: cleanFormula(exp), color: 'black' }]
+    });
+
+    hideGraphPanel();
+    saveHistory();
+}
+
+// Modificar tu función setMode existente para que abra el panel
+const oldSetMode = setMode;
+window.setMode = function(m) {
+    oldSetMode(m);
+    if(m === 'GRAPH') showGraphPanel();
+    
+    // Bloquear interacción con gráficas si NO estamos en SELECT
+    const graphs = document.querySelectorAll('foreignObject');
+    graphs.forEach(g => {
+        g.style.pointerEvents = (m === 'SELECT') ? 'all' : 'none';
+    });
+};
+
+    
         
     lucide.createIcons(); 
     
