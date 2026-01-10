@@ -753,17 +753,29 @@ input:checked + .slider:before {
 </div>
 
         <svg id="canvas">
-            <defs>
-                <pattern id="gridPattern" width="20" height="20" patternUnits="userSpaceOnUse">
-                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#EEEEEE" stroke-width="1"/>
-                </pattern>
-            </defs>
-            <rect class="grid" width="100%" height="100%" />
-            <g id="layer-images"></g>
-            <g id="layer-latex"></g>
-            <g id="layer-drawings"></g>
-            <g id="layer-ui"></g>
-        </svg>
+    <defs>
+        <marker id="arrowhead" 
+                markerWidth="10" 
+                markerHeight="7" 
+                refX="10" 
+                refY="3.5" 
+                orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="black" />
+        </marker>
+
+        <pattern id="gridPattern" width="20" height="20" patternUnits="userSpaceOnUse">
+            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#EEEEEE" stroke-width="1"/>
+        </pattern>
+    </defs>
+
+    <rect class="grid" width="100%" height="100%" fill="url(#gridPattern)" />
+    <g id="layer-images"></g>
+    <g id="layer-latex"></g>
+    <g id="layer-drawings"></g>
+    <g id="layer-ui"></g>
+</svg>
+
+        
     </div> <div id="symbols-side-panel">
         <div class="panel-header">
             <h3>Símbolos</h3>
@@ -904,9 +916,13 @@ let clipboard = [];
     function setMode(m) {
     mode = m;
     document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('btn-'+m).classList.add('active');
+    
+    // VALIDACIÓN: Solo intenta activar el botón si realmente existe el ID
+    const btn = document.getElementById('btn-' + m);
+    if (btn) {
+        btn.classList.add('active');
+    }
 
-    // Cambiar cursor según el modo
     const viewport = document.getElementById('viewport');
     if (m === 'ERASER') {
         viewport.classList.add('eraser-active');
@@ -918,81 +934,102 @@ let clipboard = [];
     /* =========================================
        SECCIÓN: LÓGICA DE SELECCIÓN (EL SELECTOR)
     ========================================= */
-    function onStart(e) {
-        const pos = getPos(e);
-        startPos = pos;
-        isAction = true;
+  function onStart(e) {
+    const pos = getPos(e);
+    startPos = pos;
+    isAction = true;
 
-        if (mode === 'ERASER') {
-        saveHistory(); // Guardamos el estado antes de empezar a borrar
-        isAction = true;
+    if (mode === 'ERASER') {
+        saveHistory();
         return;
     }
-        
-        if (mode === 'SELECT') {
-            if (e.target.classList.contains('resize-handle')) {
-                isResizing = true;
-                return;
-            }
-
-            const hit = e.target.closest('.draggable');
-            if (hit && !e.shiftKey) {
-                if (!selectedElements.includes(hit)) {
-                    deselect();
-                    selectElement(hit);
-                }
-            } else if (!hit) {
-                deselect();
-                currentEl = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-                currentEl.setAttribute("class", "selection-marquee");
-                layers.ui.appendChild(currentEl);
-            }
+    
+    if (mode === 'SELECT') {
+        if (e.target.classList.contains('resize-handle')) {
+            isResizing = true;
             return;
         }
+        const hit = e.target.closest('.draggable');
+        if (hit && !e.shiftKey) {
+            if (!selectedElements.includes(hit)) {
+                deselect();
+                selectElement(hit);
+            }
+        } else if (!hit) {
+            deselect();
+            currentEl = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            currentEl.setAttribute("class", "selection-marquee");
+            layers.ui.appendChild(currentEl);
+        }
+        return;
+    }
 
-        if (mode === 'PENCIL') {
+    if (mode === 'PENCIL') {
+        saveHistory();
+        currentEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        currentEl.setAttribute("d", `M ${pos.x} ${pos.y}`);
+        currentEl.setAttribute("class", "drawing-element draggable");
+        layers.draw.appendChild(currentEl);
+        return; // Añadido return para evitar que entre en otros bloques
+    }
+
+    if (mode === 'POLY') {
+        if (!currentEl) {
             saveHistory();
-            currentEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            currentEl.setAttribute("d", `M ${pos.x} ${pos.y}`);
+            currentEl = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+            currentEl.setAttribute("points", `${pos.x},${pos.y}`);
             currentEl.setAttribute("class", "drawing-element draggable");
             layers.draw.appendChild(currentEl);
+        } else {
+            let pts = currentEl.getAttribute("points");
+            currentEl.setAttribute("points", `${pts} ${pos.x},${pos.y}`);
         }
+        return;
+    }
 
-        if (mode === 'POLY') {
-            if (!currentEl) {
-                saveHistory();
-                currentEl = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-                currentEl.setAttribute("points", `${pos.x},${pos.y}`);
-                currentEl.setAttribute("class", "drawing-element draggable");
-                layers.draw.appendChild(currentEl);
-            } else {
-                let pts = currentEl.getAttribute("points");
-                currentEl.setAttribute("points", `${pts} ${pos.x},${pos.y}`);
-            }
-        }
-
-        if (['RECT', 'CIRCLE', 'TRI', 'COORD'].includes(mode)) {
+    // --- BLOQUE DE FIGURAS (Corregido y Ampliado) ---
+    const figureModes = ['RECT', 'CIRCLE', 'TRI', 'COORD', 'ELLIPSE', 'ARROW', 'CUBE', 'SPHERE', 'PARABOLA', 'CYLINDER'];
+    
+    if (figureModes.includes(mode)) {
         saveHistory();
+        
         if (mode === 'RECT') {
             currentEl = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            currentEl.setAttribute("class", "drawing-element draggable");
-        } else if (mode === 'CIRCLE') {
+            currentEl.setAttribute("x", pos.x);
+            currentEl.setAttribute("y", pos.y);
+        } 
+        else if (mode === 'CIRCLE') {
             currentEl = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            currentEl.setAttribute("class", "drawing-element draggable");
-        } else if (mode === 'TRI') {
-            currentEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            currentEl.setAttribute("class", "drawing-element draggable");
-        } else if (mode === 'COORD') {
+            currentEl.setAttribute("cx", pos.x);
+            currentEl.setAttribute("cy", pos.y);
+        } 
+        else if (mode === 'ELLIPSE') {
+            currentEl = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+            currentEl.setAttribute("cx", pos.x);
+            currentEl.setAttribute("cy", pos.y);
+        }
+        else if (mode === 'ARROW') {
+            currentEl = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            currentEl.setAttribute("x1", pos.x);
+            currentEl.setAttribute("y1", pos.y);
+            currentEl.setAttribute("x2", pos.x);
+            currentEl.setAttribute("y2", pos.y);
+            currentEl.setAttribute("marker-end", "url(#arrowhead)"); // Punta de flecha
+        }
+        else if (mode === 'COORD') {
             currentEl = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            currentEl.setAttribute("class", "draggable coord-system");
+            currentEl.classList.add('coord-system');
+        } 
+        else {
+            // TRI, CUBE, SPHERE, PARABOLA, CYLINDER usan <path>
+            currentEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
         }
         
-        currentEl.setAttribute("x", pos.x);
-        currentEl.setAttribute("y", pos.y);
+        // Configuración común para todas las figuras
+        currentEl.classList.add('drawing-element', 'draggable');
         layers.draw.appendChild(currentEl);
     }
-    }
-
+}
     function onMove(e) {
         if (!isAction) return;
         const pos = getPos(e);
@@ -1694,7 +1731,14 @@ function drawSphere(x, y, r) {
             M ${x-r} ${y} a ${r} ${r/3} 0 1 0 ${r*2} 0 a ${r} ${r/3} 0 1 0 ${-r*2} 0`;
 }
 
-    
+    function drawCylinder(x, y, w, h) {
+    const rh = h * 0.15; // altura de la tapa
+    return `M ${x} ${y+rh} L ${x} ${y+h-rh} 
+            A ${w/2} ${rh} 0 1 0 ${x+w} ${y+h-rh} 
+            L ${x+w} ${y+rh} 
+            A ${w/2} ${rh} 0 1 0 ${x} ${y+rh} 
+            A ${w/2} ${rh} 0 1 0 ${x+w} ${y+rh}`;
+}
     
     lucide.createIcons(); 
     
