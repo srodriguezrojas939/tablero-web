@@ -531,6 +531,57 @@ input:checked + .slider:before {
     100% { opacity: 0; transform: translateY(10px); }
 }
 
+/* Panel de figuras angosto */
+.figure-panel-narrow {
+    width: 85px !important; /* Igual que la toolbar */
+    display: none; 
+    flex-direction: column;
+}
+
+.figure-panel-narrow .side-panel-content {
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    overflow-y: auto; /* Habilita el scroll */
+    height: 100%;
+}
+
+/* Tarjetas individuales dentro del panel */
+.fig-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 65px;
+    height: 65px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.fig-card:hover {
+    background-color: var(--panel);
+    border-color: var(--accent);
+}
+
+.fig-card i {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 4px;
+}
+
+.fig-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #666;
+}
+
+    
+    
 
 /* --- ESTILO UNIFICADO PARA ICONOS LUCIDE --- */
 
@@ -659,22 +710,10 @@ input:checked + .slider:before {
     <i data-lucide="eraser"></i> 
 </button>
 
+        <button class="btn" id="btn-FIGURES" onclick="toggleFiguresPanel()" title="Figuras">
+    <i data-lucide="box"></i> <span>Figuras</span>
+</button>
         
-    <button class="btn" id="btn-RECT" onclick="setMode('RECT')" title="Rectángulo">
-        <i data-lucide="square"></i>
-    </button>
-    <button class="btn" id="btn-CIRCLE" onclick="setMode('CIRCLE')" title="Círculo">
-        <i data-lucide="circle"></i>
-    </button>
-    <button class="btn" id="btn-TRI" onclick="setMode('TRI')" title="Triángulo">
-        <i data-lucide="triangle"></i>
-    </button>
-    <button class="btn" id="btn-COORD" onclick="setMode('COORD')" title="Plano cartesiano">
-        <i data-lucide="move"></i>
-    </button>
-    
-
-
     <div class="divider"></div>
 
     <button class="btn" onclick="document.getElementById('img-up').click()" title="Insertar Imagen">
@@ -749,6 +788,35 @@ input:checked + .slider:before {
             </div>
     </div>
 
+    <div id="figures-side-panel" class="side-panel-right figure-panel-narrow">
+    <div class="panel-header">
+        <button class="close-panel-btn" onclick="toggleFiguresPanel()">×</button>
+    </div>
+    
+    <div class="side-panel-content">
+        <div class="fig-card" onclick="selectFigure('RECT')" title="Rectángulo">
+            <i data-lucide="square"></i>
+            <span class="fig-label">Rect</span>
+        </div>
+        
+        <div class="fig-card" onclick="selectFigure('CIRCLE')" title="Círculo">
+            <i data-lucide="circle"></i>
+            <span class="fig-label">Circ</span>
+        </div>
+        
+        <div class="fig-card" onclick="selectFigure('TRI')" title="Triángulo">
+            <i data-lucide="triangle"></i>
+            <span class="fig-label">Tri</span>
+        </div>
+        
+        <div class="fig-card" onclick="selectFigure('COORD')" title="Coordenadas">
+            <i data-lucide="crosshair"></i>
+            <span class="fig-label">Ejes</span>
+        </div>
+
+        </div>
+</div>
+    
 
 </div>
     
@@ -1552,6 +1620,26 @@ async function downloadBoard(format) {
     }
 }
 
+    // Función para abrir/cerrar el panel de figuras
+function toggleFiguresPanel() {
+    const figPanel = document.getElementById('figures-side-panel');
+    const symPanel = document.getElementById('symbols-side-panel');
+    
+    // Cerrar el panel de símbolos si está abierto
+    if (symPanel) symPanel.style.display = 'none';
+    
+    // Alternar visibilidad
+    const isVisible = figPanel.style.display === 'flex';
+    figPanel.style.display = isVisible ? 'none' : 'flex';
+}
+
+// Función para seleccionar la figura y cerrar el panel
+function selectFigure(mode) {
+    setMode(mode); // Activa la herramienta (RECT, CIRCLE, etc.)
+    toggleFiguresPanel(); // Cierra el panel
+}
+
+    
     lucide.createIcons(); 
     
 </script>
