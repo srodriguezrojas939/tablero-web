@@ -531,6 +531,35 @@ input:checked + .slider:before {
 }
 
 
+    <div id="figures-side-panel" class="side-panel-right">
+    <div class="panel-header">
+        <h3 style="margin:0; font-family:'Playfair Display', serif;">Figuras</h3>
+        <button class="close-panel-btn" onclick="toggleFiguresPanel()">×</button>
+    </div>
+    <div class="side-panel-content">
+        <div class="sym-card" onclick="selectFigure('RECT', 'square')">
+            <div class="sym-card-icon"><i data-lucide="square"></i></div>
+            <span>Cuadrado</span>
+        </div>
+        <div class="sym-card" onclick="selectFigure('TRI', 'triangle')">
+            <div class="sym-card-icon"><i data-lucide="triangle"></i></div>
+            <span>Triángulo</span>
+        </div>
+        <div class="sym-card" onclick="selectFigure('CIRCLE', 'circle')">
+            <div class="sym-card-icon"><i data-lucide="circle"></i></div>
+            <span>Círculo</span>
+        </div>
+        <div class="sym-card" onclick="selectFigure('COORD', 'crosshair')">
+            <div class="sym-card-icon"><i data-lucide="crosshair"></i></div>
+            <span>Coordenadas</span>
+        </div>
+    </div>
+</div>
+
+
+    
+
+
 /* --- ESTILO UNIFICADO PARA ICONOS LUCIDE --- */
 
 /* 1. Tamaño y grosor para TODOS los iconos (Header y Barra Lateral) */
@@ -573,49 +602,6 @@ input:checked + .slider:before {
 }
 
 
-    /* Estilo del Panel Derecho */
-.side-panel-right {
-    position: absolute;
-    right: 0; top: 0; bottom: 0;
-    width: 280px;
-    background: white;
-    border-left: 1px solid var(--border);
-    box-shadow: -5px 0 15px rgba(0,0,0,0.05);
-    display: none; /* Se activa con JS */
-    flex-direction: column;
-    z-index: 1000;
-}
-
-.side-panel-content {
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    overflow-y: auto;
-}
-
-/* Reutilizamos tus sym-cards para las figuras */
-.side-panel-content .sym-card {
-    display: flex;
-    align-items: center;
-    padding: 15px;
-    border: 1px solid #efefef;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: 0.2s;
-    gap: 15px;
-}
-
-.side-panel-content .sym-card:hover {
-    background: #f0f7ff;
-    border-color: var(--accent);
-}
-
-.side-panel-content .sym-card span {
-    font-size: 13px;
-    font-weight: 600;
-}
-    
     
 </style>
 </head>
@@ -704,9 +690,11 @@ input:checked + .slider:before {
 
         
 <button class="btn" id="btn-FIGURES" onclick="toggleFiguresPanel()" title="Figuras">
-    <i id="main-fig-icon" data-lucide="box"></i> <span>Figuras</span>
+    <span id="fig-icon-container"><i data-lucide="box"></i></span>
+    <span>Figuras</span>
 </button>
 
+        
     <div class="divider"></div>
 
     <button class="btn" onclick="document.getElementById('img-up').click()" title="Insertar Imagen">
@@ -1613,31 +1601,30 @@ async function downloadBoard(format) {
     }
 }
 
-// Abre y cierra el panel derecho de figuras
+// Abre y cierra el panel lateral
 function toggleFiguresPanel() {
     const panel = document.getElementById('figures-side-panel');
     const isVisible = panel.style.display === 'flex';
     
-    // Cerramos otros paneles si estuvieran abiertos (opcional)
-    const symbolsPanel = document.getElementById('symbols-side-panel');
-    if(symbolsPanel) symbolsPanel.style.display = 'none';
-
+    // Cerramos el de símbolos si está abierto para que no choquen
+    document.getElementById('symbols-side-panel').style.display = 'none';
+    
     panel.style.display = isVisible ? 'none' : 'flex';
 }
 
-// Selecciona la figura y actualiza el botón de la barra lateral
+// Selecciona la figura y cambia el icono del botón
 function selectFigure(modeType, iconName) {
     // 1. Cambiamos el modo de dibujo
     setMode(modeType); 
 
-    // 2. Actualizamos el icono del botón principal para que sepa qué hay seleccionado
-    const mainIcon = document.getElementById('main-fig-icon');
-    if (mainIcon) {
-        mainIcon.setAttribute('data-lucide', iconName);
-        lucide.createIcons(); // Refrescar iconos
-    }
+    // 2. Reemplazamos el HTML del contenedor del icono para que Lucide lo vuelva a detectar
+    const iconContainer = document.getElementById('fig-icon-container');
+    iconContainer.innerHTML = `<i data-lucide="${iconName}"></i>`;
+    
+    // 3. Forzamos a Lucide a renderizar el nuevo icono
+    lucide.createIcons();
 
-    // 3. Cerramos el panel automáticamente
+    // 4. Cerramos el panel
     toggleFiguresPanel();
 }
     
