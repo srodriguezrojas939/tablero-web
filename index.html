@@ -529,6 +529,48 @@ input:checked + .slider:before {
     85% { opacity: 1; transform: translateY(0); }
     100% { opacity: 0; transform: translateY(10px); }
 }
+
+
+    
+    /* Ajuste para los nuevos iconos */
+.btn-mini i, .btn-mini svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2px; /* Grosor de la línea del icono */
+    vertical-align: middle;
+}
+
+.btn-mini {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px; /* Espacio por si el botón tiene texto e icono */
+}
+
+
+    /* Ajuste para los botones de la barra lateral */
+.toolbar .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px; /* Espacio entre icono y texto */
+    padding: 10px;
+    width: 100%; /* Para que ocupen el ancho de la barra */
+}
+
+.toolbar .btn i {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0; /* Evita que el icono se aplaste */
+}
+
+.toolbar .btn span {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+
+    
     
 </style>
 </head>
@@ -544,31 +586,42 @@ input:checked + .slider:before {
         </span>
     </div>
 
-    <div class="header-tools">
-
-          <button class="btn-mini btn-danger" onclick="clearEverything()" title="Eliminar Todo"> ✕ </button>
+<div class="header-tools">
+    <button class="btn-mini btn-danger" onclick="clearEverything()" title="Eliminar Todo">
+        <i data-lucide="trash-2"></i>
+    </button>
     
     <div class="mini-divider"></div>
-        <button class="btn-mini" onclick="undo()" title="Deshacer">⟲</button>
-        <button class="btn-mini" onclick="redo()" title="Rehacer">⟳</button>
-        <div class="mini-divider"></div>
+    
+    <button class="btn-mini" onclick="undo()" title="Deshacer">
+        <i data-lucide="undo-2"></i>
+    </button>
+    <button class="btn-mini" onclick="redo()" title="Rehacer">
+        <i data-lucide="redo-2"></i>
+    </button>
+    
+    <div class="mini-divider"></div>
 
-         <button class="btn-mini" onclick="toggleFullScreen()" title="Pantalla Completa" style="margin-left: 4px;">
-        🗖
+    <button class="btn-mini" onclick="toggleFullScreen()" title="Pantalla Completa">
+        <i data-lucide="maximize"></i>
     </button>
 
-         <div class="snap-mini" style="display: flex; align-items: center; gap: 8px;">
+    <div class="mini-divider"></div>
 
-        <div class="dropdown" style="position: relative; display: inline-block;">
-    <button class="btn-mini" onclick="toggleDownloadMenu()" title="Descargar">
-        🗐
-    </button>
-    <div id="download-menu" class="dropdown-content">
-        <button onclick="downloadBoard('png')"> 🗐  Descargar PNG</button>
-        <button onclick="downloadBoard('pdf')"> 🗐 Descargar PDF</button>
+    <div class="dropdown" style="position: relative; display: inline-block;">
+        <button class="btn-mini" onclick="toggleDownloadMenu()" title="Descargar">
+            <i data-lucide="download"></i>
+        </button>
+        <div id="download-menu" class="dropdown-content">
+            <button onclick="downloadBoard('png')">
+                <i data-lucide="image" style="width:14px; margin-right:8px;"></i> PNG
+            </button>
+            <button onclick="downloadBoard('pdf')">
+                <i data-lucide="file-text" style="width:14px; margin-right:8px;"></i> PDF
+            </button>
+        </div>
     </div>
 </div>
-        
         
      <div class="snap-mini" style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 12px; font-weight: bold; font-family: sans-serif;">SNAP</span>
@@ -587,20 +640,45 @@ input:checked + .slider:before {
     
 
     <div class="toolbar">
-    <button class="btn active" id="btn-PENCIL" onclick="setMode('PENCIL')">🖉</button>
-    <button class="btn" id="btn-POLY" onclick="setMode('POLY')">𖡬</button>
-    <button class="btn" id="btn-RECT" onclick="setMode('RECT')">□</button>
-    <button class="btn" id="btn-CIRCLE" onclick="setMode('CIRCLE')">◎</button>
-    <button class="btn" id="btn-TRI" onclick="setMode('TRI')">⊿</button>
-    <button class="btn" id="btn-COORD" onclick="setMode('COORD')">⌖</button>
-    <button class="btn" id="btn-SELECT" onclick="setMode('SELECT')"> ⬚ Selector </button>
+    <button class="btn active" id="btn-PENCIL" onclick="setMode('PENCIL')" title="Lápiz">
+        <i data-lucide="pencil"></i>
+    </button>
+    <button class="btn" id="btn-POLY" onclick="setMode('POLY')" title="Línea/Polígono">
+        <i data-lucide="pen-tool"></i>
+    </button>
+    <button class="btn" id="btn-RECT" onclick="setMode('RECT')" title="Rectángulo">
+        <i data-lucide="square"></i>
+    </button>
+    <button class="btn" id="btn-CIRCLE" onclick="setMode('CIRCLE')" title="Círculo">
+        <i data-lucide="circle"></i>
+    </button>
+    <button class="btn" id="btn-TRI" onclick="setMode('TRI')" title="Triángulo">
+        <i data-lucide="triangle"></i>
+    </button>
+    <button class="btn" id="btn-COORD" onclick="setMode('COORD')" title="Coordenadas">
+        <i data-lucide="crosshair"></i>
+    </button>
+    
+    <button class="btn" id="btn-SELECT" onclick="setMode('SELECT')" title="Selector">
+        <i data-lucide="mouse-pointer-2"></i> <span>Selector</span>
+    </button>
+
     <div class="divider"></div>
-    <button class="btn" onclick="document.getElementById('img-up').click()"> 🗎 Imagen </button>
-    <button class="btn" onclick="showLatexPanel()">Σ Latex</button>
-    <button class="btn" id="btn-SYMBOLS" onclick="toggleSymbolsPanel()">Ω Simbolos </button>
+
+    <button class="btn" onclick="document.getElementById('img-up').click()" title="Insertar Imagen">
+        <i data-lucide="image"></i> <span>Imagen</span>
+    </button>
+    <button class="btn" onclick="showLatexPanel()" title="Insertar LaTeX">
+        <i data-lucide="sigma"></i> <span>Latex</span>
+    </button>
+    <button class="btn" id="btn-SYMBOLS" onclick="toggleSymbolsPanel()" title="Biblioteca de Símbolos">
+        <i data-lucide="library"></i> <span>Símbolos</span>
+    </button>
+
     <div class="divider"></div>
-        
 </div>
+
+    
 
 
     
@@ -1436,6 +1514,7 @@ async function downloadBoard(format) {
     }
 }
 
+    lucide.createIcons(); 
     
 </script>
 
