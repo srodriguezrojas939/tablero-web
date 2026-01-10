@@ -710,9 +710,10 @@ body.mode-SELECT foreignObject {
 
 /* Permite que el contenedor de la gráfica se pueda estirar desde la esquina */
 .graph-wrapper {
-    outline: none;
-    resize: both;
-    overflow: visible;
+    resize: both; /* Permite estirar desde la esquina */
+    overflow: hidden; /* Evita que el contenido se salga mientras estiras */
+    background: white;
+    border: 1px solid #E5E5E5;
 }
 
     
@@ -1900,31 +1901,62 @@ function updateGraphLivePreview() {
     } catch(e) {}
 }
 
-// 5. Insertar en el tablero
 function insertGraphOnBoard() {
     const exp = document.getElementById('graph-exp').value;
     if(!exp) return;
 
     const id = 'g' + Date.now();
     const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-    fo.setAttribute("x", 100); fo.setAttribute("y", 100);
-    fo.setAttribute("width", "350"); fo.setAttribute("height", "350");
-    fo.classList.add('drawing-element', 'draggable'); // Para que se pueda mover con tu selector
+    
+    // Tamaño inicial
+    fo.setAttribute("x", 100); 
+    fo.setAttribute("y", 100);
+    fo.setAttribute("width", "350"); 
+    fo.setAttribute("height", "350");
+    
+    // 'draggable' para tu selector, 'graph-wrapper' para el resize CSS
+    fo.classList.add('drawing-element', 'draggable', 'graph-wrapper'); 
 
     const div = document.createElement("div");
     div.id = id;
-    div.style.width = "100%"; div.style.height = "100%";
-    div.style.background = "white"; div.style.border = "1px solid #E5E5E5";
+    div.className = "graph-widget-container"; // Asegúrate de tener esta clase en tu CSS
+    div.style.width = "100%"; 
+    div.style.height = "100%";
     
     fo.appendChild(div);
     layers.draw.appendChild(fo);
 
-    functionPlot({
-        target: `#${id}`,
-        width: 350, height: 350,
-        grid: true,
-        data: [{ fn: cleanFormula(exp), color: 'black' }]
+    // Función interna para renderizar/actualizar la gráfica
+    const render = () => {
+        const width = fo.getAttribute("width");
+        const height = fo.getAttribute("height");
+        
+        functionPlot({
+            target: `#${id}`,
+            width: width,
+            height: height,
+            grid: true,
+            data: [{ 
+                fn: cleanFormula(exp), 
+                color: 'black' 
+            }]
+        });
+    };
+
+    // Renderizado inicial
+    render();
+
+    // VIGILANTE DE TAMAÑO (Esto soluciona el espacio en blanco)
+    const ro = new ResizeObserver(() => {
+        // Obtenemos el nuevo tamaño del foreignObject tras estirarlo
+        const rect = fo.getBoundingClientRect();
+        // Solo redibujamos si el tamaño cambió significativamente para no saturar
+        fo.setAttribute("width", fo.clientWidth);
+        fo.setAttribute("height", fo.clientHeight);
+        render();
     });
+    
+    ro.observe(fo); // Empezamos a vigilar el foreignObject
 
     hideGraphPanel();
     saveHistory();
