@@ -518,7 +518,6 @@ input:checked + .slider:before {
     display: block !important;
 }
 
- /* Animación suave para el aviso */
 #status-msg.show {
     display: block !important;
     animation: fadeInOut 3s forwards;
@@ -529,7 +528,7 @@ input:checked + .slider:before {
     15% { opacity: 1; transform: translateY(0); }
     85% { opacity: 1; transform: translateY(0); }
     100% { opacity: 0; transform: translateY(10px); }
-}   
+}
     
 </style>
 </head>
@@ -1362,22 +1361,24 @@ function showLatexPanel() {
 }
     
 
-// Función para mostrar mensajes dentro de la página (sin ventanas emergentes)
+// --- FUNCIONES DE INTERFAZ Y DESCARGA ---
+
+// Esta función permite mostrar mensajes sin ventanas emergentes
 function showMessage(text) {
     const msg = document.getElementById("status-msg");
+    if (!msg) return;
     msg.innerText = text;
     msg.classList.remove("show");
-    void msg.offsetWidth; // Truco para reiniciar la animación
+    void msg.offsetWidth; // Reinicia la animación
     msg.classList.add("show");
 }
 
-// 1. Abrir/Cerrar menú
 function toggleDownloadMenu() {
     const menu = document.getElementById("download-menu");
-    menu.classList.toggle("show-menu");
+    if (menu) menu.classList.toggle("show-menu");
 }
 
-// 2. Cerrar menú si haces clic fuera
+// Cerrar menú si haces clic fuera
 window.addEventListener('click', function(event) {
     if (!event.target.matches('.btn-mini') && !event.target.closest('.dropdown')) {
         const dropdowns = document.getElementsByClassName("dropdown-content");
@@ -1387,15 +1388,11 @@ window.addEventListener('click', function(event) {
     }
 });
 
-// 3. Lógica principal de descarga corregida
 async function downloadBoard(format) {
-    // Cerramos el menú
     const menu = document.getElementById("download-menu");
     if (menu) menu.classList.remove("show-menu");
 
-    // CAMBIO CLAVE: Usamos 'canvas-container' que sí existe en tu código
     const board = document.getElementById('canvas-container'); 
-    
     if (!board) {
         showMessage(" Error: No se encontró el área de dibujo.");
         return;
@@ -1416,7 +1413,7 @@ async function downloadBoard(format) {
             link.download = `tablero-${Date.now()}.png`;
             link.href = canvas.toDataURL("image/png");
             link.click();
-            showMessage("PNG descargado con éxito");
+            showMessage(" PNG descargado");
         } 
         else if (format === 'pdf') {
             const { jsPDF } = window.jspdf;
@@ -1431,17 +1428,18 @@ async function downloadBoard(format) {
 
             pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
             pdf.save(`tablero-${Date.now()}.pdf`);
-            showMessage("PDF descargado con éxito");
+            showMessage(" PDF descargado");
         }
     } catch (err) {
         console.error("Error:", err);
-        showMessage(" Error al generar la descarga.");
+        showMessage(" Error al descargar.");
     }
 }
 
-    <div id="status-msg" style="position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 10px 20px; border-radius: 50px; font-size: 13px; display: none; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.2);"></div>
-
     
 </script>
+
+    <div id="status-msg" style="position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 10px 20px; border-radius: 50px; font-size: 13px; display: none; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.2);"></div>
+
 </body>
 </html>
