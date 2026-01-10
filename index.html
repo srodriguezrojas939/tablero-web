@@ -710,14 +710,11 @@ body.mode-SELECT foreignObject {
 
 /* Permite que el contenedor de la gráfica se pueda estirar desde la esquina */
 .graph-wrapper {
-    resize: both; 
-    overflow: hidden;
-    background: white;
-    border: 1px solid #E5E5E5;
-    /* ESTO EVITA QUE SE VUELVA PEQUEÑA INFINITAMENTE */
-    min-width: 150px !important;
-    min-height: 150px !important;
+    outline: none;
+    resize: both;
+    overflow: visible;
 }
+
     
     
 </style>
@@ -1903,74 +1900,49 @@ function updateGraphLivePreview() {
     } catch(e) {}
 }
 
+// 5. Insertar en el tablero
 function insertGraphOnBoard() {
     const exp = document.getElementById('graph-exp').value;
     if(!exp) return;
 
     const id = 'g' + Date.now();
     const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-    
-    fo.setAttribute("x", 100); 
-    fo.setAttribute("y", 100);
-    fo.setAttribute("width", "350"); 
-    fo.setAttribute("height", "350");
-    fo.classList.add('drawing-element', 'draggable', 'graph-wrapper'); 
+    fo.setAttribute("x", 100); fo.setAttribute("y", 100);
+    fo.setAttribute("width", "350"); fo.setAttribute("height", "350");
+    fo.classList.add('drawing-element', 'draggable'); // Para que se pueda mover con tu selector
 
     const div = document.createElement("div");
     div.id = id;
-    div.className = "graph-widget-container";
-    div.style.width = "100%"; 
-    div.style.height = "100%";
+    div.style.width = "100%"; div.style.height = "100%";
+    div.style.background = "white"; div.style.border = "1px solid #E5E5E5";
     
     fo.appendChild(div);
     layers.draw.appendChild(fo);
 
-    // Función de renderizado con parámetros de ancho y alto
-    const render = (w, h) => {
-        try {
-            functionPlot({
-                target: `#${id}`,
-                width: w,
-                height: h,
-                grid: true,
-                disableZoom: (mode !== 'SELECT'), // Solo zoom en modo selección
-                disablePan: (mode !== 'SELECT'),  // Solo mover en modo selección
-                data: [{ 
-                    fn: cleanFormula(exp), 
-                    color: 'black' 
-                }]
-            });
-        } catch (e) { console.error("Error render:", e); }
-    };
-
-    // Render inicial
-    render(350, 350);
-
-    // OBSERVADOR MEJORADO: Con control de rebote para evitar el encogimiento
-    let resizeTimer;
-    const ro = new ResizeObserver(entries => {
-        for (let entry of entries) {
-            const { width, height } = entry.contentRect;
-            
-            // Si el tamaño es muy pequeño, no hacer nada
-            if (width < 50 || height < 50) return;
-
-            // Debounce: Esperamos 50ms antes de redibujar para que sea estable
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => {
-                // Actualizamos los atributos del foreignObject para que coincidan
-                fo.setAttribute("width", width);
-                fo.setAttribute("height", height);
-                render(width, height);
-            }, 50);
-        }
+    functionPlot({
+        target: `#${id}`,
+        width: 350, height: 350,
+        grid: true,
+        data: [{ fn: cleanFormula(exp), color: 'black' }]
     });
-    
-    ro.observe(fo);
 
     hideGraphPanel();
     saveHistory();
 }
+
+// Modificar tu función setMode existente para que abra el panel
+const oldSetMode = setMode;
+window.setMode = function(m) {
+    oldSetMode(m);
+    if(m === 'GRAPH') showGraphPanel();
+    
+    // Bloquear interacción con gráficas si NO estamos en SELECT
+    const graphs = document.querySelectorAll('foreignObject');
+    graphs.forEach(g => {
+        g.style.pointerEvents = (m === 'SELECT') ? 'all' : 'none';
+    });
+};
+
     
         
     lucide.createIcons(); 
