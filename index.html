@@ -710,12 +710,14 @@ body.mode-SELECT foreignObject {
 
 /* Permite que el contenedor de la gráfica se pueda estirar desde la esquina */
 .graph-wrapper {
-    resize: both; /* Permite estirar desde la esquina */
-    overflow: hidden; /* Evita que el contenido se salga mientras estiras */
+    resize: both; 
+    overflow: hidden;
     background: white;
     border: 1px solid #E5E5E5;
+    /* ESTO EVITA QUE SE VUELVA PEQUEÑA INFINITAMENTE */
+    min-width: 150px !important;
+    min-height: 150px !important;
 }
-
     
     
 </style>
@@ -1908,73 +1910,67 @@ function insertGraphOnBoard() {
     const id = 'g' + Date.now();
     const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
     
-    // Tamaño inicial
     fo.setAttribute("x", 100); 
     fo.setAttribute("y", 100);
     fo.setAttribute("width", "350"); 
     fo.setAttribute("height", "350");
-    
-    // 'draggable' para tu selector, 'graph-wrapper' para el resize CSS
     fo.classList.add('drawing-element', 'draggable', 'graph-wrapper'); 
 
     const div = document.createElement("div");
     div.id = id;
-    div.className = "graph-widget-container"; // Asegúrate de tener esta clase en tu CSS
+    div.className = "graph-widget-container";
     div.style.width = "100%"; 
     div.style.height = "100%";
     
     fo.appendChild(div);
     layers.draw.appendChild(fo);
 
-    // Función interna para renderizar/actualizar la gráfica
-    const render = () => {
-        const width = fo.getAttribute("width");
-        const height = fo.getAttribute("height");
-        
-        functionPlot({
-            target: `#${id}`,
-            width: width,
-            height: height,
-            grid: true,
-            data: [{ 
-                fn: cleanFormula(exp), 
-                color: 'black' 
-            }]
-        });
+    // Función de renderizado con parámetros de ancho y alto
+    const render = (w, h) => {
+        try {
+            functionPlot({
+                target: `#${id}`,
+                width: w,
+                height: h,
+                grid: true,
+                disableZoom: (mode !== 'SELECT'), // Solo zoom en modo selección
+                disablePan: (mode !== 'SELECT'),  // Solo mover en modo selección
+                data: [{ 
+                    fn: cleanFormula(exp), 
+                    color: 'black' 
+                }]
+            });
+        } catch (e) { console.error("Error render:", e); }
     };
 
-    // Renderizado inicial
-    render();
+    // Render inicial
+    render(350, 350);
 
-    // VIGILANTE DE TAMAÑO (Esto soluciona el espacio en blanco)
-    const ro = new ResizeObserver(() => {
-        // Obtenemos el nuevo tamaño del foreignObject tras estirarlo
-        const rect = fo.getBoundingClientRect();
-        // Solo redibujamos si el tamaño cambió significativamente para no saturar
-        fo.setAttribute("width", fo.clientWidth);
-        fo.setAttribute("height", fo.clientHeight);
-        render();
+    // OBSERVADOR MEJORADO: Con control de rebote para evitar el encogimiento
+    let resizeTimer;
+    const ro = new ResizeObserver(entries => {
+        for (let entry of entries) {
+            const { width, height } = entry.contentRect;
+            
+            // Si el tamaño es muy pequeño, no hacer nada
+            if (width < 50 || height < 50) return;
+
+            // Debounce: Esperamos 50ms antes de redibujar para que sea estable
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                // Actualizamos los atributos del foreignObject para que coincidan
+                fo.setAttribute("width", width);
+                fo.setAttribute("height", height);
+                render(width, height);
+            }, 50);
+        }
     });
     
-    ro.observe(fo); // Empezamos a vigilar el foreignObject
+    ro.observe(fo);
 
     hideGraphPanel();
     saveHistory();
 }
-
-// Modificar tu función setMode existente para que abra el panel
-const oldSetMode = setMode;
-window.setMode = function(m) {
-    oldSetMode(m);
-    if(m === 'GRAPH') showGraphPanel();
-    
-    // Bloquear interacción con gráficas si NO estamos en SELECT
-    const graphs = document.querySelectorAll('foreignObject');
-    graphs.forEach(g => {
-        g.style.pointerEvents = (m === 'SELECT') ? 'all' : 'none';
-    });
-};
-
     
         
     lucide.createIcons(); 
