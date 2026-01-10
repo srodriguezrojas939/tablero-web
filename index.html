@@ -740,6 +740,10 @@ input:checked + .slider:before {
         <i data-lucide="library"></i> <span>Símbolos</span>
     </button>
 
+        <button class="btn" onclick="addGraph()" title="Graficar">
+    <i data-lucide="trending-up"></i>
+</button>
+
     <div class="divider"></div>
 </div>
 
@@ -822,17 +826,17 @@ input:checked + .slider:before {
     <div class="side-panel-content">
         <div class="fig-card" onclick="selectFigure('RECT')" title="Rectángulo">
             <i data-lucide="square"></i>
-            <span class="fig-label">Rect</span>
+            <span class="fig-label">Rectangulo</span>
         </div>
         
         <div class="fig-card" onclick="selectFigure('CIRCLE')" title="Círculo">
             <i data-lucide="circle"></i>
-            <span class="fig-label">Circ</span>
+            <span class="fig-label">Circulo</span>
         </div>
         
         <div class="fig-card" onclick="selectFigure('TRI')" title="Triángulo">
             <i data-lucide="triangle"></i>
-            <span class="fig-label">Tri</span>
+            <span class="fig-label">Triangulo</span>
         </div>
         
         <div class="fig-card" onclick="selectFigure('COORD')" title="Coordenadas">
@@ -847,7 +851,7 @@ input:checked + .slider:before {
         <i data-lucide="move-right"></i><span class="fig-label">Flecha</span>
     </div>
     <div class="fig-card" onclick="selectFigure('PARABOLA')" title="Parábola">
-        <i data-lucide="spline"></i><span class="fig-label">Parab</span>
+        <i data-lucide="spline"></i><span class="fig-label">Parabola</span>
     </div>
 
     <div class="fig-card" onclick="selectFigure('CUBE')" title="Cubo">
@@ -857,7 +861,7 @@ input:checked + .slider:before {
         <i data-lucide="circle-dashed"></i><span class="fig-label">Esfera</span>
     </div>
     <div class="fig-card" onclick="selectFigure('CYLINDER')" title="Cilindro">
-        <i data-lucide="cylinder"></i><span class="fig-label">Cilin</span>
+        <i data-lucide="cylinder"></i><span class="fig-label">Cilindro</span>
     </div>
         
         </div>
@@ -1745,6 +1749,66 @@ function drawSphere(x, y, r) {
             A ${w/2} ${rh} 0 1 0 ${x+w} ${y+rh}`;
 }
 
+    function addGraph() {
+    let input = prompt("Introduce la función (usa 'x'):", "x^2");
+    if (!input) return;
+
+    // Truco: reemplaza x^2 por x**2 para que JS lo entienda
+    let formula = input.replace(/\^/g, "**");
+    // Prepara la fórmula para usar funciones de Math (sin, cos, etc)
+    formula = formula.replace(/(sin|cos|tan|sqrt|exp|log|PI)/g, "Math.$1");
+
+    const scale = 30; // 30 píxeles por cada unidad 1
+    const range = 10; // Dibujar de -10 a 10
+    const step = 0.1;
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+
+    try {
+        const mathFunc = new Function('x', `return ${formula};`);
+        
+        // Creamos un grupo para que todo (ejes + curva) sea un solo elemento
+        const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        group.classList.add('drawing-element', 'draggable');
+
+        // --- DIBUJAR EJES ---
+        const axes = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        axes.setAttribute("d", `M ${centerX - (range*scale)} ${centerY} H ${centerX + (range*scale)} 
+                                M ${centerX} ${centerY - (range*scale)} V ${centerY + (range*scale)}`);
+        axes.setAttribute("stroke", "#ccc");
+        axes.setAttribute("stroke-width", "1");
+        group.appendChild(axes);
+
+        // --- DIBUJAR CURVA ---
+        let pathData = "";
+        for (let x = -range; x <= range; x += step) {
+            const y = mathFunc(x);
+            const screenX = centerX + (x * scale);
+            const screenY = centerY - (y * scale);
+
+            if (isNaN(screenY) || Math.abs(screenY) > 5000) continue;
+
+            pathData += (pathData === "" ? "M" : "L") + ` ${screenX} ${screenY}`;
+        }
+
+        const curve = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        curve.setAttribute("d", pathData);
+        curve.setAttribute("stroke", currentColor);
+        curve.setAttribute("stroke-width", currentSize);
+        curve.setAttribute("fill", "none");
+        group.appendChild(curve);
+
+        layers.draw.appendChild(group);
+        saveHistory();
+        if(window.lucide) lucide.createIcons();
+
+    } catch (e) {
+        alert("Error: Verifica que la función esté bien escrita.");
+        console.error(e);
+    }
+}
+
+    
         
     lucide.createIcons(); 
     
