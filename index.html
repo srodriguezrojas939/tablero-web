@@ -1927,6 +1927,83 @@ function updateGraphLivePreview() {
     } catch(e) {}
 }
 
+    function insertGraphOnBoard() {
+    const exp = document.getElementById('graph-exp').value;
+    if(!exp) return;
+
+    const id = 'g' + Date.now();
+    const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+    
+    fo.setAttribute("x", 100); 
+    fo.setAttribute("y", 100);
+    fo.setAttribute("width", "350"); 
+    fo.setAttribute("height", "350");
+    fo.classList.add('drawing-element', 'draggable', 'graph-wrapper'); 
+
+    const div = document.createElement("div");
+    div.id = id;
+    div.className = "graph-widget-container";
+    div.style.width = "100%"; 
+    div.style.height = "100%";
+    div.style.position = "relative"; // Para que el PIN se ubique bien
+
+    // --- BOTÓN PIN ---
+    const pinBtn = document.createElement("div");
+    pinBtn.className = "pin-button";
+    pinBtn.innerHTML = `<i data-lucide="pin"></i>`;
+    pinBtn.title = "Fijar gráfica";
+    div.dataset.pinned = "false";
+    
+    pinBtn.onclick = (e) => {
+        e.stopPropagation();
+        toggleGraphPin(id, exp, div, pinBtn);
+    };
+    div.appendChild(pinBtn);
+    // -----------------
+
+    fo.appendChild(div);
+    layers.draw.appendChild(fo);
+
+    const render = (w, h) => {
+        const isPinned = div.dataset.pinned === "true";
+        try {
+            functionPlot({
+                target: `#${id}`,
+                width: w,
+                height: h,
+                grid: true,
+                disableZoom: isPinned,
+                disablePan: isPinned,
+                data: [{ 
+                    fn: cleanFormula(exp), 
+                    color: 'black' 
+                }]
+            });
+            if(window.lucide) lucide.createIcons();
+        } catch (e) { console.error("Error:", e); }
+    };
+
+    render(350, 350);
+
+    let timeout;
+    const ro = new ResizeObserver(entries => {
+        for (let entry of entries) {
+            const { width, height } = entry.contentRect;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                fo.setAttribute("width", width);
+                fo.setAttribute("height", height);
+                render(width, height);
+            }, 50);
+        }
+    });
+    
+    ro.observe(fo);
+
+    hideGraphPanel();
+    if(typeof saveHistory === 'function') saveHistory();
+}
+
 
 
 // Modificar tu función setMode existente para que abra el panel
