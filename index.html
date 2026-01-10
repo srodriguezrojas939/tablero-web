@@ -539,13 +539,27 @@ input:checked + .slider:before {
 }
 
 .figure-panel-narrow .side-panel-content {
-    padding: 5px;
+    padding: 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 15px;
-    overflow-y: auto; /* Habilita el scroll */
-    height: 100%;
+    
+    /* CORRECCIÓN: */
+    overflow-y: auto;      /* Habilita el scroll vertical */
+    overflow-x: hidden;    /* Evita que se mueva hacia los lados */
+    max-height: 80vh;      /* Altura máxima: 80% de la pantalla */
+    width: 100%;           /* Asegura que ocupe el ancho del panel */
+    box-sizing: border-box; /* Incluye el padding en el cálculo del ancho */
+}
+
+/* OPCIONAL: Haz que la barra de scroll sea más fina y moderna */
+.figure-panel-narrow .side-panel-content::-webkit-scrollbar {
+    width: 5px;
+}
+.figure-panel-narrow .side-panel-content::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
 }
 
 /* Tarjetas individuales dentro del panel */
