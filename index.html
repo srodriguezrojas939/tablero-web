@@ -986,21 +986,37 @@ let clipboard = [];
     
     if (figureModes.includes(mode)) {
         saveHistory();
+        
         if (mode === 'RECT') {
             currentEl = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        } else if (mode === 'CIRCLE') {
+            currentEl.setAttribute("x", pos.x);
+            currentEl.setAttribute("y", pos.y);
+        } 
+        else if (mode === 'CIRCLE') {
             currentEl = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            currentEl.setAttribute("cx", pos.x); currentEl.setAttribute("cy", pos.y);
-        } else if (mode === 'ELLIPSE') {
+            currentEl.setAttribute("cx", pos.x);
+            currentEl.setAttribute("cy", pos.y);
+        } 
+        else if (mode === 'ELLIPSE') {
             currentEl = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
-            currentEl.setAttribute("cx", pos.x); currentEl.setAttribute("cy", pos.y);
-        } else if (mode === 'ARROW') {
+            currentEl.setAttribute("cx", pos.x);
+            currentEl.setAttribute("cy", pos.y);
+        }
+        else if (mode === 'ARROW') {
             currentEl = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            currentEl.setAttribute("x1", pos.x); currentEl.setAttribute("y1", pos.y);
+            currentEl.setAttribute("x1", pos.x);
+            currentEl.setAttribute("y1", pos.y);
+            // Arreglo del "enganche": inicializamos el final en la misma posición
+            currentEl.setAttribute("x2", pos.x);
+            currentEl.setAttribute("y2", pos.y);
             currentEl.setAttribute("marker-end", "url(#arrowhead)");
-        } else if (mode === 'COORD') {
+        }
+        else if (mode === 'COORD') {
             currentEl = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        } else {
+            currentEl.classList.add('coord-system');
+        } 
+        else {
+            // TRI, CUBE, SPHERE, PARABOLA, CYLINDER usan <path>
             currentEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
         }
         
@@ -1055,35 +1071,32 @@ let clipboard = [];
             currentEl.setAttribute("d", `${d} L ${pos.x} ${pos.y}`);
         }
 
-    if (isAction && ['RECT', 'CIRCLE', 'TRI', 'COORD', 'ELLIPSE', 'ARROW', 'CUBE', 'SPHERE', 'PARABOLA', 'CYLINDER'].includes(mode) && currentEl) {
+if (isAction && ['RECT', 'CIRCLE', 'TRI', 'COORD', 'ELLIPSE', 'ARROW', 'CUBE', 'SPHERE', 'PARABOLA', 'CYLINDER'].includes(mode) && currentEl) {
         const w = Math.abs(pos.x - startPos.x);
         const h = Math.abs(pos.y - startPos.y);
         const x = Math.min(pos.x, startPos.x);
         const y = Math.min(pos.y, startPos.y);
 
         if (mode === 'RECT') {
-            currentEl.setAttribute("x", x); currentEl.setAttribute("y", y);
-            currentEl.setAttribute("width", w); currentEl.setAttribute("height", h);
+            currentEl.setAttribute("x", x); 
+            currentEl.setAttribute("y", y);
+            currentEl.setAttribute("width", w); 
+            currentEl.setAttribute("height", h);
         } else if (mode === 'CIRCLE') {
             const r = Math.sqrt(w*w + h*h);
-            currentEl.setAttribute("cx", startPos.x);
-            currentEl.setAttribute("cy", startPos.y);
             currentEl.setAttribute("r", r);
-        } else if (mode === 'TRI') {
-            currentEl.setAttribute("d", `M ${startPos.x} ${pos.y} L ${pos.x} ${pos.y} L ${pos.x} ${startPos.y} Z`);
-        } else if (mode === 'COORD') {
-            currentEl.setAttribute("data-w", w); 
-            currentEl.setAttribute("data-h", h);
-            drawCartesian(currentEl, x, y, w, h); }
-} else if (mode === 'ELLIPSE') {
-            currentEl.setAttribute('rx', Math.abs(pos.x - startPos.x));
-            currentEl.setAttribute('ry', Math.abs(pos.y - startPos.y));
+        } else if (mode === 'ELLIPSE') {
+            currentEl.setAttribute('rx', w);
+            currentEl.setAttribute('ry', h);
         } else if (mode === 'ARROW') {
             currentEl.setAttribute('x2', pos.x);
             currentEl.setAttribute('y2', pos.y);
+        } else if (mode === 'TRI') {
+            currentEl.setAttribute("d", `M ${startPos.x} ${pos.y} L ${pos.x} ${pos.y} L ${pos.x} ${startPos.y} Z`);
+        } else if (mode === 'COORD') {
+            drawCartesian(currentEl, x, y, w, h);
         } else if (mode === 'CUBE') {
-            const size = Math.abs(pos.x - startPos.x);
-            currentEl.setAttribute('d', drawCube(startPos.x, startPos.y, size));
+            currentEl.setAttribute('d', drawCube(startPos.x, startPos.y, w));
         } else if (mode === 'SPHERE') {
             const r = Math.sqrt(w*w + h*h);
             currentEl.setAttribute('d', drawSphere(startPos.x, startPos.y, r));
@@ -1094,7 +1107,6 @@ let clipboard = [];
         } else if (mode === 'CYLINDER') {
             currentEl.setAttribute('d', drawCylinder(x, y, w, h));
         }
-        
     }
         
 
@@ -1708,15 +1720,17 @@ function drawSphere(x, y, r) {
             M ${x-r} ${y} a ${r} ${r/3} 0 1 0 ${r*2} 0 a ${r} ${r/3} 0 1 0 ${-r*2} 0`;
 }
 
+
     function drawCylinder(x, y, w, h) {
-    const rh = h * 0.15; // altura de la tapa
+    const rh = h * 0.15; // Altura de la elipse de la tapa
     return `M ${x} ${y+rh} L ${x} ${y+h-rh} 
             A ${w/2} ${rh} 0 1 0 ${x+w} ${y+h-rh} 
             L ${x+w} ${y+rh} 
             A ${w/2} ${rh} 0 1 0 ${x} ${y+rh} 
             A ${w/2} ${rh} 0 1 0 ${x+w} ${y+rh}`;
 }
-    
+
+        
     lucide.createIcons(); 
     
 </script>
