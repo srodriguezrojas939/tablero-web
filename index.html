@@ -913,22 +913,17 @@ let clipboard = [];
     return { x, y };
 }
 
-    function setMode(m) {
+  function setMode(m) {
     mode = m;
     document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
     
-    // VALIDACIÓN: Solo intenta activar el botón si realmente existe el ID
+    // El "if(btn)" evita que el código explote si el botón no existe
     const btn = document.getElementById('btn-' + m);
-    if (btn) {
-        btn.classList.add('active');
-    }
+    if (btn) btn.classList.add('active');
 
     const viewport = document.getElementById('viewport');
-    if (m === 'ERASER') {
-        viewport.classList.add('eraser-active');
-    } else {
-        viewport.classList.remove('eraser-active');
-    }
+    if (m === 'ERASER') viewport.classList.add('eraser-active');
+    else viewport.classList.remove('eraser-active');
 }
 
     /* =========================================
@@ -987,45 +982,28 @@ let clipboard = [];
         return;
     }
 
-    // --- BLOQUE DE FIGURAS (Corregido y Ampliado) ---
-    const figureModes = ['RECT', 'CIRCLE', 'TRI', 'COORD', 'ELLIPSE', 'ARROW', 'CUBE', 'SPHERE', 'PARABOLA', 'CYLINDER'];
+  const figureModes = ['RECT', 'CIRCLE', 'TRI', 'COORD', 'ELLIPSE', 'ARROW', 'CUBE', 'SPHERE', 'PARABOLA', 'CYLINDER'];
     
     if (figureModes.includes(mode)) {
         saveHistory();
-        
         if (mode === 'RECT') {
             currentEl = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            currentEl.setAttribute("x", pos.x);
-            currentEl.setAttribute("y", pos.y);
-        } 
-        else if (mode === 'CIRCLE') {
+        } else if (mode === 'CIRCLE') {
             currentEl = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            currentEl.setAttribute("cx", pos.x);
-            currentEl.setAttribute("cy", pos.y);
-        } 
-        else if (mode === 'ELLIPSE') {
+            currentEl.setAttribute("cx", pos.x); currentEl.setAttribute("cy", pos.y);
+        } else if (mode === 'ELLIPSE') {
             currentEl = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
-            currentEl.setAttribute("cx", pos.x);
-            currentEl.setAttribute("cy", pos.y);
-        }
-        else if (mode === 'ARROW') {
+            currentEl.setAttribute("cx", pos.x); currentEl.setAttribute("cy", pos.y);
+        } else if (mode === 'ARROW') {
             currentEl = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            currentEl.setAttribute("x1", pos.x);
-            currentEl.setAttribute("y1", pos.y);
-            currentEl.setAttribute("x2", pos.x);
-            currentEl.setAttribute("y2", pos.y);
-            currentEl.setAttribute("marker-end", "url(#arrowhead)"); // Punta de flecha
-        }
-        else if (mode === 'COORD') {
+            currentEl.setAttribute("x1", pos.x); currentEl.setAttribute("y1", pos.y);
+            currentEl.setAttribute("marker-end", "url(#arrowhead)");
+        } else if (mode === 'COORD') {
             currentEl = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            currentEl.classList.add('coord-system');
-        } 
-        else {
-            // TRI, CUBE, SPHERE, PARABOLA, CYLINDER usan <path>
+        } else {
             currentEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
         }
         
-        // Configuración común para todas las figuras
         currentEl.classList.add('drawing-element', 'draggable');
         layers.draw.appendChild(currentEl);
     }
