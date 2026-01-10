@@ -641,37 +641,127 @@ input:checked + .slider:before {
 }
 
 
-    .graph-widget-container {
-    background: white;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    cursor: move;
-    position: absolute;
-    /* Esto permite redimensionar desde la esquina */
-    resize: both; 
-    overflow: hidden;
-    min-width: 300px;
-    min-height: 300px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-
+   /* --- ESTILOS DE LA BARRA DE ENTRADA (Monocromática) --- */
 #graph-input-bar {
     position: fixed;
-    top: 20px;
+    top: 80px; /* Un poco más abajo del header */
     left: 50%;
     transform: translateX(-50%);
     z-index: 2000;
     background: white;
-    padding: 10px 20px;
-    border-radius: 50px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-    display: none; /* Se activa con el botón */
+    padding: 8px 15px;
+    border-radius: 6px; /* Bordes menos redondeados, más serio */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    display: none;
     gap: 10px;
     align-items: center;
-    border: 2px solid var(--accent);
+    border: 1px solid #ccc; /* Borde gris sutil, NADA DE AZUL */
+    font-family: 'Open Sans', sans-serif;
+    transition: all 0.3s ease;
 }
 
-    
+/* Clase de error para cuando la función no es válida */
+#graph-input-bar.input-error {
+    border-color: #d9534f; /* Rojo sutil solo en caso de error */
+    animation: shake 0.4s ease-in-out;
+}
+
+/* Botón de Insertar en negro/gris */
+#btn-insert-graph {
+    background: #333; 
+    color: white; 
+    border: none; 
+    border-radius: 4px; 
+    padding: 6px 12px; 
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+#btn-insert-graph:hover { background: #555; }
+
+/* Botón de cerrar (X) */
+#btn-close-graph {
+    background: none; border: none; color: #999; font-size: 16px; cursor: pointer;
+}
+#btn-close-graph:hover { color: #333; }
+
+
+/* --- ESTILOS INTERNOS DE LA GRÁFICA (Function-Plot) --- */
+
+/* Contenedor del widget */
+.graph-widget-container {
+    background: white;
+    border: 1px solid #ddd; /* Borde gris claro */
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    /* IMPORTANTE: Esto evita que el ratón interactúe con la gráfica interna
+       cuando no estás usando el selector, permitiendo rayar encima */
+    pointer-events: none; 
+}
+/* Pero permitimos que el contenedor principal sí reciba eventos para poder moverlo */
+.drawing-element.draggable foreignObject {
+     pointer-events: none;
+}
+.drawing-element.draggable:hover foreignObject {
+     /* Cuando pasamos el mouse con el selector, habilitamos para que funcione el resize */
+     pointer-events: auto;
+}
+
+/* ESTILO DE LOS NÚMEROS Y EJES (Más finos y legibles) */
+.graph-widget-container .axis text {
+    font-family: 'Open Sans', sans-serif !important;
+    font-weight: 400 !important; /* 400 es normal, si lo quieres más fino usa 300 */
+    font-size: 11px !important;
+    fill: #666 !important; /* Color gris oscuro, no negro puro */
+    stroke: none; /* Quita el contorno que lo hace ver en negrita */
+}
+
+.graph-widget-container .axis path,
+.graph-widget-container .axis line {
+    stroke: #ddd; /* Líneas de los ejes más sutiles */
+}
+
+/* Animación de error (sacudida) */
+@keyframes shake {
+  0%, 100% { transform: translateX(-50%); }
+  20%, 60% { transform: translateX(calc(-50% - 5px)); }
+  40%, 80% { transform: translateX(calc(-50% + 5px)); }
+}
+    #graph-input-bar button {
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    color: #333;
+    transition: all 0.2s;
+}
+
+#graph-input-bar button:hover {
+    background: #eeeeee;
+    border-color: #bbb;
+}
+
+#btn-insert-graph {
+    background: #333 !important;
+    color: white !important;
+    padding: 6px 15px !important;
+}
+
+/* Números y ejes de la gráfica más delgados */
+.graph-widget-container text {
+    font-family: 'Open Sans', sans-serif !important;
+    font-weight: 300 !important; /* Más delgado */
+    font-size: 10px !important;
+    fill: #888 !important;
+}
+
+/* Bloquear interacción con el SVG interno para que no haga zoom al rayar */
+.graph-widget-container svg {
+    pointer-events: none !important;
+}
     
     
 </style>
@@ -1804,9 +1894,97 @@ function drawSphere(x, y, r) {
 }
 
 function insertGraphObject() {
+    const inputBar = document.getElementById('graph-input-bar');
     const expression = document.getElementById('func-exp').value;
-    if (!expression) return;
 
+    // Validación simple sin popup
+    if (!expression.trim()) {
+        triggerGraphError();
+        return;
+    }
+
+    const graphId = 'graph-' + Date.now();
+    
+    // 1. Crear el contenedor resizeable (foreignObject)
+    const foreignObject = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+    foreignObject.setAttribute("x", window.innerWidth / 2 - 200); // Centrado
+    foreignObject.setAttribute("y", window.innerHeight / 2 - 150);
+    // Establecemos un tamaño inicial fijo. El CSS se encargará del redimensionado.
+    foreignObject.setAttribute("width", "400"); 
+    foreignObject.setAttribute("height", "300");
+    
+    // Clase 'draggable' para que tu selector lo mueva.
+    // Clase 'graph-wrapper' para el CSS de resize.
+    foreignObject.classList.add('drawing-element', 'draggable', 'graph-wrapper');
+    
+    // 2. El div interno donde la librería dibuja
+    const container = document.createElement("div");
+    container.className = "graph-widget-container";
+    container.id = graphId;
+    
+    foreignObject.appendChild(container);
+    layers.draw.appendChild(foreignObject);
+
+    try {
+        // 3. Configuración de la librería (Aquí está la clave del bloqueo)
+        const options = {
+            target: `#${graphId}`,
+            width: 400,
+            height: 300,
+            grid: true,
+            // IMPORTANTE: DESACTIVAR ZOOM Y PAN INTERNO
+            disableZoom: true,
+            disablePan: true,
+            xAxis: { domain: [-10, 10] }, // Rango fijo inicial
+            yAxis: { domain: [-10, 10] },
+            data: [{
+                fn: expression.replace(/\^/g, "**").replace(/(sin|cos|tan|sqrt|abs|log|exp|pi)/g, "Math.$1"),
+                sampler: 'builtIn',
+                graphType: 'polyline',
+                color: 'black' // La línea de la gráfica en negro
+            }]
+        };
+
+        // Renderizar
+        functionPlot(options);
+        
+        // Observer para manejar el redimensionado del div y actualizar la gráfica
+        new ResizeObserver(entries => {
+            for (let entry of entries) {
+                const w = entry.contentRect.width;
+                const h = entry.contentRect.height;
+                // Sincronizamos el foreignObject con el div
+                foreignObject.setAttribute("width", w);
+                foreignObject.setAttribute("height", h);
+                
+                // Actualizamos la gráfica con el nuevo tamaño, manteniendo el bloqueo
+                options.width = w;
+                options.height = h;
+                functionPlot(options);
+            }
+        }).observe(foreignObject); // Observamos el foreignObject que es el que tiene el resize CSS
+
+        saveHistory();
+        toggleGraphBar(); // Cerrar barra
+        document.getElementById('func-exp').value = ""; // Limpiar
+
+    } catch (e) {
+        console.error("Error al graficar:", e);
+        // Si falla, borramos el contenedor creado y mostramos error visual
+        foreignObject.remove();
+        triggerGraphError();
+    }
+}
+
+// Función auxiliar para mostrar error visual sin popup
+function triggerGraphError() {
+    const inputBar = document.getElementById('graph-input-bar');
+    inputBar.classList.add('input-error');
+    // Quitar la clase de error después de la animación (0.5s)
+    setTimeout(() => {
+        inputBar.classList.remove('input-error');
+    }, 500);
+}
     // Crear un ID único para esta gráfica
     const graphId = 'graph-' + Date.now();
     
@@ -1865,7 +2043,117 @@ function insertGraphObject() {
     }
 }
 
+// Listener para la previsualización en tiempo real
+document.getElementById('func-exp')?.addEventListener('input', function(e) {
+    updatePreview(e.target.value);
+});
 
+function addSymbol(sym) {
+    const input = document.getElementById('func-exp');
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const text = input.value;
+    
+    // Insertar el símbolo en la posición del cursor
+    input.value = text.slice(0, start) + sym + text.slice(end);
+    input.focus();
+    
+    // Si el símbolo tiene paréntesis, poner el cursor en medio
+    if (sym.includes('()')) {
+        input.setSelectionRange(start + sym.length - 1, start + sym.length - 1);
+    } else {
+        input.setSelectionRange(start + sym.length, start + sym.length);
+    }
+    updatePreview(input.value);
+}
+
+function updatePreview(val) {
+    if (!val) return;
+    try {
+        functionPlot({
+            target: '#graph-preview',
+            width: 100,
+            height: 100,
+            disableZoom: true,
+            disablePan: true,
+            xAxis: { domain: [-6, 6] },
+            yAxis: { domain: [-6, 6] },
+            data: [{
+                fn: formatFormula(val),
+                color: '#333'
+            }]
+        });
+    } catch (e) { /* Error silencioso en el preview */ }
+}
+
+// Limpia la fórmula para que la librería la entienda
+function formatFormula(f) {
+    return f.toLowerCase()
+        .replace(/ln/g, "log") // En JS Math.log es Natural
+        .replace(/\^/g, "**")
+        .replace(/sqrt/g, "Math.sqrt")
+        .replace(/sin/g, "Math.sin")
+        .replace(/cos/g, "Math.cos")
+        .replace(/tan/g, "Math.tan");
+}
+
+function insertGraphObject() {
+    const expression = document.getElementById('func-exp').value;
+    if (!expression) { triggerGraphError(); return; }
+
+    const graphId = 'graph-' + Date.now();
+    const foreignObject = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+    
+    // Configuración inicial
+    foreignObject.setAttribute("x", 150);
+    foreignObject.setAttribute("y", 150);
+    foreignObject.setAttribute("width", "400");
+    foreignObject.setAttribute("height", "400");
+    foreignObject.classList.add('drawing-element', 'draggable', 'graph-wrapper');
+
+    const container = document.createElement("div");
+    container.className = "graph-widget-container";
+    container.id = graphId;
+    foreignObject.appendChild(container);
+    layers.draw.appendChild(foreignObject);
+
+    try {
+        const options = {
+            target: `#${graphId}`,
+            width: 400,
+            height: 400,
+            grid: true,
+            disableZoom: true, // Bloqueo de zoom
+            disablePan: true,  // Bloqueo de movimiento interno
+            data: [{
+                fn: formatFormula(expression),
+                color: 'black'
+            }]
+        };
+
+        functionPlot(options);
+
+        // Observer para redimensionar
+        new ResizeObserver(entries => {
+            for (let entry of entries) {
+                const w = entry.contentRect.width;
+                const h = entry.contentRect.height;
+                foreignObject.setAttribute("width", w);
+                foreignObject.setAttribute("height", h);
+                options.width = w;
+                options.height = h;
+                functionPlot(options);
+            }
+        }).observe(foreignObject);
+
+        saveHistory();
+        toggleGraphBar();
+        document.getElementById('func-exp').value = "";
+    } catch (e) {
+        foreignObject.remove();
+        triggerGraphError();
+    }
+}
     
         
     lucide.createIcons(); 
@@ -1874,14 +2162,34 @@ function insertGraphObject() {
 
     <div id="status-msg" style="position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 10px 20px; border-radius: 50px; font-size: 13px; display: none; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.2);"></div>
 
-    <div id="graph-input-bar">
-    <span style="font-weight: bold;">f(x) =</span>
-    <input type="text" id="func-exp" placeholder="x^2, sin(x), sqrt(x)..." 
-           style="border:none; outline:none; font-size: 16px; width: 200px;">
-    <button class="btn" onclick="insertGraphObject()" style="background: var(--accent); color: white; border-radius: 20px; padding: 5px 15px;">
-        Insertar
-    </button>
-    <button onclick="toggleGraphBar()" style="background: none; border: none; cursor: pointer;">✕</button>
+ <div id="graph-input-bar" style="display: none; flex-direction: column; width: 320px; padding: 15px;">
+    <div style="display: flex; gap: 10px; align-items: flex-start;">
+        <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 10px;">
+                <span style="font-weight: 600; color: #333;">f(x) =</span>
+                <input type="text" id="func-exp" placeholder="x^2 + sin(x)" 
+                       style="border: 1px solid #ccc; outline:none; font-size: 14px; width: 100%; padding: 6px; border-radius: 4px;">
+            </div>
+            
+            <div id="math-shortcuts" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 10px;">
+                <button onclick="addSymbol('^2')">x²</button>
+                <button onclick="addSymbol('^')">^</button>
+                <button onclick="addSymbol('sqrt()')">√</button>
+                <button onclick="addSymbol('ln()')">ln</button>
+                <button onclick="addSymbol('sin()')">sin</button>
+                <button onclick="addSymbol('cos()')">cos</button>
+                <button onclick="addSymbol('()')">( )</button>
+                <button onclick="addSymbol('/')">/</button>
+            </div>
+        </div>
+
+        <div id="graph-preview" style="width: 100px; height: 100px; border: 1px solid #eee; background: #fafafa; border-radius: 4px;"></div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px; border-top: 1px solid #eee; padding-top: 10px;">
+        <button id="btn-close-graph" onclick="toggleGraphBar()" style="font-size: 12px; color: #888; background: none; border: none; cursor: pointer;">Cancelar</button>
+        <button id="btn-insert-graph" onclick="insertGraphObject()" style="font-weight: 600;">Insertar en Tablero</button>
+    </div>
 </div>
 
     
