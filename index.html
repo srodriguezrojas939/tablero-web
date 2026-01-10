@@ -717,6 +717,31 @@ body.mode-SELECT foreignObject {
     min-height: 100px;
 }
 
+    .pin-button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 28px;
+    height: 28px;
+    background: white;
+    border: 1px solid #E5E5E5;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 20;
+    color: #333;
+    transition: all 0.2s;
+}
+.pin-button:hover {
+    background: #f0f0f0;
+}
+.pin-button.pinned {
+    background: #000;
+    color: #fff;
+}
+
     
     
 </style>
@@ -1902,73 +1927,25 @@ function updateGraphLivePreview() {
     } catch(e) {}
 }
 
-function insertGraphOnBoard() {
-    const exp = document.getElementById('graph-exp').value;
-    if(!exp) return;
-
-    const id = 'g' + Date.now();
-    const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-    
-    // Posición inicial y clase para permitir el redimensionado
-    fo.setAttribute("x", 100); 
-    fo.setAttribute("y", 100);
-    fo.setAttribute("width", "350"); 
-    fo.setAttribute("height", "350");
-    // Añadimos 'graph-wrapper' que tiene el 'resize: both' en tu CSS [cite: 120]
-    fo.classList.add('drawing-element', 'draggable', 'graph-wrapper'); 
-
-    const div = document.createElement("div");
-    div.id = id;
-    div.className = "graph-widget-container";
-    div.style.width = "100%"; 
-    div.style.height = "100%";
-    
-    fo.appendChild(div);
-    layers.draw.appendChild(fo);
-
-    // Función para renderizar la gráfica con dimensiones dinámicas
-    const render = (w, h) => {
-        try {
-            functionPlot({
-                target: `#${id}`,
-                width: w,
-                height: h,
-                grid: true,
-                data: [{ 
-                    fn: cleanFormula(exp), 
-                    color: 'black' 
-                }]
-            });
-        } catch (e) { console.error("Error al graficar:", e); }
-    };
-
-    // Primer dibujo
-    render(350, 350);
-
-    // EL OBSERVADOR: Detecta cuando estiras el recuadro y redibuja la gráfica
-    let timeout;
-    const ro = new ResizeObserver(entries => {
-        for (let entry of entries) {
-            // Obtenemos el nuevo tamaño del recuadro
-            const { width, height } = entry.contentRect;
-            
-            // Evitamos redibujar mil veces por segundo (debounce)
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                // Actualizamos los atributos del SVG para que no se corte
-                fo.setAttribute("width", width);
-                fo.setAttribute("height", height);
-                // Redibujamos la gráfica con el nuevo tamaño
-                render(width, height);
-            }, 50);
-        }
-    });
-    
-    ro.observe(fo); // Empezamos a vigilar este recuadro
-
-    hideGraphPanel();
-    if(typeof saveHistory === 'function') saveHistory();
+.pin-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    background: white;
+    border: 1px solid #E5E5E5;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    color: #333;
+    transition: all 0.2s;
 }
+.pin-button:hover { background: #f5f5f5; }
+.pin-button.pinned { background: #000; color: #fff; border-color: #000; }
 
 // Modificar tu función setMode existente para que abra el panel
 const oldSetMode = setMode;
@@ -1983,8 +1960,33 @@ window.setMode = function(m) {
     });
 };
 
+
     
-        
+    function toggleGraphPin(id, exp, container, btn) {
+    const isPinned = container.dataset.pinned === "true";
+    const newState = !isPinned;
+    
+    // Guardamos el nuevo estado
+    container.dataset.pinned = newState.toString();
+    
+    // Cambiamos el icono y color
+    btn.classList.toggle('pinned', newState);
+    btn.innerHTML = newState ? `<i data-lucide="pin-off"></i>` : `<i data-lucide="pin"></i>`;
+    
+    // Re-renderizamos con las dimensiones actuales
+    const rect = container.getBoundingClientRect();
+    functionPlot({
+        target: `#${id}`,
+        width: rect.width,
+        height: rect.height,
+        grid: true,
+        disableZoom: newState,
+        disablePan: newState,
+        data: [{ fn: cleanFormula(exp), color: 'black' }]
+    });
+    
+    lucide.createIcons();
+}        
     lucide.createIcons(); 
     
 </script>
