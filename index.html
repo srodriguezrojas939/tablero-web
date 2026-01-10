@@ -1927,17 +1927,19 @@ function updateGraphLivePreview() {
     } catch(e) {}
 }
 
-    function insertGraphOnBoard() {
+  function insertGraphOnBoard() {
     const exp = document.getElementById('graph-exp').value;
     if(!exp) return;
 
     const id = 'g' + Date.now();
     const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
     
+    // 1. Configuración del contenedor SVG (ForeignObject)
     fo.setAttribute("x", 100); 
     fo.setAttribute("y", 100);
     fo.setAttribute("width", "350"); 
     fo.setAttribute("height", "350");
+    // Mantenemos tus clases originales para el selector y el redimensionado
     fo.classList.add('drawing-element', 'draggable', 'graph-wrapper'); 
 
     const div = document.createElement("div");
@@ -1945,65 +1947,77 @@ function updateGraphLivePreview() {
     div.className = "graph-widget-container";
     div.style.width = "100%"; 
     div.style.height = "100%";
-    div.style.position = "relative"; // Para que el PIN se ubique bien
+    div.style.position = "relative"; // Crucial para que el botón PIN no flote fuera
+    div.dataset.pinned = "false";    // Estado inicial: Desbloqueado
 
-    // --- BOTÓN PIN ---
+    // 2. Creación del botón PIN (Añadido con extremo cuidado)
     const pinBtn = document.createElement("div");
     pinBtn.className = "pin-button";
     pinBtn.innerHTML = `<i data-lucide="pin"></i>`;
     pinBtn.title = "Fijar gráfica";
-    div.dataset.pinned = "false";
     
+    // Lógica del botón integrada para que no se rompa
     pinBtn.onclick = (e) => {
-        e.stopPropagation();
-        toggleGraphPin(id, exp, div, pinBtn);
+        e.stopPropagation(); // Evita que el selector del tablero se active
+        const isCurrentlyPinned = div.dataset.pinned === "true";
+        const newState = !isCurrentlyPinned;
+        
+        div.dataset.pinned = newState.toString();
+        pinBtn.classList.toggle('pinned', newState);
+        pinBtn.innerHTML = newState ? `<i data-lucide="pin-off"></i>` : `<i data-lucide="pin"></i>`;
+        
+        // Redibujamos inmediatamente para aplicar el bloqueo de zoom/pan
+        render();
     };
     div.appendChild(pinBtn);
-    // -----------------
 
     fo.appendChild(div);
     layers.draw.appendChild(fo);
 
-    const render = (w, h) => {
+    // 3. Función de renderizado (Tu lógica original mejorada)
+    const render = () => {
+        const w = fo.getAttribute("width");
+        const h = fo.getAttribute("height");
         const isPinned = div.dataset.pinned === "true";
+
         try {
             functionPlot({
                 target: `#${id}`,
                 width: w,
                 height: h,
                 grid: true,
-                disableZoom: isPinned,
-                disablePan: isPinned,
+                disableZoom: isPinned, // Bloquea interacción interna si está en "pin"
+                disablePan: isPinned,  // Bloquea movimiento interno si está en "pin"
                 data: [{ 
                     fn: cleanFormula(exp), 
                     color: 'black' 
                 }]
             });
+            // Refresca los iconos de Lucide (el pin)
             if(window.lucide) lucide.createIcons();
-        } catch (e) { console.error("Error:", e); }
+        } catch (e) { console.error("Error al graficar:", e); }
     };
 
-    render(350, 350);
+    // 4. Dibujo inicial
+    render();
 
+    // 5. El Observador de escala (Tu lógica de redimensionado intacta)
     let timeout;
-    const ro = new ResizeObserver(entries => {
-        for (let entry of entries) {
-            const { width, height } = entry.contentRect;
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                fo.setAttribute("width", width);
-                fo.setAttribute("height", height);
-                render(width, height);
-            }, 50);
-        }
+    const ro = new ResizeObserver(() => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            // Sincroniza el tamaño del SVG con el del recuadro estirado
+            fo.setAttribute("width", div.clientWidth);
+            fo.setAttribute("height", div.clientHeight);
+            render();
+        }, 50);
     });
-    
-    ro.observe(fo);
+    ro.observe(div);
 
+    // 6. Limpieza final (Tus funciones originales)
     hideGraphPanel();
     if(typeof saveHistory === 'function') saveHistory();
 }
-
 
 
 // Modificar tu función setMode existente para que abra el panel
