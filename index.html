@@ -4,7 +4,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;1,400&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tablero v5</title>
+    <title>Tablero v6</title>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -546,7 +546,7 @@ input:checked + .slider:before {
 
     <div class="header-tools">
 
-          <button class="btn-mini btn-danger" onclick="clearEverything()" title="Eliminar Todo">x</button>
+          <button class="btn-mini btn-danger" onclick="clearEverything()" title="Eliminar Todo"> ✕ </button>
     
     <div class="mini-divider"></div>
         <button class="btn-mini" onclick="undo()" title="Deshacer">⟲</button>
@@ -554,14 +554,14 @@ input:checked + .slider:before {
         <div class="mini-divider"></div>
 
          <button class="btn-mini" onclick="toggleFullScreen()" title="Pantalla Completa" style="margin-left: 4px;">
-        🗗
+        🗖
     </button>
 
          <div class="snap-mini" style="display: flex; align-items: center; gap: 8px;">
 
         <div class="dropdown" style="position: relative; display: inline-block;">
     <button class="btn-mini" onclick="toggleDownloadMenu()" title="Descargar">
-        ⎘ 
+        🗐
     </button>
     <div id="download-menu" class="dropdown-content">
         <button onclick="downloadBoard('png')"> 🗐  Descargar PNG</button>
