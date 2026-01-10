@@ -712,7 +712,9 @@ body.mode-SELECT foreignObject {
 .graph-wrapper {
     outline: none;
     resize: both;
-    overflow: visible;
+    overflow: hidden !important;
+    min-width: 100px;
+    min-height: 100px;
 }
 
     
@@ -1900,34 +1902,72 @@ function updateGraphLivePreview() {
     } catch(e) {}
 }
 
-// 5. Insertar en el tablero
 function insertGraphOnBoard() {
     const exp = document.getElementById('graph-exp').value;
     if(!exp) return;
 
     const id = 'g' + Date.now();
     const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-    fo.setAttribute("x", 100); fo.setAttribute("y", 100);
-    fo.setAttribute("width", "350"); fo.setAttribute("height", "350");
-    fo.classList.add('drawing-element', 'draggable'); // Para que se pueda mover con tu selector
+    
+    // Posición inicial y clase para permitir el redimensionado
+    fo.setAttribute("x", 100); 
+    fo.setAttribute("y", 100);
+    fo.setAttribute("width", "350"); 
+    fo.setAttribute("height", "350");
+    // Añadimos 'graph-wrapper' que tiene el 'resize: both' en tu CSS [cite: 120]
+    fo.classList.add('drawing-element', 'draggable', 'graph-wrapper'); 
 
     const div = document.createElement("div");
     div.id = id;
-    div.style.width = "100%"; div.style.height = "100%";
-    div.style.background = "white"; div.style.border = "1px solid #E5E5E5";
+    div.className = "graph-widget-container";
+    div.style.width = "100%"; 
+    div.style.height = "100%";
     
     fo.appendChild(div);
     layers.draw.appendChild(fo);
 
-    functionPlot({
-        target: `#${id}`,
-        width: 350, height: 350,
-        grid: true,
-        data: [{ fn: cleanFormula(exp), color: 'black' }]
+    // Función para renderizar la gráfica con dimensiones dinámicas
+    const render = (w, h) => {
+        try {
+            functionPlot({
+                target: `#${id}`,
+                width: w,
+                height: h,
+                grid: true,
+                data: [{ 
+                    fn: cleanFormula(exp), 
+                    color: 'black' 
+                }]
+            });
+        } catch (e) { console.error("Error al graficar:", e); }
+    };
+
+    // Primer dibujo
+    render(350, 350);
+
+    // EL OBSERVADOR: Detecta cuando estiras el recuadro y redibuja la gráfica
+    let timeout;
+    const ro = new ResizeObserver(entries => {
+        for (let entry of entries) {
+            // Obtenemos el nuevo tamaño del recuadro
+            const { width, height } = entry.contentRect;
+            
+            // Evitamos redibujar mil veces por segundo (debounce)
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                // Actualizamos los atributos del SVG para que no se corte
+                fo.setAttribute("width", width);
+                fo.setAttribute("height", height);
+                // Redibujamos la gráfica con el nuevo tamaño
+                render(width, height);
+            }, 50);
+        }
     });
+    
+    ro.observe(fo); // Empezamos a vigilar este recuadro
 
     hideGraphPanel();
-    saveHistory();
+    if(typeof saveHistory === 'function') saveHistory();
 }
 
 // Modificar tu función setMode existente para que abra el panel
