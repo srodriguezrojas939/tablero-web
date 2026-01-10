@@ -810,10 +810,30 @@ input:checked + .slider:before {
         </div>
         
         <div class="fig-card" onclick="selectFigure('COORD')" title="Coordenadas">
-            <i data-lucide="crosshair"></i>
+            <i data-lucide="move"></i>
             <span class="fig-label">Ejes</span>
         </div>
+        <div class="fig-card" onclick="selectFigure('ELLIPSE')" title="Elipse">
+        <i data-lucide="oval"></i><span class="fig-label">Elipse</span>
+    </div>
 
+    <div class="fig-card" onclick="selectFigure('ARROW')" title="Flecha">
+        <i data-lucide="move-right"></i><span class="fig-label">Flecha</span>
+    </div>
+    <div class="fig-card" onclick="selectFigure('PARABOLA')" title="Parábola">
+        <i data-lucide="spline"></i><span class="fig-label">Parab</span>
+    </div>
+
+    <div class="fig-card" onclick="selectFigure('CUBE')" title="Cubo">
+        <i data-lucide="box"></i><span class="fig-label">Cubo</span>
+    </div>
+    <div class="fig-card" onclick="selectFigure('SPHERE')" title="Esfera">
+        <i data-lucide="circle-dashed"></i><span class="fig-label">Esfera</span>
+    </div>
+    <div class="fig-card" onclick="selectFigure('CYLINDER')" title="Cilindro">
+        <i data-lucide="cylinder"></i><span class="fig-label">Cilin</span>
+    </div>
+        
         </div>
 </div>
     
@@ -1020,7 +1040,7 @@ let clipboard = [];
             currentEl.setAttribute("d", `${d} L ${pos.x} ${pos.y}`);
         }
 
-    if (isAction && ['RECT', 'CIRCLE', 'TRI', 'COORD'].includes(mode) && currentEl) {
+    if (isAction && ['RECT', 'CIRCLE', 'TRI', 'COORD', 'ELLIPSE', 'ARROW', 'CUBE', 'SPHERE', 'PARABOLA', 'CYLINDER'].includes(mode) && currentEl) {
         const w = Math.abs(pos.x - startPos.x);
         const h = Math.abs(pos.y - startPos.y);
         const x = Math.min(pos.x, startPos.x);
@@ -1039,9 +1059,29 @@ let clipboard = [];
         } else if (mode === 'COORD') {
             currentEl.setAttribute("data-w", w); 
             currentEl.setAttribute("data-h", h);
-            drawCartesian(currentEl, x, y, w, h);
+            drawCartesian(currentEl, x, y, w, h); }
+} else if (mode === 'ELLIPSE') {
+            currentEl.setAttribute('rx', Math.abs(pos.x - startPos.x));
+            currentEl.setAttribute('ry', Math.abs(pos.y - startPos.y));
+        } else if (mode === 'ARROW') {
+            currentEl.setAttribute('x2', pos.x);
+            currentEl.setAttribute('y2', pos.y);
+        } else if (mode === 'CUBE') {
+            const size = Math.abs(pos.x - startPos.x);
+            currentEl.setAttribute('d', drawCube(startPos.x, startPos.y, size));
+        } else if (mode === 'SPHERE') {
+            const r = Math.sqrt(w*w + h*h);
+            currentEl.setAttribute('d', drawSphere(startPos.x, startPos.y, r));
+        } else if (mode === 'PARABOLA') {
+            const pw = pos.x - startPos.x;
+            const ph = pos.y - startPos.y;
+            currentEl.setAttribute('d', `M ${startPos.x-pw} ${startPos.y} Q ${startPos.x} ${startPos.y+ph*2} ${startPos.x+pw} ${startPos.y}`);
+        } else if (mode === 'CYLINDER') {
+            currentEl.setAttribute('d', drawCylinder(x, y, w, h));
         }
+        
     }
+        
     }
 
     function onEnd() {
@@ -1639,6 +1679,22 @@ function selectFigure(mode) {
     toggleFiguresPanel(); // Cierra el panel
 }
 
+    function drawCube(x, y, s) {
+    const offset = s * 0.4;
+    return `M ${x} ${y} h ${s} v ${s} h ${-s} Z 
+            M ${x+offset} ${y-offset} h ${s} v ${s} h ${-s} Z 
+            M ${x} ${y} L ${x+offset} ${y-offset} 
+            M ${x+s} ${y} L ${x+s+offset} ${y-offset} 
+            M ${x} ${y+s} L ${x+offset} ${y+s-offset} 
+            M ${x+s} ${y+s} L ${x+s+offset} ${y+s-offset}`;
+}
+
+function drawSphere(x, y, r) {
+    return `M ${x-r} ${y} a ${r} ${r} 0 1 0 ${r*2} 0 a ${r} ${r} 0 1 0 ${-r*2} 0 
+            M ${x-r} ${y} a ${r} ${r/3} 0 1 0 ${r*2} 0 a ${r} ${r/3} 0 1 0 ${-r*2} 0`;
+}
+
+    
     
     lucide.createIcons(); 
     
