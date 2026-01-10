@@ -11,6 +11,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/d3@7"></script>
+<script src="https://unpkg.com/function-plot/dist/function-plot.js"></script>
     
 <style>
     :root {
@@ -637,6 +639,39 @@ input:checked + .slider:before {
 .eraser-active {
     cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewbox="0 0 20 20"><rect x="0" y="0" width="18" height="18" fill="white" stroke="black" stroke-width="1"/></svg>') 10 10, auto !important;
 }
+
+
+    .graph-widget-container {
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    cursor: move;
+    position: absolute;
+    /* Esto permite redimensionar desde la esquina */
+    resize: both; 
+    overflow: hidden;
+    min-width: 300px;
+    min-height: 300px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+#graph-input-bar {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+    background: white;
+    padding: 10px 20px;
+    border-radius: 50px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    display: none; /* Se activa con el botón */
+    gap: 10px;
+    align-items: center;
+    border: 2px solid var(--accent);
+}
+
+    
     
     
 </style>
@@ -691,7 +726,7 @@ input:checked + .slider:before {
 </div>
         
      <div class="snap-mini" style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 12px; font-weight: bold; font-family: sans-serif;">SNAP</span>
+            <span style="font-size: 12px; font-weight: bold; font-family: sans-serif;">GRILLA</span>
             <label class="switch">
                 <input type="checkbox" id="snap-toggle-check" onclick="toggleSnap()">
                 <span class="slider"></span>
@@ -1762,98 +1797,74 @@ function drawSphere(x, y, r) {
             A ${w/2} ${rh} 0 1 0 ${x+w} ${y+rh}`;
 }
 
-
-    // 1. Mostrar/Ocultar la barra
-function toggleGraphBar() {
-    const bar = document.getElementById('graph-tool-bar');
-    const isHidden = bar.style.display === 'none';
-    bar.style.display = isHidden ? 'flex' : 'none';
-    if(isHidden) document.getElementById('graph-formula').focus();
+    function toggleGraphBar() {
+    const bar = document.getElementById('graph-input-bar');
+    bar.style.display = bar.style.display === 'flex' ? 'none' : 'flex';
+    if(bar.style.display === 'flex') document.getElementById('func-exp').focus();
 }
 
-// 2. Crear el plano y la gráfica
-function createPlot() {
-    const input = document.getElementById('graph-formula');
-    let formula = input.value.trim();
-    if (!formula) return;
+function insertGraphObject() {
+    const expression = document.getElementById('func-exp').value;
+    if (!expression) return;
 
-    // Traducción automática de matemáticas
-    let jsFormula = formula.toLowerCase()
-        .replace(/\^/g, "**")
-        .replace(/(sin|cos|tan|sqrt|abs|log|exp|pi)/g, "Math.$1");
-
-    const scale = 35;    // Tamaño de la cuadrícula
-    const range = 10;    // De -10 a 10 unidades
-    const step = 0.1;
+    // Crear un ID único para esta gráfica
+    const graphId = 'graph-' + Date.now();
     
-    // Lo ponemos en el centro del área visible
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
+    // Crear el contenedor que se puede mover (ForeignObject para integrarse al SVG)
+    const foreignObject = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+    foreignObject.setAttribute("x", window.innerWidth / 4);
+    foreignObject.setAttribute("y", window.innerHeight / 4);
+    foreignObject.setAttribute("width", "400");
+    foreignObject.setAttribute("height", "400");
+    foreignObject.classList.add('drawing-element', 'draggable'); // Para que tus funciones de mover funcionen
+    
+    // El div real donde se renderiza la biblioteca
+    const container = document.createElement("div");
+    container.className = "graph-widget-container";
+    container.id = graphId;
+    
+    foreignObject.appendChild(container);
+    layers.draw.appendChild(foreignObject);
 
+    // Renderizar la función usando la biblioteca
     try {
-        const f = new Function('x', `return ${jsFormula};`);
+        functionPlot({
+            target: `#${graphId}`,
+            width: 400,
+            height: 400,
+            grid: true,
+            data: [{
+                fn: expression.replace(/\^/g, "**"), // Traducir x^2 a x**2
+                sampler: 'builtIn',
+                graphType: 'polyline'
+            }]
+        });
         
-        // GRUPO PRINCIPAL (Para que el selector lo mueva todo junto)
-        const plotGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        plotGroup.classList.add('drawing-element', 'draggable'); 
-        plotGroup.setAttribute("style", "cursor: move;");
+        // Listener para redimensionar la gráfica cuando el usuario estira el div
+        new ResizeObserver(() => {
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            foreignObject.setAttribute("width", w);
+            foreignObject.setAttribute("height", h);
+            // Re-renderizar para ajustar escalas
+            functionPlot({
+                target: `#${graphId}`,
+                width: w,
+                height: h,
+                grid: true,
+                data: [{ fn: expression.replace(/\^/g, "**") }]
+            });
+        }).observe(container);
 
-        // --- DIBUJAR CUADRÍCULA ---
-        const grid = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        let gP = "";
-        for(let i = -range; i <= range; i++) {
-            gP += `M ${centerX + i*scale} ${centerY - 5*scale} V ${centerY + 5*scale} `;
-            gP += `M ${centerX - 5*scale} ${centerY + i*scale} H ${centerX + 5*scale} `;
-        }
-        grid.setAttribute("d", gP);
-        grid.setAttribute("stroke", "#f0f0f0");
-        grid.setAttribute("stroke-width", "1");
-        plotGroup.appendChild(grid);
-
-        // --- DIBUJAR EJES ---
-        const axes = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        axes.setAttribute("d", `M ${centerX - range*scale} ${centerY} H ${centerX + range*scale} M ${centerX} ${centerY - range*scale} V ${centerY + range*scale}`);
-        axes.setAttribute("stroke", "#666");
-        axes.setAttribute("stroke-width", "1.5");
-        plotGroup.appendChild(axes);
-
-        // --- DIBUJAR CURVA ---
-        const curve = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        let pathData = "";
-        let first = true;
-
-        for (let x = -range; x <= range; x += step) {
-            const y = f(x);
-            if (isNaN(y) || !isFinite(y)) { first = true; continue; }
-
-            const sx = centerX + (x * scale);
-            const sy = centerY - (y * scale);
-
-            // Evitar que la línea se dispare al infinito
-            if (Math.abs(y) > 50) { first = true; continue; }
-
-            pathData += (first ? "M" : "L") + ` ${sx} ${sy}`;
-            first = false;
-        }
-
-        curve.setAttribute("d", pathData);
-        curve.setAttribute("stroke", currentColor); // Color actual del lápiz
-        curve.setAttribute("stroke-width", "2.5");
-        curve.setAttribute("fill", "none");
-        plotGroup.appendChild(curve);
-
-        // --- FINALIZAR ---
-        layers.draw.appendChild(plotGroup);
         saveHistory();
-        
-        // Cerrar la barra al terminar
-        toggleGraphBar();
-        input.value = ""; 
-
+        toggleGraphBar(); // Cerrar barra
+        document.getElementById('func-exp').value = ""; // Limpiar
     } catch (e) {
-        alert("Fórmula inválida. Prueba algo simple como: x^2");
+        alert("Error en la función matemática");
+        foreignObject.remove();
     }
 }
+
 
     
         
@@ -1863,5 +1874,16 @@ function createPlot() {
 
     <div id="status-msg" style="position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 10px 20px; border-radius: 50px; font-size: 13px; display: none; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.2);"></div>
 
+    <div id="graph-input-bar">
+    <span style="font-weight: bold;">f(x) =</span>
+    <input type="text" id="func-exp" placeholder="x^2, sin(x), sqrt(x)..." 
+           style="border:none; outline:none; font-size: 16px; width: 200px;">
+    <button class="btn" onclick="insertGraphObject()" style="background: var(--accent); color: white; border-radius: 20px; padding: 5px 15px;">
+        Insertar
+    </button>
+    <button onclick="toggleGraphBar()" style="background: none; border: none; cursor: pointer;">✕</button>
+</div>
+
+    
 </body>
 </html>
