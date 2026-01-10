@@ -9,7 +9,7 @@
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
+<script src="https://unpkg.com/lucide@latest"></script>
     
 <style>
     :root {
@@ -531,46 +531,41 @@ input:checked + .slider:before {
 }
 
 
-    
-    /* Ajuste para los nuevos iconos */
-.btn-mini i, .btn-mini svg {
+/* --- ESTILO UNIFICADO PARA ICONOS LUCIDE --- */
+
+/* 1. Tamaño y grosor para TODOS los iconos (Header y Barra Lateral) */
+.btn-mini i, .btn-mini svg, 
+.toolbar .btn i, .toolbar .btn svg {
     width: 18px;
     height: 18px;
-    stroke-width: 2px; /* Grosor de la línea del icono */
+    stroke-width: 2px; /* Grosor profesional */
     vertical-align: middle;
+    flex-shrink: 0;    /* Evita que el icono se aplaste */
 }
 
+/* 2. Ajuste para botones pequeños del Header */
 .btn-mini {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 5px; /* Espacio por si el botón tiene texto e icono */
+    gap: 5px;
 }
 
-
-    /* Ajuste para los botones de la barra lateral */
+/* 3. Ajuste para botones de la Barra Lateral */
 .toolbar .btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px; /* Espacio entre icono y texto */
+    gap: 8px;    /* Espacio entre icono y texto */
     padding: 10px;
-    width: 100%; /* Para que ocupen el ancho de la barra */
+    width: 100%;
 }
 
-.toolbar .btn i {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0; /* Evita que el icono se aplaste */
-}
-
+/* 4. Estilo del texto en los botones de la barra lateral */
 .toolbar .btn span {
     font-size: 13px;
     font-weight: 500;
 }
-
-
-    
     
 </style>
 </head>
